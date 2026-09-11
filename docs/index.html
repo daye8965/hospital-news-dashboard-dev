@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>[개발] 빅5 병원 뉴스 대시보드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f7f7f5;--surface:#fff;--border:#e4e4e0;
+  --text:#1a1a18;--muted:#6b6b67;--accent:#1a5fa8;--accent-bg:#eef4fb;
+  --radius:8px;--font:'Noto Sans KR',sans-serif;--mono:'DM Mono',monospace;
+  --c-asan:#1a5fa8;--c-samsung:#1a7a3c;--c-severance:#7b3fa0;
+  --c-snuh:#c0392b;--c-smc:#d4780a;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;min-height:100vh}
+
+/* 헤더 */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20}
+.header-left h1{font-size:16px;font-weight:600;letter-spacing:-.3px}
+.header-left p{font-size:11px;color:var(--muted);margin-top:1px}
+#total-badge{font-family:var(--mono);font-size:11px;background:var(--accent-bg);color:var(--accent);padding:3px 10px;border-radius:20px;font-weight:500}
+
+/* 탭 */
+.tab-nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;display:flex;gap:0}
+.tab-btn{font-family:var(--font);font-size:14px;font-weight:600;padding:14px 28px;border:none;border-bottom:3px solid transparent;background:none;color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .15s;margin-bottom:-1px;letter-spacing:-.2px}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active[data-tab="ours"]{color:var(--c-asan);border-bottom-color:var(--c-asan)}
+.tab-btn.active[data-tab="others"]{color:var(--c-samsung);border-bottom-color:var(--c-samsung)}
+.tab-btn.active[data-tab="compare"]{color:var(--text);border-bottom-color:var(--text)}
+
+/* 필터 바 */
+.filter-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 32px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.filter-bar input,.filter-bar select{font-family:var(--font);font-size:13px;padding:5px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none;transition:border-color .15s}
+.filter-bar input:focus,.filter-bar select:focus{border-color:var(--accent)}
+#search-input{width:200px}
+.filter-bar button{font-family:var(--font);font-size:13px;padding:5px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--muted);cursor:pointer;transition:all .15s}
+.filter-bar button:hover{border-color:var(--accent);color:var(--accent)}
+#result-count{font-size:12px;color:var(--muted);margin-left:auto;font-family:var(--mono)}
+
+/* 패널 */
+main{padding:20px 32px;max-width:1280px;margin:0 auto}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* 통계 카드 */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px}
+.stat-card .label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.stat-card .value{font-size:20px;font-weight:600;font-family:var(--mono)}
+
+/* 테이블 */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead th{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:9px 12px;text-align:left;background:var(--bg);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+thead th:hover{color:var(--accent)}
+thead th .si{margin-left:3px;opacity:.4}
+thead th.sorted .si{opacity:1;color:var(--accent)}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--accent-bg)}
+td{padding:10px 12px;vertical-align:top}
+.td-date{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap}
+.td-tag{white-space:nowrap}
+.td-title a{color:var(--text);text-decoration:none;font-weight:500;font-size:13px;line-height:1.5;display:block}
+.td-title a:hover{color:var(--accent)}
+.td-summary{font-size:12px;color:var(--muted);max-width:500px;line-height:1.5}
+.td-media{font-size:11px;color:var(--muted);font-family:var(--mono);white-space:nowrap}
+.td-link a{font-size:11px;color:var(--accent);text-decoration:none;font-family:var(--mono);white-space:nowrap}
+.td-link{white-space:nowrap}
+.td-link a:hover{text-decoration:underline}
+.tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:4px;font-weight:500;white-space:nowrap}
+
+/* 타병원 탭 - 병원 선택 필터 */
+.hospital-filter{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.hosp-btn{font-family:var(--font);font-size:12px;font-weight:500;padding:5px 12px;border:1.5px solid var(--border);border-radius:20px;background:var(--surface);color:var(--muted);cursor:pointer;transition:all .15s}
+.hosp-btn:hover{border-color:currentColor}
+.hosp-btn.active{color:#fff}
+
+/* 비교 탭 */
+.compare-section-title{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:0 0 12px}
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.chart-card h3{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
+.chart-wrap{position:relative;height:260px}
+.rank-bar-wrap{display:flex;align-items:center;gap:8px}
+.rank-bar-bg{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.rank-bar-fill{height:100%;border-radius:3px;transition:width .4s}
+.rank-pct{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:32px;text-align:right}
+
+/* 페이지네이션 */
+.pagination{display:flex;justify-content:center;gap:5px;margin-top:14px;flex-wrap:wrap}
+.pagination button{font-family:var(--mono);font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--muted);cursor:pointer;transition:all .15s}
+.pagination button:hover,.pagination button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pagination button:disabled{opacity:.35;cursor:default}
+
+.notice{background:#fffbeb;border:1px solid #f0e68c;border-radius:var(--radius);padding:8px 14px;margin-bottom:14px;font-size:12px;color:#7a6500}
+
+/* 엑셀 다운로드 버튼 */
+.excel-btn{font-family:var(--font);font-size:13px;font-weight:500;padding:6px 14px;border:1.5px solid #1a7a3c;border-radius:var(--radius);background:#fff;color:#1a7a3c;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .15s;white-space:nowrap}
+.excel-btn:hover{background:#1a7a3c;color:#fff}
+.excel-btn:active{transform:scale(.97)}
+.excel-btn svg{flex-shrink:0}
+
+/* 모달 */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:12px;width:95%;max-width:1400px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-header h2{font-size:15px;font-weight:600}
+.modal-close{font-size:20px;border:none;background:none;cursor:pointer;color:var(--muted);line-height:1;padding:4px 8px;border-radius:4px}
+.modal-close:hover{background:var(--bg);color:var(--text)}
+.modal-body{overflow-y:auto;padding:16px 20px;flex:1}
+.modal-table table{width:100%;border-collapse:collapse;font-size:13px}
+.modal-table thead th{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;text-align:left;background:var(--bg);border-bottom:1px solid var(--border);white-space:nowrap}
+.modal-table tbody tr{border-bottom:1px solid var(--border)}
+.modal-table tbody tr:last-child{border-bottom:none}
+.modal-table tbody tr:hover{background:var(--accent-bg)}
+.modal-table td{padding:9px 10px;vertical-align:top;font-size:13px}
+.cat-btn{cursor:pointer;transition:opacity .15s}
+.cat-btn:hover{opacity:.75}
+
+@media(max-width:768px){
+  header,.filter-bar,main,.tab-nav{padding-left:16px;padding-right:16px}
+  .td-summary{display:none}
+  #search-input{width:140px}
+  .chart-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- 매체 드릴다운 모달 -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">기사 목록</h2>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-table" id="modal-table"></div>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div class="header-left">
+    <h1>빅5 병원 뉴스 대시보드 <span style="font-size:11px;font-weight:600;color:#fff;background:#d4780a;padding:2px 7px;border-radius:4px;vertical-align:middle">개발 버전</span></h1>
+    <p style="font-size:11px;color:var(--muted);margin-top:1px">대시보드 제작 : 이다예</p>
+    <p id="last-updated">샘플 데이터 미리보기</p>
+  </div>
+  <span id="total-badge">—</span>
+</header>
+
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="ours"   onclick="switchTab('ours')">🏥 우리병원</button>
+  <button class="tab-btn"        data-tab="others" onclick="switchTab('others')">🔍 타병원</button>
+  <button class="tab-btn"        data-tab="compare"onclick="switchTab('compare')">📊 병원 비교</button>
+</nav>
+
+<div class="filter-bar" id="filter-bar">
+  <input type="date" id="date-from">
+  <span style="color:var(--muted);font-size:12px">~</span>
+  <input type="date" id="date-to">
+  <select id="keyword-filter"><option value="">전체 키워드</option></select>
+  <input type="text" id="search-input" placeholder="검색... (-제외어)">
+  <button onclick="resetFilters()">초기화</button>
+  <span id="result-count"></span>
+  <button class="excel-btn" onclick="downloadExcel()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+    주간 엑셀 다운로드
+  </button>
+</div>
+
+<main>
+  <!-- ① 우리병원 탭 -->
+  <div id="panel-ours" class="tab-panel active">
+    <div class="notice">📋 샘플 데이터 미리보기 — GitHub Pages 배포 후 실제 수집 데이터로 교체됩니다.</div>
+    <div class="stats-row" id="stats-ours"></div>
+    <div class="table-wrap" id="table-ours"></div>
+    <div class="pagination" id="pag-ours"></div>
+  </div>
+
+  <!-- ② 타병원 탭 -->
+  <div id="panel-others" class="tab-panel">
+    <div class="notice">📋 샘플 데이터 미리보기 — GitHub Pages 배포 후 실제 수집 데이터로 교체됩니다.</div>
+    <div class="hospital-filter" id="hosp-filter"></div>
+    <div class="stats-row" id="stats-others"></div>
+    <div class="table-wrap" id="table-others"></div>
+    <div class="pagination" id="pag-others"></div>
+  </div>
+
+  <!-- ③ 비교 탭 -->
+  <div id="panel-compare" class="tab-panel">
+    <div class="notice">📋 샘플 데이터 기준 비교입니다. 실제 배포 후 자동 반영됩니다.</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 16px;margin-bottom:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:12px;font-weight:600;color:var(--muted)">기간 설정</span>
+      <input type="date" id="compare-date-from" style="font-family:var(--font);font-size:13px;padding:5px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none">
+      <span style="color:var(--muted);font-size:12px">~</span>
+      <input type="date" id="compare-date-to" style="font-family:var(--font);font-size:13px;padding:5px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none">
+      <button onclick="applyCompareFilter()" style="font-family:var(--font);font-size:13px;padding:5px 12px;border:1px solid var(--accent);border-radius:var(--radius);background:var(--accent);color:#fff;cursor:pointer">적용</button>
+      <button onclick="resetCompareFilter()" style="font-family:var(--font);font-size:13px;padding:5px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--muted);cursor:pointer">초기화</button>
+      <span id="compare-period-label" style="font-size:11px;color:var(--muted);margin-left:auto;font-family:var(--mono)"></span>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h3>병원별 기사 건수</h3>
+        <div class="chart-wrap"><canvas id="chart-bar"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>병원별 점유율</h3>
+        <div class="chart-wrap"><canvas id="chart-pie"></canvas></div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:48px">순위</th>
+          <th>병원</th>
+          <th style="width:90px">기사 수</th>
+          <th>점유율</th>
+          <th>수집 키워드</th>
+        </tr></thead>
+        <tbody id="compare-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+// ── 상수 ─────────────────────────────────────────────────────────────────────
+const PAGE_SIZE = 20;
+
+// 프론트엔드 매체 매핑 (출입기자리스트 기반)
+const MEDIA_MAP_FE = {
+  "chosun":"조선일보","joongang":"중앙일보","joins":"중앙일보",
+  "donga":"동아일보","hankookilbo":"한국일보","hani":"한겨레",
+  "khan":"경향신문","kyunghyang":"경향신문","seoul":"서울신문",
+  "kmib":"국민일보","segye":"세계일보","munhwa":"문화일보","naeil":"내일신문",
+  "hankyung":"한국경제","mk":"매일경제","mkhealth":"매경헬스",
+  "sedaily":"서울경제","fnnews":"파이낸셜뉴스","mt":"머니투데이",
+  "heraldcorp":"헤럴드경제","heraldm":"헤럴드경제",
+  "asiae":"아시아경제","edaily":"이데일리","etnews":"전자신문",
+  "ajunews":"아주경제","chosunbiz":"조선비즈","etoday":"이투데이","dt":"디지털타임스",
+  "yna":"연합뉴스","news1":"뉴스1","newsis":"뉴시스","newspim":"뉴스핌",
+  "kbs":"KBS","imbc":"MBC","mbc":"MBC","sbs":"SBS",
+  "jtbc":"JTBC","ytn":"YTN","mbn":"MBN","tvchosun":"TV조선",
+  "ichannela":"채널A","yonhapnewstv":"연합뉴스TV","obs":"OBS","ebs":"EBS",
+  "healthchosun":"헬스조선","k-health":"헬스경향",
+  "kukinews":"쿠키뉴스","kormedi":"코메디닷컴",
+  "doctorsnews":"의협신문","bosa":"의학신문","whosaeng":"후생신보",
+  "dailymedi":"데일리메디","medicaltimes":"메디칼타임즈",
+  "docdocdoc":"청년의사","monews":"메디칼업저버","medipana":"메디파나뉴스",
+  "medigatenews":"메디게이트뉴스","rapportian":"라포르시안",
+  "mdtoday":"메디컬투데이","newsmp":"의약뉴스","hitnews":"히트뉴스",
+  "koreabiomed":"코리아바이오메드","pharmstoday":"메디팜스투데이",
+  "ggmedinews":"경기메디뉴스","bokuennews":"보건뉴스",
+  "medicalworldnews":"메디컬월드뉴스","healthinnews":"헬스인뉴스",
+  "healtho":"헬스오","yakup":"약업신문","kpanews":"약사공론",
+  "pharmnews":"팜뉴스","ibric":"브릭","medipharmtimes":"메디팜타임즈",
+  "wowtv":"한경TV","dailian":"데일리안","nocutnews":"노컷뉴스","cbs":"CBS",
+  "sisapress":"시사저널","sisaweek":"시사위크","newstomato":"뉴스토마토",
+  "zdnet":"지디넷코리아","inews24":"아이뉴스24","asiatoday":"아시아투데이",
+  "betanews":"베타뉴스","newsway":"뉴스웨이","greened":"녹색경제신문",
+  "veritas-a":"베리타스알파","paxnetnews":"팍스넷뉴스","100ssd":"백세시대",
+  "healthi":"헬스앤라이프","econovill":"이코노믹리뷰","newsquest":"뉴스퀘스트",
+  "biztribune":"비즈트리뷴","ebn":"EBN","mtn":"머니투데이방송",
+  "seoulwire":"서울와이어","todaykorea":"투데이코리아","news2day":"뉴스투데이",
+  "mydaily":"마이데일리","g-enews":"글로벌이코노믹","thedailypost":"데일리포스트",
+  "enewstoday":"이뉴스투데이","megaeconomy":"메가경제",
+  "wikileaks-kr":"위키리크스한국","nbntv":"NBN",
+  "lifein":"라이프인","widedaily":"와이드데일리","topstarnews":"탑스타뉴스",
+  "thepowernews":"더파워뉴스","thepublic":"더퍼블릭","ziks":"직썰",
+  "lawissue":"로이슈","cnbizm":"CNB저널","jemin":"제민일보",
+  "starnewskorea":"스타뉴스","biznews":"비즈월드","doctorstimes":"의사신문",
+  "viva100":"브릿지경제","worktoday":"워크투데이","thefirstmedia":"더퍼스트",
+  "ccdailynews":"충청데일리","hidoc":"하이닥","sportsq":"스포츠Q",
+  "gukjenews":"국제뉴스","sportsworldi":"스포츠월드","dynews":"동양일보","kmedinfo":"e-의료정보",
+  "iusm":"울산의대뉴스","dongascience":"동아사이언스",
+  "newdailybiz":"뉴데일리경제","menews":"모닝경제",
+  "emoneynews":"이머니뉴스","wiznews":"위즈뉴스","aitimes":"인공지능신문",
+  "joynews24":"조이뉴스24",
+};
+
+function validateName(name) {
+  if (!name) return '';
+  const SURNAMES = '김이박최정강조윤장임한오서신권황안송류전홍고문양손배백허유남심노정하곽성차주우구신임나전민유진지엄채원천방공강현함변염양변복예편';
+  const parts = name.split(/[,\s·]+/).filter(Boolean);
+  const valid = parts.filter(p => p.length >= 2 && p.length <= 3 && SURNAMES.includes(p[0]) && !/병원|센터|의대|대학|학과|내과|외과|연구/.test(p));
+  return valid.join(', ');
+}
+
+function extractProfessor(title, summary, group) {
+  const combined = (title || '') + ' ' + (summary || '');
+  const found = [];
+  const SURNAMES = '김이박최정강조윤장임한오서신권황안송류전홍고문양손배백허유남심노정하곽성차주우구신임나전민유진지엄채원천방공강현함변염양변복예편';
+  const patterns = [
+    /([가-힣]{2,3})\s+(?:[가-힣]+\s+)?교수/g,
+    /교수\s+([가-힣]{2,3})(?=[\s,·(]|$)/g,
+    /([가-힣]{2,3})\s+(?:교수|전문의|원장)/g,
+  ];
+  for (const pat of patterns) {
+    let m;
+    while ((m = pat.exec(combined)) !== null) {
+      const name = m[1];
+      if (name.length < 2 || name.length > 3) continue;
+      if (!SURNAMES.includes(name[0])) continue;
+      if (/^(병원|센터|연구|의료|대학|학교|환자|치료|수술|진료|의사|간호|임상|학과|정신|내분|분비|종양|외과|흉부|신경|소아|비뇨|성형|재활|마취|응급|영상|방사|진단|예방|가정|산부|해부|약리|병리|면역|유전|세포|보건|공동|공식|공사|공급|공학|공단|공립|공공|공중|내과|산의)$/.test(name)) continue;
+      if (found.includes(name)) continue;
+      found.push(name);
+    }
+  }
+  return found.slice(0, 3).join(', ');
+}
+
+function snippetAround(text, group) {
+  if (!text) return '';
+  const hospKey = group === '아산' ? '서울아산병원' : group === '삼성' ? '삼성서울병원' : group === '세브란스' ? '세브란스병원' : group === '서울대' ? '서울대병원' : group === '성모' ? '서울성모병원' : '';
+  const keywords = hospKey ? [hospKey, ...(HOSPITALS[Object.keys(HOSPITALS).find(k=>HOSPITALS[k].group===group)]?.keywords||[])] : [];
+  for (const kw of keywords) {
+    const idx = text.indexOf(kw);
+    if (idx >= 0) {
+      const start = Math.max(0, idx - 30);
+      const end = Math.min(text.length, idx + kw.length + 120);
+      return (start > 0 ? '…' : '') + text.slice(start, end) + (end < text.length ? '…' : '');
+    }
+  }
+  return text.length > 160 ? text.slice(0, 160) + '…' : text;
+}
+
+function resolveMedia(mediaStr, urlStr) {
+  // 무의미한 파싱 결과 제거
+  const JUNK = new Set(['co','or','ne','go','ac','re','pe','kr','com','net','org']);
+  if (JUNK.has((mediaStr||'').toLowerCase())) mediaStr = '';
+  // 이미 매핑된 한글 매체명이면 그대로
+  if (mediaStr && /[가-힣]/.test(mediaStr)) return mediaStr;
+  // URL이나 도메인 단편에서 추출
+  const target = urlStr || mediaStr || '';
+  if (!target) return mediaStr || '';
+  try {
+    const domain = target.replace(/https?:\/\/(www\.)?/,'').split('/')[0].toLowerCase();
+    if (domain.includes('news.naver') || domain.includes('n.news.naver')) return mediaStr||'';
+    for (const [key, name] of Object.entries(MEDIA_MAP_FE)) {
+      if (domain.includes(key)) return name;
+    }
+    // 최후수단: 도메인 파트 추출
+    const parts = domain.split('.');
+    if (parts.length >= 2) {
+      const skip = new Set(['co','or','ne','go','ac','re','pe','kr','com','net','org']);
+      for (let i = 0; i < parts.length; i++) {
+        if (!skip.has(parts[i]) && parts[i].length > 1) return parts[i];
+      }
+      return mediaStr || '';
+    }
+  } catch(e) {}
+  return mediaStr || '';
+}
+const HOSPITALS = {
+  asan:      {label:'서울아산병원', short:'아산',    group:'아산',     color:'#1a5fa8', keywords:['서울아산병원','아산병원']},
+  samsung:   {label:'삼성서울병원', short:'삼성',    group:'삼성',     color:'#1a7a3c', keywords:['삼성서울병원','성균관의대']},
+  severance: {label:'세브란스병원', short:'세브란스', group:'세브란스', color:'#7b3fa0', keywords:['세브란스병원','연세암병원']},
+  snuh:      {label:'서울대병원',   short:'서울대',  group:'서울대',   color:'#c0392b', keywords:['서울대병원','서울대학교병원']},
+  smc:       {label:'서울성모병원', short:'성모',    group:'성모',     color:'#d4780a', keywords:['서울성모병원']},
+};
+const OTHERS_KEYS = ['samsung','severance','snuh','smc'];
+
+// ── 샘플 데이터 ───────────────────────────────────────────────────────────────
+const SAMPLE = [
+  {날짜:'2026-05-26',병원그룹:'아산',검색어:'서울아산병원',매체:'연합뉴스',제목:'서울아산병원, 국내 최초 로봇수술 5만 건 달성',요약:'서울아산병원이 국내 최초로 로봇수술 누적 5만 건을 돌파했다. 세계 최고 수준의 역량을 입증한 성과다.',네이버링크:'https://n.news.naver.com/1',언론사원문:'https://example.com/1',발행일시:'2026-05-26 08:32',수집일시:'2026-05-27 08:05'},
+  {날짜:'2026-05-26',병원그룹:'아산',검색어:'아산병원',매체:'헬스조선',제목:'아산병원 심장내과팀, 고위험 판막질환 신술기 개발',요약:'서울아산병원 심장내과 연구팀이 합병증 위험을 낮춘 새 판막 치환 시술 기법을 개발했다.',네이버링크:'https://n.news.naver.com/2',언론사원문:'https://example.com/2',발행일시:'2026-05-26 09:15',수집일시:'2026-05-27 08:05'},
+  {날짜:'2026-05-26',병원그룹:'아산',검색어:'울산의대',매체:'메디칼타임즈',제목:'울산의대-아산병원 공동 연구, SCI 저명 저널 게재',요약:'울산의대·아산병원 공동 연구팀의 암 면역치료 논문이 세계 권위 학술지에 게재됐다.',네이버링크:'https://n.news.naver.com/3',언론사원문:'https://example.com/3',발행일시:'2026-05-26 11:00',수집일시:'2026-05-27 08:05'},
+  {날짜:'2026-05-26',병원그룹:'아산',검색어:'서울아산병원',매체:'한국경제',제목:'서울아산병원 간이식팀, 생체 간이식 3천 건 달성',요약:'서울아산병원 간이식팀이 생체 간이식 누적 3000건을 달성했다.',네이버링크:'https://n.news.naver.com/4',언론사원문:'https://example.com/4',발행일시:'2026-05-26 13:00',수집일시:'2026-05-27 08:05'},
+  {날짜:'2026-05-26',병원그룹:'아산',검색어:'서울아산병원',매체:'중앙일보',제목:'서울아산병원, AI 기반 폐암 조기진단 시스템 임상 도입',요약:'서울아산병원이 AI가 CT 영상을 분석해 폐암을 조기 발견하는 시스템을 국내 최초로 임상에 적용한다.',네이버링크:'https://n.news.naver.com/5',언론사원문:'https://example.com/5',발행일시:'2026-05-26 15:30',수집일시:'2026-05-27 08:05'},
+  {날짜:'2026-05-25',병원그룹:'아산',검색어:'서울중앙병원',매체:'뉴시스',제목:'서울중앙병원, 응급의료센터 2배 규모 확장 이전',요약:'서울중앙병원이 응급의료센터를 기존 대비 2배 규모로 확장 이전하고 중증 외상 전담 구역을 신설했다.',네이버링크:'https://n.news.naver.com/6',언론사원문:'https://example.com/6',발행일시:'2026-05-25 09:00',수집일시:'2026-05-26 08:05'},
+  {날짜:'2026-05-25',병원그룹:'아산',검색어:'아산병원',매체:'메디컬투데이',제목:'아산병원 정형외과, 무릎인공관절 수술 2만 건 돌파',요약:'아산병원 정형외과가 국내 최다 무릎인공관절 수술 2만 건을 달성했다.',네이버링크:'https://n.news.naver.com/7',언론사원문:'https://example.com/7',발행일시:'2026-05-25 14:20',수집일시:'2026-05-26 08:05'},
+  // 삼성
+  {날짜:'2026-05-26',병원그룹:'삼성',검색어:'삼성서울병원',매체:'조선일보',제목:'삼성서울병원, 세계 최초 단일공 로봇 갑상선 수술 성공',요약:'삼성서울병원 이비인후과팀이 세계 최초로 단일공 로봇을 이용한 갑상선 수술에 성공했다.',네이버링크:'https://n.news.naver.com/8',언론사원문:'https://example.com/8',발행일시:'2026-05-26 08:50',수집일시:'2026-05-27 08:05'},
+  {날짜:'2026-05-26',병원그룹:'삼성',검색어:'삼성서울병원',매체:'동아일보',제목:'삼성서울병원-MIT, 혈액 한 방울로 치매 조기 진단 AI 개발',요약:'삼성서울병원과 MIT 연구팀이 혈액 단 한 방울로 치매를 조기 진단하는 AI 모델을 개발했다.',네이버링크:'https://n.news.naver.com/9',언론사원문:'https://example.com/9',발행일시:'2026-05-26 10:30',수집일시:'2026-05-27 08:05'},
+  {날짜:'2026-05-26',병원그룹:'삼성',검색어:'삼성병원',매체:'연합뉴스',제목:'삼성병원, 국내 최대 규모 임상시험 센터 개관',요약:'삼성서울병원이 글로벌 수준의 임상시험 인프라를 갖춘 국내 최대 규모 임상시험 센터를 개관했다.',네이버링크:'https://n.news.naver.com/10',언론사원문:'https://example.com/10',발행일시:'2026-05-26 14:00',수집일시:'2026-05-27 08:05'},
+  {날짜:'2026-05-25',병원그룹:'삼성',검색어:'삼성서울병원',매체:'뉴스1',제목:'삼성서울병원, JCI 인증 7연속 획득',요약:'삼성서울병원이 국제 의료기관 평가기관 JCI 인증을 7회 연속 획득하며 글로벌 의료 수준을 입증했다.',네이버링크:'https://n.news.naver.com/11',언론사원문:'https://example.com/11',발행일시:'2026-05-25 11:00',수집일시:'2026-05-26 08:05'},
+  // 세브란스
+  {날짜:'2026-05-26',병원그룹:'세브란스',검색어:'세브란스병원',매체:'한겨레',제목:'세브란스병원, 다빈치 로봇수술 아시아 1위 달성',요약:'세브란스병원이 다빈치 로봇수술 건수 기준으로 아시아 1위를 기록했다.',네이버링크:'https://n.news.naver.com/12',언론사원문:'https://example.com/12',발행일시:'2026-05-26 09:00',수집일시:'2026-05-27 08:05'},
+  {날짜:'2026-05-26',병원그룹:'세브란스',검색어:'연세암병원',매체:'YTN',제목:'연세암병원, 국내 최초 CAR-T 세포치료 임상 착수',요약:'연세암병원이 국내 최초로 CAR-T 세포치료제 임상시험에 착수한다고 발표했다.',네이버링크:'https://n.news.naver.com/13',언론사원문:'https://example.com/13',발행일시:'2026-05-26 11:45',수집일시:'2026-05-27 08:05'},
+  {날짜:'2026-05-25',병원그룹:'세브란스',검색어:'세브란스병원',매체:'KBS',제목:'세브란스병원, 5G 활용 원격 로봇 수술 국내 첫 성공',요약:'세브란스병원이 5G 네트워크를 활용한 원격 로봇 수술을 국내 최초로 성공시켰다.',네이버링크:'https://n.news.naver.com/14',언론사원문:'https://example.com/14',발행일시:'2026-05-25 10:00',수집일시:'2026-05-26 08:05'},
+  // 서울대
+  {날짜:'2026-05-26',병원그룹:'서울대',검색어:'서울대병원',매체:'경향신문',제목:'서울대병원, 국가지정 희귀질환 진료 거점병원 지정',요약:'서울대병원이 보건복지부로부터 국가지정 희귀질환 진료 거점병원으로 지정받았다.',네이버링크:'https://n.news.naver.com/15',언론사원문:'https://example.com/15',발행일시:'2026-05-26 09:30',수집일시:'2026-05-27 08:05'},
+  {날짜:'2026-05-26',병원그룹:'서울대',검색어:'서울대학교병원',매체:'매일경제',제목:'서울대학교병원, 디지털 헬스케어 전담 부서 신설',요약:'서울대학교병원이 AI 의료 혁신을 전담하는 디지털 헬스케어 부서를 신설했다.',네이버링크:'https://n.news.naver.com/16',언론사원문:'https://example.com/16',발행일시:'2026-05-26 15:10',수집일시:'2026-05-27 08:05'},
+  {날짜:'2026-05-25',병원그룹:'서울대',검색어:'서울대병원',매체:'서울경제',제목:'서울대병원 연구팀, 항생제 내성균 극복 신약 후보 발굴',요약:'서울대병원 연구팀이 다제내성균에 효과적인 항균 물질 후보를 발굴하는 데 성공했다.',네이버링크:'https://n.news.naver.com/17',언론사원문:'https://example.com/17',발행일시:'2026-05-25 13:00',수집일시:'2026-05-26 08:05'},
+  // 성모
+  {날짜:'2026-05-26',병원그룹:'성모',검색어:'서울성모병원',매체:'코메디닷컴',제목:'서울성모병원, 조혈모세포이식 5천 건 달성',요약:'서울성모병원이 국내 최대 조혈모세포이식 센터로서 누적 5000건 이식을 달성했다.',네이버링크:'https://n.news.naver.com/18',언론사원문:'https://example.com/18',발행일시:'2026-05-26 10:20',수집일시:'2026-05-27 08:05'},
+  {날짜:'2026-05-25',병원그룹:'성모',검색어:'서울성모병원',매체:'JTBC',제목:'서울성모병원, 가톨릭 의생명 연구원 대폭 확대 개편',요약:'서울성모병원이 가톨릭 의생명 연구원을 확대 개편해 기초·임상 융합 연구를 강화한다.',네이버링크:'https://n.news.naver.com/19',언론사원문:'https://example.com/19',발행일시:'2026-05-25 15:00',수집일시:'2026-05-26 08:05'},
+];
+
+// ── 매체 분류 ─────────────────────────────────────────────────────────────────
+const DAILY_PRESS = new Set([
+  '조선일보','중앙일보','동아일보','한겨레','경향신문','한국일보','서울신문',
+  '국민일보','세계일보','문화일보',
+]);
+const ECONOMIC_PRESS = new Set([
+  '한국경제','매일경제','서울경제','이데일리','머니투데이','파이낸셜뉴스',
+  '헤럴드경제','아시아경제','전자신문',
+]);
+const BROADCAST = new Set([
+  'KBS','MBC','SBS','JTBC','YTN','MBN','TV조선','채널A','연합뉴스TV',
+]);
+const WIRE = new Set(['연합뉴스','뉴시스','뉴스1']);
+const MEDICAL_PRESS = new Set([
+  '헬스조선','메디칼타임즈','의사신문','라포르시안','메디컬투데이','코메디닷컴',
+  '메디컬포스트','청년의사','데일리메디','의학신문','메디파나뉴스','히트뉴스',
+  '약사공론','의약뉴스',
+]);
+
+function classifyMedia(media) {
+  if (!media) return '기타';
+  if (DAILY_PRESS.has(media))    return '일간지';
+  if (ECONOMIC_PRESS.has(media)) return '경제지';
+  if (BROADCAST.has(media))      return '방송';
+  if (WIRE.has(media))           return '통신사';
+  if (MEDICAL_PRESS.has(media))  return '의료전문지';
+  return '기타';
+}
+
+// ── 상태 ─────────────────────────────────────────────────────────────────────
+let allData = SAMPLE;
+let currentTab = 'ours';
+let oursPage = 1, othersPage = 1;
+let oursSort = {col:'발행일시',asc:false}, othersSort = {col:'발행일시',asc:false};
+let selectedHosp = null; // null = 전체 타병원
+let barChart = null, pieChart = null;
+
+// ── 초기화 ───────────────────────────────────────────────────────────────────
+async function init() {
+  buildHospFilter();
+  updateKeywordOptions('ours');
+
+  // CSV 로드 시도 → 실패 시 샘플 데이터 사용
+  try {
+    const res = await fetch('./news.csv?t=' + Date.now());
+    if (!res.ok) throw new Error('CSV 없음');
+    const text = await res.text();
+    const parsed = parseCSV(text);
+    if (parsed.length > 0) {
+      allData = parsed;
+      const dates = allData.map(r=>r['수집일시']).filter(Boolean).sort();
+      if (dates.length) {
+        document.getElementById('last-updated').textContent = `마지막 수집: ${dates[dates.length-1]}`;
+      }
+      // 샘플 안내 제거
+      document.querySelectorAll('.notice').forEach(el => el.style.display = 'none');
+    }
+  } catch(e) {
+    console.log('CSV 로드 실패, 샘플 데이터 사용:', e);
+  }
+
+  document.getElementById('total-badge').textContent = `총 ${allData.length.toLocaleString()}건`;
+  renderOurs();
+  renderCompare();
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.replace(/^\uFEFF/, '').trim().replace(/^"|"$/g, ''));
+  const parsed = lines.slice(1).map(line => {
+    const cols = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === '"') { inQ = !inQ; }
+      else if (line[i] === ',' && !inQ) { cols.push(cur); cur = ''; }
+      else { cur += line[i]; }
+    }
+    cols.push(cur);
+    const row = {};
+    headers.forEach((h, i) => row[h] = (cols[i] || '').trim().replace(/^"|"$/g, ''));
+    return row;
+  }).filter(r => r['제목']);
+
+  // ── 프론트엔드 중복 제거 ──────────────────────────────────────────────────
+  const seenUrls   = new Set();
+  const seenTitles = new Set();
+  return parsed.filter(r => {
+    const url  = r['언론사원문'] || r['네이버링크'] || '';
+    const tk   = (r['제목'] || '').replace(/[^\w가-힣a-zA-Z0-9]/g, '').toLowerCase().slice(0, 30);
+
+    if (url && seenUrls.has(url))     return false;
+    if (tk  && seenTitles.has(tk))    return false;
+
+    if (url) seenUrls.add(url);
+    if (tk)  seenTitles.add(tk);
+    return true;
+  });
+}
+
+function buildHospFilter() {
+  const wrap = document.getElementById('hosp-filter');
+  wrap.innerHTML = `<button class="hosp-btn active" data-hk="all" onclick="selectHosp('all')" style="border-color:#888;color:#444">전체 타병원</button>`
+    + OTHERS_KEYS.map(k => {
+      const h = HOSPITALS[k];
+      return `<button class="hosp-btn" data-hk="${k}" onclick="selectHosp('${k}')"
+        style="border-color:${h.color};color:${h.color}">${h.label}</button>`;
+    }).join('');
+}
+
+function selectHosp(key) {
+  selectedHosp = key === 'all' ? null : key;
+  document.querySelectorAll('.hosp-btn').forEach(b => {
+    const active = b.dataset.hk === key;
+    b.classList.toggle('active', active);
+    if (active) b.style.background = key === 'all' ? '#444' : HOSPITALS[key]?.color || '#444';
+    else b.style.background = '';
+    if (active) b.style.color = '#fff';
+    else b.style.color = key === 'all' ? '' : (HOSPITALS[b.dataset.hk]?.color || '');
+  });
+  updateKeywordOptions('others');
+  othersPage = 1;
+  renderOthers();
+}
+
+// ── 탭 전환 ──────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-'+tab));
+  document.getElementById('filter-bar').style.display = tab === 'compare' ? 'none' : 'flex';
+  if (tab === 'ours')   { updateKeywordOptions('ours');   renderOurs(); }
+  if (tab === 'others') { updateKeywordOptions('others'); renderOthers(); }
+  if (tab === 'compare') renderCompare();
+}
+
+function updateKeywordOptions(tab) {
+  const sel = document.getElementById('keyword-filter');
+  let kws = [];
+  if (tab === 'ours') {
+    kws = HOSPITALS.asan.keywords;
+  } else {
+    const keys = selectedHosp ? [selectedHosp] : OTHERS_KEYS;
+    kws = [...new Set(keys.flatMap(k => HOSPITALS[k].keywords))];
+  }
+  sel.innerHTML = '<option value="">전체 키워드</option>' + kws.map(k=>`<option>${k}</option>`).join('');
+  document.getElementById('search-input').value = '';
+}
+
+// ── 필터 값 가져오기 ──────────────────────────────────────────────────────────
+function getFilters() {
+  return {
+    dateFrom: document.getElementById('date-from').value,
+    dateTo:   document.getElementById('date-to').value,
+    keyword:  document.getElementById('keyword-filter').value,
+    search:   document.getElementById('search-input').value.toLowerCase(),
+  };
+}
+
+const FE_EXCLUDE_KW = [
+  '부고','부음','별세','타계','빈소','발인','영결식','추도사','모친상','부친상','장례식장','셀럽포토','돌싱',
+  '김우빈','김희선','김동일','파크로쉬','장미화','홍수환','조우신','레몬헬스케어','보령시장',
+  '삼성전자','삼성증권','삼성물산','삼성SDI','삼성SDS','삼성화재','삼성생명','삼성바이오',
+  '강북삼성병원','분당서울대병원','강남세브란스','영동세브란스','용인세브란스','국제성모병원','인천성모병원','부천성모병원',
+  '보라매병원','세란병원','강남베드로병원','연세유업','세브란스케어',
+  '지역의사제','수능최저','의대 입시','편입학',
+  '분양','임대주택','재건축','살인미수','스토킹 살인','살해미수',
+  '옥희','故 옥희','고 옥희','영면에 든','서울시스터즈',
+];
+const FE_EXCLUDE_MEDIA = ['celuvmedia'];
+const FE_EXCLUDE_QUERY = ['서울의대'];
+
+function applyFilters(rows) {
+  const {dateFrom,dateTo,keyword,search} = getFilters();
+  return rows.filter(r => {
+    if (r['검색어'] === '서울중앙병원') return false;
+    if (FE_EXCLUDE_QUERY.includes(r['검색어'])) return false;
+    const combined = Object.values(r).join(' ');
+    if (FE_EXCLUDE_KW.some(kw => combined.includes(kw))) return false;
+    const url = (r['언론사원문']||r['네이버링크']||'').toLowerCase();
+    if (FE_EXCLUDE_MEDIA.some(m => url.includes(m))) return false;
+    if (dateFrom && r['날짜'] < dateFrom) return false;
+    if (dateTo   && r['날짜'] > dateTo)   return false;
+    if (keyword  && r['검색어'] !== keyword) return false;
+    if (search) {
+      const terms = search.split(/\s+/).filter(Boolean);
+      const titleLow = (r['제목']||'').toLowerCase();
+      const summLow = (r['요약']||'').toLowerCase();
+      const all = titleLow + ' ' + summLow;
+      for (const t of terms) {
+        if (t.startsWith('-') && t.length > 1) {
+          if (all.includes(t.slice(1))) return false;
+        } else {
+          if (!all.includes(t)) return false;
+        }
+      }
+    }
+    return true;
+  });
+}
+
+// ── 우리병원 렌더 ─────────────────────────────────────────────────────────────
+function renderOurs() {
+  const h = HOSPITALS.asan;
+  const base = allData.filter(r => r['병원그룹'] === '아산');
+  const filtered = applyFilters(base);
+  const rows = sortRows(filtered, oursSort);
+  document.getElementById('result-count').textContent = `${rows.length}건`;
+
+  // 키워드별 집계 (필터 적용)
+  const kwCounts = {};
+  filtered.forEach(r => { kwCounts[r['검색어']] = (kwCounts[r['검색어']]||0)+1; });
+  const days = [...new Set(filtered.map(r=>r['날짜']))].length;
+
+  // 매체 분류별 집계
+  const catCounts = {};
+  filtered.forEach(r => {
+    const cat = classifyMedia(r['매체']);
+    catCounts[cat] = (catCounts[cat]||0)+1;
+  });
+  const CAT_COLOR = {
+    '일간지':'#1a5fa8', '경제지':'#1a7a3c', '방송':'#7b3fa0',
+    '통신사':'#555', '의료전문지':'#c0392b', '기타':'#888',
+  };
+  const CAT_ORDER = ['일간지','경제지','방송','통신사','의료전문지','기타'];
+
+  // 매체별 Top5
+  const mediaCounts = {};
+  filtered.forEach(r => { if(r['매체']) mediaCounts[r['매체']] = (mediaCounts[r['매체']]||0)+1; });
+  const top5 = Object.entries(mediaCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const maxCount = top5[0]?.[1] || 1;
+
+  document.getElementById('stats-ours').innerHTML = `
+    <!-- 요약 카드 -->
+    <div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:4px">
+      ${[
+        statCard('전체 기사', filtered.length, h.color),
+        statCard('수집 일수', days, h.color),
+        ...Object.entries(kwCounts).map(([k,v]) => statCard(k, v, h.color))
+      ].join('')}
+    </div>
+    <!-- 매체 분류 집계 -->
+    <div style="grid-column:1/-1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div>
+        <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">매체 유형별 집계</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          ${CAT_ORDER.filter(c=>catCounts[c]).map(c => `
+            <div class="cat-btn" onclick="openMediaModal('${c}')" style="display:flex;align-items:center;gap:6px;min-width:100px;padding:4px 6px;border-radius:6px">
+              <span style="width:8px;height:8px;border-radius:50%;background:${CAT_COLOR[c]||'#888'};flex-shrink:0"></span>
+              <span style="font-size:12px;color:var(--muted)">${c}</span>
+              <span style="font-family:var(--mono);font-size:13px;font-weight:600;color:${CAT_COLOR[c]||'#888'};margin-left:auto">${catCounts[c]}</span>
+              <span style="font-size:10px;color:var(--muted);margin-left:2px">›</span>
+            </div>`).join('')}
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">매체별 Top 5</div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          ${top5.map(([media, cnt]) => {
+            const cat = classifyMedia(media);
+            const color = CAT_COLOR[cat] || '#888';
+            const pct = Math.round(cnt/maxCount*100);
+            return `<div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:12px;color:var(--text);min-width:72px;white-space:nowrap">${media}</span>
+              <div style="flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden">
+                <div style="width:${pct}%;height:100%;background:${color};border-radius:3px"></div>
+              </div>
+              <span style="font-family:var(--mono);font-size:11px;color:var(--muted);min-width:16px;text-align:right">${cnt}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>`;
+
+  renderTable('table-ours', rows, oursPage, 'ours', h.color);
+  renderPag('pag-ours', rows.length, oursPage, 'ours');
+}
+
+// ── 타병원 렌더 ───────────────────────────────────────────────────────────────
+function renderOthers() {
+  const keys = selectedHosp ? [selectedHosp] : OTHERS_KEYS;
+  const groups = keys.map(k => HOSPITALS[k].group);
+  const base = allData.filter(r => groups.includes(r['병원그룹']));
+  const filtered = applyFilters(base);
+  const rows = sortRows(filtered, othersSort);
+  document.getElementById('result-count').textContent = `${rows.length}건`;
+
+  // 통계
+  const hospCounts = {};
+  filtered.forEach(r => {
+    const lbl = Object.values(HOSPITALS).find(h=>h.group===r['병원그룹'])?.label || r['병원그룹'];
+    hospCounts[lbl] = (hospCounts[lbl]||0)+1;
+  });
+  const days = [...new Set(filtered.map(r=>r['날짜']))].length;
+  const accentColor = selectedHosp ? HOSPITALS[selectedHosp].color : '#444';
+  document.getElementById('stats-others').innerHTML = [
+    statCard('전체 기사', filtered.length, accentColor),
+    statCard('수집 일수', days, accentColor),
+    ...Object.entries(hospCounts).map(([k,v]) => {
+      const color = Object.values(HOSPITALS).find(h=>h.label===k)?.color || accentColor;
+      return statCard(k, v, color);
+    })
+  ].join('');
+
+  renderTable('table-others', rows, othersPage, 'others', accentColor);
+  renderPag('pag-others', rows.length, othersPage, 'others');
+}
+
+// ── 공통 테이블 렌더 ──────────────────────────────────────────────────────────
+function renderTable(id, rows, page, panelKey, defaultColor) {
+  const wrap = document.getElementById(id);
+  const pageRows = rows.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE);
+  if (!pageRows.length) {
+    wrap.innerHTML = `<div style="text-align:center;padding:50px 20px;color:var(--muted);font-size:13px">검색 결과가 없습니다.</div>`;
+    return;
+  }
+  wrap.innerHTML = `<table>
+    <thead><tr>
+      <th onclick="doSort('${panelKey}','발행일시')" data-col="발행일시" class="${(panelKey==='ours'?oursSort:othersSort).col==='발행일시'?'sorted':''}">날짜 <span class="si">↕</span></th>
+      ${panelKey==='others'?'<th>병원</th>':''}
+      <th>키워드</th>
+      <th onclick="doSort('${panelKey}','매체')" data-col="매체" class="${(panelKey==='ours'?oursSort:othersSort).col==='매체'?'sorted':''}">매체 <span class="si">↕</span></th>
+      <th>제목</th>
+      <th style="white-space:nowrap">교수명</th>
+      <th class="td-summary">요약</th>
+      <th style="white-space:nowrap;min-width:50px">링크</th>
+    </tr></thead>
+    <tbody>${pageRows.map(r => {
+      const hKey = Object.keys(HOSPITALS).find(k=>HOSPITALS[k].group===r['병원그룹']);
+      const color = HOSPITALS[hKey]?.color || defaultColor;
+      const link = r['언론사원문']||r['네이버링크']||'';
+      const naverLink = r['네이버링크']||'';
+      const prof = extractProfessor(r['제목'], r['요약'], r['병원그룹']) || validateName(r['교수명']) || '';
+      // 날짜: 발행일시 우선, 없으면 날짜 컬럼, URL처럼 생긴 값은 무시
+      const rawDate = r['발행일시']||r['날짜']||'';
+      const displayDate = (rawDate && !rawDate.startsWith('http')) ? rawDate.slice(0,16) : '—';
+      // 매체명 보정
+      const media = resolveMedia(r['매체']||'', r['언론사원문']||r['네이버링크']||'');
+      return `<tr>
+        <td class="td-date">${displayDate}</td>
+        ${panelKey==='others'?`<td class="td-tag"><span class="tag" style="background:${color}22;color:${color};font-weight:600">${HOSPITALS[hKey]?.label||r['병원그룹']}</span></td>`:''}
+        <td class="td-tag"><span style="font-size:12px;color:var(--muted)">${r['검색어']||''}</span></td>
+        <td class="td-media">${media}</td>
+        <td class="td-title">${link?`<a href="${link}" target="_blank" rel="noopener">${r['제목']}</a>`:r['제목']}</td>
+        <td style="font-size:12px;color:#1a5fa8;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;font-weight:${prof?'600':'400'}">${prof||'—'}</td>
+        <td class="td-summary">${snippetAround(r['요약']||'', r['병원그룹'])}</td>
+        <td class="td-link">${naverLink?`<a href="${naverLink}" target="_blank" rel="noopener">네이버</a>`:''}</td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+// ── 비교 탭 렌더 ──────────────────────────────────────────────────────────────
+function getCompareData() {
+  const from = document.getElementById('compare-date-from').value;
+  const to = document.getElementById('compare-date-to').value;
+  let data = allData.filter(r => {
+    if (r['검색어'] === '서울중앙병원') return false;
+    if (FE_EXCLUDE_QUERY.includes(r['검색어'])) return false;
+    const combined = Object.values(r).join(' ');
+    if (FE_EXCLUDE_KW.some(kw => combined.includes(kw))) return false;
+    const url = (r['언론사원문']||r['네이버링크']||'').toLowerCase();
+    if (FE_EXCLUDE_MEDIA.some(m => url.includes(m))) return false;
+    if (from && r['날짜'] < from) return false;
+    if (to && r['날짜'] > to) return false;
+    return true;
+  });
+  const label = document.getElementById('compare-period-label');
+  label.textContent = (from || to) ? `${from || '~'} ~ ${to || '~'} (${data.length}건)` : '';
+  return data;
+}
+
+function applyCompareFilter() { renderCompare(); }
+function resetCompareFilter() {
+  document.getElementById('compare-date-from').value = '';
+  document.getElementById('compare-date-to').value = '';
+  renderCompare();
+}
+
+function renderCompare() {
+  const compareData = getCompareData();
+  const stats = Object.entries(HOSPITALS).map(([k,h]) => ({
+    key:k, label:h.label, color:h.color,
+    count: compareData.filter(r=>r['병원그룹']===h.group).length,
+    keywords: [...new Set(compareData.filter(r=>r['병원그룹']===h.group).map(r=>r['검색어']))]
+  })).sort((a,b)=>b.count-a.count);
+
+  const total = stats.reduce((s,g)=>s+g.count,0);
+
+  // 순위 테이블
+  document.getElementById('compare-tbody').innerHTML = stats.map((g,i) => {
+    const pct = total ? Math.round(g.count/total*100) : 0;
+    const medals = ['🥇','🥈','🥉'];
+    return `<tr>
+      <td style="text-align:center;font-size:18px">${medals[i]||i+1}</td>
+      <td><span style="display:inline-flex;align-items:center;gap:7px">
+        <span style="width:9px;height:9px;border-radius:50%;background:${g.color};flex-shrink:0"></span>
+        <strong style="color:${g.color}">${g.label}</strong>
+        ${g.key==='asan'?'<span style="font-size:10px;background:#eef4fb;color:#1a5fa8;padding:1px 6px;border-radius:4px;font-weight:600">우리병원</span>':''}
+      </span></td>
+      <td><span style="font-family:var(--mono);font-weight:600;font-size:15px;color:${g.color}">${g.count}</span><span style="font-size:11px;color:var(--muted)">건</span></td>
+      <td><div class="rank-bar-wrap">
+        <div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${pct}%;background:${g.color}"></div></div>
+        <span class="rank-pct">${pct}%</span>
+      </div></td>
+      <td style="font-size:11px;color:var(--muted)">${g.keywords.slice(0,3).join(' · ')}</td>
+    </tr>`;
+  }).join('');
+
+  // 차트
+  const labels = stats.map(g=>g.label);
+  const counts = stats.map(g=>g.count);
+  const colors = stats.map(g=>g.color);
+
+  if (barChart) barChart.destroy();
+  barChart = new Chart(document.getElementById('chart-bar'), {
+    type:'bar',
+    data:{labels, datasets:[{
+      data:counts,
+      backgroundColor:colors.map(c=>c+'bb'),
+      borderColor:colors,
+      borderWidth:1.5,
+      borderRadius:5,
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{beginAtZero:true, grid:{color:'#e8e8e4'}, ticks:{font:{family:'DM Mono',size:11}}},
+        x:{grid:{display:false}, ticks:{font:{family:'Noto Sans KR',size:11}}}
+      }
+    }
+  });
+
+  if (pieChart) pieChart.destroy();
+  pieChart = new Chart(document.getElementById('chart-pie'), {
+    type:'doughnut',
+    data:{labels, datasets:[{
+      data:counts,
+      backgroundColor:colors.map(c=>c+'cc'),
+      borderColor:'#fff',
+      borderWidth:3,
+      hoverOffset:6,
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'58%',
+      plugins:{legend:{
+        position:'bottom',
+        labels:{font:{family:'Noto Sans KR',size:11}, padding:14, boxWidth:11, borderRadius:3}
+      }}
+    }
+  });
+}
+
+// ── 유틸 ─────────────────────────────────────────────────────────────────────
+function statCard(label, value, color) {
+  return `<div class="stat-card"><div class="label">${label}</div><div class="value" style="color:${color}">${typeof value==='number'?value.toLocaleString():value}</div></div>`;
+}
+
+function sortRows(rows, state) {
+  return [...rows].sort((a,b) => {
+    let av = a[state.col]||'', bv = b[state.col]||'';
+    // URL처럼 생긴 날짜값은 빈값으로 처리
+    if (av.startsWith('http')) av = '';
+    if (bv.startsWith('http')) bv = '';
+    return state.asc ? av.localeCompare(bv) : bv.localeCompare(av);
+  });
+}
+
+function doSort(panelKey, col) {
+  if (panelKey === 'ours') {
+    if (oursSort.col===col) oursSort.asc=!oursSort.asc; else{oursSort.col=col;oursSort.asc=false;}
+    oursPage=1; renderOurs();
+  } else {
+    if (othersSort.col===col) othersSort.asc=!othersSort.asc; else{othersSort.col=col;othersSort.asc=false;}
+    othersPage=1; renderOthers();
+  }
+}
+
+function renderPag(id, total_rows, page, key) {
+  const total = Math.ceil(total_rows/PAGE_SIZE);
+  const el = document.getElementById(id);
+  if (total<=1){el.innerHTML='';return;}
+  let html=`<button onclick="goPage('${key}',${page-1})" ${page===1?'disabled':''}>← 이전</button>`;
+  const s=Math.max(1,page-2),e=Math.min(total,page+2);
+  if(s>1) html+=`<button onclick="goPage('${key}',1)">1</button>${s>2?'<span style="align-self:center;color:var(--muted);padding:0 2px">…</span>':''}`;
+  for(let i=s;i<=e;i++) html+=`<button onclick="goPage('${key}',${i})" class="${i===page?'active':''}">${i}</button>`;
+  if(e<total) html+=`${e<total-1?'<span style="align-self:center;color:var(--muted);padding:0 2px">…</span>':''}<button onclick="goPage('${key}',${total})">${total}</button>`;
+  html+=`<button onclick="goPage('${key}',${page+1})" ${page===total?'disabled':''}>다음 →</button>`;
+  el.innerHTML=html;
+}
+
+function goPage(key, p) {
+  const base = key==='ours' ? allData.filter(r=>r['병원그룹']==='아산')
+    : allData.filter(r=>OTHERS_KEYS.map(k=>HOSPITALS[k].group).includes(r['병원그룹']));
+  const total = Math.ceil(base.length/PAGE_SIZE);
+  if(p<1||p>total) return;
+  if(key==='ours'){oursPage=p;renderOurs();}
+  else{othersPage=p;renderOthers();}
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function resetFilters() {
+  ['date-from','date-to'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('keyword-filter').value='';
+  document.getElementById('search-input').value='';
+  if(currentTab==='ours'){oursPage=1;renderOurs();}
+  else{othersPage=1;renderOthers();}
+}
+
+['date-from','date-to','keyword-filter'].forEach(id =>
+  document.getElementById(id).addEventListener('change', () => {
+    if(currentTab==='ours'){oursPage=1;renderOurs();}
+    else{othersPage=1;renderOthers();}
+  }));
+document.getElementById('search-input').addEventListener('input', () => {
+  if(currentTab==='ours'){oursPage=1;renderOurs();}
+  else{othersPage=1;renderOthers();}
+});
+
+// ── 엑셀 다운로드 ─────────────────────────────────────────────────────────────
+function downloadExcel() {
+  const wb = XLSX.utils.book_new();
+  const COLS = ['날짜','매체','제목','요약','링크','교수 소속','이름'];
+
+  // 주간 범위 계산 (오늘 기준 최근 7일)
+  const today = new Date();
+  const weekAgo = new Date(today);
+  weekAgo.setDate(today.getDate() - 7);
+  const fmt = d => d.toISOString().slice(0,10);
+  const weekLabel = `${fmt(weekAgo)}_${fmt(today)}`;
+
+  // 날짜 필터 값이 있으면 그걸 우선 사용
+  const dateFrom = document.getElementById('date-from').value || fmt(weekAgo);
+  const dateTo   = document.getElementById('date-to').value   || fmt(today);
+
+  // 병원별로 시트 생성
+  Object.entries(HOSPITALS).forEach(([key, h]) => {
+    const rows = allData.filter(r => {
+      if (r['병원그룹'] !== h.group) return false;
+      if (r['날짜'] < dateFrom || r['날짜'] > dateTo) return false;
+      if (r['검색어'] === '서울중앙병원') return false;
+      if (FE_EXCLUDE_QUERY.includes(r['검색어'])) return false;
+      const combined = Object.values(r).join(' ');
+      if (FE_EXCLUDE_KW.some(kw => combined.includes(kw))) return false;
+      const url = (r['언론사원문']||r['네이버링크']||'').toLowerCase();
+      if (FE_EXCLUDE_MEDIA.some(m => url.includes(m))) return false;
+      return true;
+    }).sort((a,b) => b['발행일시'].localeCompare(a['발행일시']));
+
+    const sheetData = [
+      COLS,
+      ...rows.map(r => [
+        r['날짜']       || '',
+        r['매체']       || '',
+        r['제목']       || '',
+        r['요약']       || '',
+        r['언론사원문'] || r['네이버링크'] || '',
+        '',   // 교수 소속 (수동 입력)
+        '',   // 이름 (수동 입력)
+      ])
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(sheetData);
+
+    // 컬럼 너비 설정
+    ws['!cols'] = [
+      {wch:12},  // 날짜
+      {wch:14},  // 매체
+      {wch:55},  // 제목
+      {wch:80},  // 요약
+      {wch:60},  // 링크
+      {wch:16},  // 교수 소속
+      {wch:10},  // 이름
+    ];
+
+    // 헤더 행 스타일 (배경색)
+    const headerRange = XLSX.utils.decode_range(ws['!ref']);
+    for (let C = headerRange.s.c; C <= headerRange.e.c; C++) {
+      const cell = ws[XLSX.utils.encode_cell({r:0, c:C})];
+      if (cell) {
+        cell.s = {
+          font:    {bold:true, color:{rgb:'FFFFFF'}},
+          fill:    {fgColor:{rgb: h.color.replace('#','')}},
+          alignment: {horizontal:'center'},
+        };
+      }
+    }
+
+    // 시트명: 병원 레이블 (Excel 시트명 31자 제한)
+    XLSX.utils.book_append_sheet(wb, ws, h.label.slice(0,31));
+  });
+
+  const fileName = `빅5병원_뉴스_${weekLabel}.xlsx`;
+  XLSX.writeFile(wb, fileName);
+}
+
+// ── 매체 드릴다운 모달 ────────────────────────────────────────────────────────
+function openMediaModal(category) {
+  const base = allData.filter(r => r['병원그룹'] === '아산');
+  const CAT_COLOR = {
+    '일간지':'#1a5fa8','경제지':'#1a7a3c','방송':'#7b3fa0',
+    '통신사':'#555','의료전문지':'#c0392b','기타':'#888',
+  };
+  const color = CAT_COLOR[category] || '#888';
+
+  const rows = base
+    .filter(r => classifyMedia(r['매체']) === category)
+    .sort((a,b) => (b['발행일시']||'').localeCompare(a['발행일시']||''));
+
+  document.getElementById('modal-title').innerHTML =
+    `<span style="display:inline-flex;align-items:center;gap:8px">
+      <span style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0"></span>
+      ${category} <span style="font-family:var(--mono);font-size:12px;font-weight:400;color:var(--muted);margin-left:4px">${rows.length}건</span>
+    </span>`;
+
+  document.getElementById('modal-table').innerHTML = rows.length === 0
+    ? `<div style="text-align:center;padding:40px;color:var(--muted)">기사가 없습니다.</div>`
+    : `<table style="width:100%">
+        <colgroup>
+          <col style="width:130px">
+          <col style="width:90px">
+          <col style="min-width:500px">
+          <col style="width:110px">
+          <col style="width:55px">
+        </colgroup>
+        <thead><tr>
+          <th>날짜</th>
+          <th>매체</th>
+          <th>제목</th>
+          <th>교수명</th>
+          <th>링크</th>
+        </tr></thead>
+        <tbody>${rows.map(r => {
+          const link = r['언론사원문']||r['네이버링크']||'';
+          const naver = r['네이버링크']||'';
+          const prof = extractProfessor(r['제목'], r['요약'], r['병원그룹']) || validateName(r['교수명']) || '';
+          const rawDate = r['발행일시']||r['날짜']||'';
+          const displayDate = (rawDate && !rawDate.startsWith('http')) ? rawDate.slice(0,16) : '—';
+          const media = resolveMedia(r['매체']||'', r['언론사원문']||r['네이버링크']||'');
+          return `<tr>
+            <td style="font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap">${displayDate}</td>
+            <td style="font-size:12px;white-space:nowrap">${media}</td>
+            <td>${link?`<a href="${link}" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none;font-size:13px;font-weight:500">${r['제목']}</a>`:r['제목']}</td>
+            <td style="font-size:12px;color:#1a5fa8;font-weight:${prof?'600':'400'};white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis">${prof||'—'}</td>
+            <td style="white-space:nowrap">${naver?`<a href="${naver}" target="_blank" rel="noopener" style="font-size:11px;color:var(--accent);font-family:var(--mono)">네이버</a>`:''}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`;
+
+  document.getElementById('modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModalDirect();
+}
+
+function closeModalDirect() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ESC 키로 닫기
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeModalDirect(); });
+
+init();
+</script>
+</body>
+</html>
