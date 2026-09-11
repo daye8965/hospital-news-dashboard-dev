@@ -123,15 +123,28 @@ def parse_byline(raw):
     return names, emails
 
 
+# 해외 IP(GitHub Actions)에는 네이버가 다른 구조의 페이지를 주므로 클래스가 여러 개 붙거나
+# 태그 종류가 달라도 잡히게 하고, 구조화 데이터(JSON-LD author)도 본다
+NAVER_BYLINE_RE = re.compile(r'class="[^"]*\bbyline_s\b[^"]*"[^>]*>(.*?)</(?:span|p|em|div)>', re.S)
+NAVER_JOURNALIST_RE = re.compile(
+    r'class="[^"]*\bmedia_end_head_journalist_name\b[^"]*"[^>]*>(.*?)</(?:em|span|strong|a|div|p)>', re.S)
+JSONLD_AUTHOR_RE = re.compile(r'"author"\s*:\s*(\{.*?\}|\[.*?\])', re.S)
+
+
 def byline_from_naver(page):
     names, emails = [], []
-    for fragment in re.findall(r'class="byline_s"[^>]*>(.*?)</span>', page, re.S):
+    for fragment in NAVER_BYLINE_RE.findall(page):
         found_names, found_emails = parse_byline(fragment)
         _add_unique(names, found_names)
         _add_unique(emails, found_emails)
     if not names:
-        for fragment in re.findall(r'class="media_end_head_journalist_name"[^>]*>(.*?)</em>', page, re.S):
+        for fragment in NAVER_JOURNALIST_RE.findall(page):
             _add_unique(names, parse_byline(fragment)[0])
+    if not names:
+        for block in JSONLD_AUTHOR_RE.findall(page):
+            for value in re.findall(r'"name"\s*:\s*"([^"]+)"', block):
+                if not MEDIA_HINT_RE.search(value):
+                    _add_unique(names, parse_byline(value)[0])
     return names, emails
 
 
@@ -177,8 +190,11 @@ def byline_sources(row):
 
 def _naver_diagnosis(url, page):
     title = re.search(r"<title[^>]*>(.*?)</title>", page, re.S)
+    at = page.find("media_end_head_journalist")
+    around = re.sub(r"\s+", " ", page[max(0, at - 120):at + 400]) if at >= 0 else ""
     return {"url": url, "길이": len(page), "title": _clean(title.group(1))[:80] if title else "",
-            "byline_s태그": "byline_s" in page, "journalist태그": "media_end_head_journalist" in page}
+            "byline_s태그": "byline_s" in page, "journalist태그": at >= 0,
+            "journalist주변HTML": around, "jsonld_author": '"author"' in page}
 
 
 def enrich_bylines(rows, status, deadline):
