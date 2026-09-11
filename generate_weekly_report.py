@@ -29,7 +29,8 @@ target_date = today - timedelta(days=1)
 start_dt    = datetime(target_date.year, target_date.month, target_date.day, tzinfo=KST)
 end_dt      = datetime(today.year,       today.month,       today.day,       tzinfo=KST)
 
-FIELDNAMES = ["날짜", "병원그룹", "검색어", "매체", "제목", "교수명", "요약", "언론사원문", "네이버링크", "발행일시", "수집일시"]
+FIELDNAMES = ["날짜", "병원그룹", "검색어", "매체", "제목", "교수명", "요약", "언론사원문", "네이버링크", "발행일시", "수집일시",
+              "기자명", "기자이메일", "지면", "출입기자"]   # 뒤쪽 4개는 enrich_articles.py가 채움
 
 # 도메인 → 매체명 매핑 (자주 등장하는 주요 언론사)
 MEDIA_MAP = {
@@ -157,10 +158,15 @@ def collect_all() -> list[dict]:
 # ── CSV 저장 (누적) ────────────────────────────────────────────────────────────
 def save_to_csv(items: list[dict]) -> None:
     CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
-    file_exists = CSV_PATH.exists()
+    has_content = CSV_PATH.exists() and CSV_PATH.stat().st_size > 0
+    fieldnames = FIELDNAMES
+    if has_content:
+        # 기존 파일의 열 순서를 따라야 이어 붙인 행이 한 칸씩 밀리지 않는다
+        with open(CSV_PATH, encoding="utf-8-sig", newline="") as f:
+            fieldnames = next(csv.reader(f), None) or FIELDNAMES
     with open(CSV_PATH, "a", newline="", encoding="utf-8-sig") as f:
-        writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
-        if not file_exists:
+        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore", restval="")
+        if not has_content:
             writer.writeheader()
         writer.writerows(items)
     print(f"CSV 저장 완료: {CSV_PATH} ({len(items)}행 추가)")

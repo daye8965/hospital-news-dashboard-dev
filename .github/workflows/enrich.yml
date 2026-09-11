@@ -1,0 +1,47 @@
+name: 기사 보강 (기자명·지면·출입기자)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - enrich_articles.py
+      - .github/workflows/enrich.yml
+
+# 수집 워크플로우와 같은 CSV를 고치므로 동시에 돌지 않게 한다
+concurrency:
+  group: news-data
+  cancel-in-progress: false
+
+jobs:
+  enrich:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install requests google-auth
+
+      - name: 기사 보강
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          REPORTER_SHEET_ID:           ${{ secrets.REPORTER_SHEET_ID }}
+          REPORTER_SHEET_RANGE:        ${{ secrets.REPORTER_SHEET_RANGE }}
+          REPORTER_SHEET_CSV_URL:      ${{ secrets.REPORTER_SHEET_CSV_URL }}
+        run: python enrich_articles.py
+
+      - name: 변경사항 커밋 & 푸시
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/
+          git diff --staged --quiet || git commit -m "기사 보강 $(date +'%Y-%m-%d %H:%M')"
+          git pull --rebase origin main
+          git push

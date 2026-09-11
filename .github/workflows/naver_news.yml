@@ -7,6 +7,11 @@ on:
     - cron: "0 0 * * 1"
   workflow_dispatch:
 
+# 보강 워크플로우와 같은 CSV를 고치므로 동시에 돌지 않게 한다
+concurrency:
+  group: news-data
+  cancel-in-progress: false
+
 jobs:
   collect:
     runs-on: ubuntu-latest
@@ -20,7 +25,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - run: pip install requests openpyxl
+      - run: pip install requests openpyxl google-auth
 
       - name: CSV 오염 데이터 정리
         run: python clean_csv.py
@@ -39,10 +44,21 @@ jobs:
           NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
         run: python generate_weekly_report.py
 
+      # 보강이 실패해도 수집한 기사는 반드시 커밋되도록 continue-on-error
+      - name: 기사 보강 (기자명·지면·출입기자)
+        continue-on-error: true
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          REPORTER_SHEET_ID:           ${{ secrets.REPORTER_SHEET_ID }}
+          REPORTER_SHEET_RANGE:        ${{ secrets.REPORTER_SHEET_RANGE }}
+          REPORTER_SHEET_CSV_URL:      ${{ secrets.REPORTER_SHEET_CSV_URL }}
+        run: python enrich_articles.py
+
       - name: 변경사항 커밋 & 푸시
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/
           git diff --staged --quiet || git commit -m "자동 수집 $(date +'%Y-%m-%d')"
+          git pull --rebase origin main
           git push

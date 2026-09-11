@@ -89,7 +89,8 @@ EXCLUDE_PATTERN = re.compile(
 )
 
 CSV_PATH   = Path("docs/news.csv")
-FIELDNAMES = ["날짜","병원그룹","검색어","매체","제목","교수명","요약","언론사원문","네이버링크","발행일시","수집일시"]
+FIELDNAMES = ["날짜","병원그룹","검색어","매체","제목","교수명","요약","언론사원문","네이버링크","발행일시","수집일시",
+              "기자명","기자이메일","지면","출입기자"]   # 뒤쪽 4개는 enrich_articles.py가 채움
 
 KST         = timezone(timedelta(hours=9))
 today       = datetime.now(KST).date()
@@ -340,10 +341,15 @@ def collect_all():
 
 def save_to_csv(items):
     CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
-    file_exists = CSV_PATH.exists()
+    has_content = CSV_PATH.exists() and CSV_PATH.stat().st_size > 0
+    fieldnames = FIELDNAMES
+    if has_content:
+        # 기존 파일의 열 순서를 따라야 이어 붙인 행이 한 칸씩 밀리지 않는다
+        with open(CSV_PATH, encoding="utf-8-sig", newline="") as f:
+            fieldnames = next(csv.reader(f), None) or FIELDNAMES
     with open(CSV_PATH, "a", newline="", encoding="utf-8-sig") as f:
-        writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
-        if not file_exists:
+        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore", restval="")
+        if not has_content:
             writer.writeheader()
         writer.writerows(items)
     print(f"CSV 저장 완료: {len(items)}건")
