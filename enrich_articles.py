@@ -313,32 +313,62 @@ def _norm(text):
     return re.sub(r"[\s()·\-_.]", "", text or "").lower()
 
 
-def _find_col(header, keys):
-    for i, cell in enumerate(header):
-        if any(key in _norm(str(cell)) for key in keys):
+ROSTER_NAME_HEADERS  = ("기자", "이름", "성명", "기자명")
+ROSTER_MEDIA_HEADERS = ("매체", "매체명", "언론사", "소속", "회사")
+ROSTER_EMAIL_HEADERS = ("이메일", "메일", "email")
+ROSTER_NOT_NAMES = {"기자", "이름", "성명", "기자명", "팀장", "부장", "차장", "국장", "공석", "미정"}
+
+
+def _find_col(header, keys, exact_only=False):
+    cells = [_norm(str(cell)) for cell in header]
+    for i, h in enumerate(cells):   # 제목이 정확히 같은 열을 먼저
+        if h in keys:
+            return i
+    if exact_only:
+        return None
+    for i, h in enumerate(cells):
+        if any(key in h for key in keys):
             return i
     return None
 
 
-def parse_roster(values):
-    header, header_idx, name_col = [], 0, None
-    for header_idx, header in enumerate(values[:10]):
-        name_col = _find_col(header, ("이름", "성명", "기자명"))
-        if name_col is not None:
-            break
-    if name_col is None:
-        raise ValueError("명단에서 이름 열을 찾지 못함 (헤더에 '이름'·'성명'·'기자명' 중 하나 필요)")
-    media_col = _find_col(header, ("매체", "언론사", "소속", "회사"))
-    email_col = _find_col(header, ("이메일", "메일", "email"))
+def _clean_reporter_name(raw):
+    """'고유선(팀장)', '김길원(전문기자, 병원)', '백영미(26년 7월까지 연수)' → 이름만"""
+    text = re.sub(r"[(\[（].*?[)\]）]", " ", raw or "")
+    for token in re.split(r"[\s,/·]+", text):
+        if re.fullmatch(r"[가-힣]{2,4}", token) and token not in ROSTER_NOT_NAMES:
+            return token
+    return ""
 
-    emails, by_name = set(), {}
+
+def parse_roster(values):
+    header_idx = name_col = None
+    for i, row in enumerate(values[:10]):
+        col = _find_col(row, ROSTER_NAME_HEADERS, exact_only=True)
+        # '기자리스트' 같은 표 제목과 헷갈리지 않도록 매체나 이메일 열 제목도 같이 있는 행을 헤더로 본다
+        if col is not None and (_find_col(row, ROSTER_MEDIA_HEADERS) is not None
+                                or _find_col(row, ROSTER_EMAIL_HEADERS) is not None):
+            header_idx, name_col = i, col
+            break
+    if header_idx is None:
+        raise ValueError("명단에서 제목 행을 찾지 못함 (기자·이름 열과 매체·이메일 열 제목 필요)")
+    header = values[header_idx]
+    media_col = _find_col(header, ROSTER_MEDIA_HEADERS)
+    email_col = _find_col(header, ROSTER_EMAIL_HEADERS)
+
+    emails, by_name, current_media = set(), {}, ""
     for row in values[header_idx + 1:]:
         def cell(i):
             return str(row[i]).strip() if i is not None and i < len(row) else ""
+        # 병합된 매체 칸은 첫 행에만 값이 오므로 다음 매체가 나올 때까지 이어 쓴다.
+        # 칸 전체('조선일보 / 정기적 - 헬스조선')를 보관해 자매지 기사도 매칭되게 한다
+        if cell(media_col):
+            current_media = cell(media_col)
+        name = _clean_reporter_name(cell(name_col))
+        if not name:
+            continue
         emails.update(e.lower() for e in EMAIL_RE.findall(cell(email_col)))
-        name = re.sub(r"\s", "", cell(name_col))
-        if re.fullmatch(r"[가-힣]{2,4}", name):
-            by_name.setdefault(name, set()).add(_norm(cell(media_col)))
+        by_name.setdefault(name, set()).add(_norm(current_media))
     return {"emails": emails, "by_name": by_name, "has_media": media_col is not None}
 
 
@@ -380,7 +410,7 @@ def is_beat_reporter(row, roster):
         if not roster["has_media"]:
             return True
         # 동명이인 방지: 명단의 매체와 기사의 매체가 같아야 인정
-        if media and any(m and (m in media or media in m) for m in roster_media):
+        if len(media) >= 2 and any(m and (m in media or media in m) for m in roster_media):
             return True
     return False
 
