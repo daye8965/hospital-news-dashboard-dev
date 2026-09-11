@@ -260,7 +260,7 @@ td{padding:10px 12px;vertical-align:top}
 
   <!-- ⑤ 서울아산병원-보고용 탭 -->
   <div id="panel-report" class="tab-panel">
-    <div class="notice notice-keep">📑 연간 언론실적 양식 기준으로 모았습니다. <b>온라인 매체 목록과 '제외 추정' 규칙은 임시값</b>이며, 연간실적 엑셀 분석 후 교체됩니다.
+    <div class="notice notice-keep">📑 2026 연간 언론실적 엑셀 기준으로 모았습니다. 온라인은 <b>실적에 집계된 적 있는 매체</b>만, '제외 추정'은 6/11~9/10 대시보드 기사를 실적과 대조해 <b>제외율 85% 이상이었던 유형</b>만 표시합니다(서울아산병원 기사에만 적용, 태그에 마우스를 올리면 제외율 표시). 신문은 네이버 지면 정보로 게재가 확인된 기사만 담고, 방송 프로그램 실적은 기사로 구분되지 않아 방송사 웹기사는 온라인에 포함됩니다.
       <label class="check-label" style="margin-left:8px"><input type="checkbox" id="hide-suspect"> 제외 추정 기사 숨기기</label>
     </div>
     <div id="report-body"></div>
@@ -320,6 +320,20 @@ const MEDIA_MAP_FE = {
   "newdailybiz":"뉴데일리경제","menews":"모닝경제",
   "emoneynews":"이머니뉴스","wiznews":"위즈뉴스","aitimes":"인공지능신문",
   "joynews24":"조이뉴스24",
+  // 연간 언론실적 엑셀과 대조해 확인한 도메인
+  "koreahealthlog":"코리아헬스로그","financialpost":"파이낸셜포스트","medical-tribune":"메디칼트리뷴",
+  "nongmin.com":"농민신문","ikunkang":"건강다이제스트","sentv":"서울경제TV","dizzo":"디지틀조선일보",
+  "it.chosun":"IT조선","biz.chosun":"조선비즈","ekn.kr":"에너지경제","hinews.co.kr":"하이뉴스","dailypharm":"데일리팜",
+  "ggilbo":"금강일보","joseilbo":"조세일보","kado.net":"강원도민일보","kwnews.co.kr":"강원일보",
+  "daily.hankooki":"데일리한국","sisajournal":"시사저널","insight.co.kr":"인사이트","pinpointnews":"핀포인트뉴스",
+  "newdaily":"뉴데일리","cstimes":"컨슈머타임스","wikitree":"위키트리","businesspost":"비즈니스포스트",
+  "sportsseoul":"스포츠서울","newsen":"뉴스엔","tenasia":"텐아시아","hansbiz":"한스경제","ablenews":"에이블뉴스",
+  "dailygoodnews":"데일리굿뉴스","kizmom":"키즈맘","paxetv":"팍스경제TV","kyeonggi.com":"경기일보",
+  "ksilbo":"경상일보","womaneconomy":"여성경제신문","asiatime.co.kr":"아시아타임즈","newscj":"천지일보",
+  "tf.co.kr":"더팩트","imaeil":"매일신문","gndomin":"경남도민일보","koreatimes":"코리아타임즈",
+  "magazine.hankyung":"한경비즈니스","medicopharma":"메디코파마","welfarenews":"웰페어뉴스",
+  "isplus":"일간스포츠","sports.khan":"스포츠경향","science.ytn":"YTN사이언스","biz.sbs":"SBS Biz",
+  "apsk":"메디팜스투데이",
 };
 
 // ── 보강 열(기자명·지면·출입기자) 헬퍼 ────────────────────────────────────────
@@ -406,9 +420,12 @@ function resolveMedia(mediaStr, urlStr) {
   try {
     const domain = target.replace(/https?:\/\/(www\.)?/,'').split('/')[0].toLowerCase();
     if (domain.includes('news.naver') || domain.includes('n.news.naver')) return mediaStr||'';
-    for (const [key, name] of Object.entries(MEDIA_MAP_FE)) {
-      if (domain.includes(key)) return name;
+    // 가장 긴 키 우선: 'chosunbiz'·'it.chosun'이 'chosun'보다, 'sports.khan'이 'khan'보다 먼저 맞도록
+    let hit = '';
+    for (const key of Object.keys(MEDIA_MAP_FE)) {
+      if (domain.includes(key) && key.length > hit.length) hit = key;
     }
+    if (hit) return MEDIA_MAP_FE[hit];
     // 최후수단: 도메인 파트 추출
     const parts = domain.split('.');
     if (parts.length >= 2) {
@@ -835,19 +852,53 @@ function renderPaper() {
 
 // ── 서울아산병원-보고용 렌더 ──────────────────────────────────────────────────
 // ⚠️ 임시값: 연간 언론실적 엑셀 분석 후 실제 매체 목록·제외 규칙으로 교체한다
-const REPORT_ONLINE_MEDIA = new Set([...DAILY_PRESS, ...ECONOMIC_PRESS, ...BROADCAST, ...WIRE, ...MEDICAL_PRESS]);
-const REPORT_SUSPECT_RULES = [
-  {tag:'연예·인물',     kw:['배우','가수','아이돌','연예인','방송인','예능','열애','결혼식']},
-  {tag:'사건·단순언급', kw:['장례식장','빈소','이송돼','이송됐','병원으로 옮겨','치료를 받던','숨졌','사망했']},
-  {tag:'제약·증권',     kw:['주가','공시','상장','IPO','목표주가','영업이익','매출액','증권가']},
-  {tag:'지자체',        kw:['보건소','지자체','군수','구청장','도지사','시장은']},
-  {tag:'타기관 행사',   kw:['심포지엄','학술대회','포럼 개최','세미나 개최','협약식']},
+// 2026 연간 언론실적 '아산_온라인' 시트에 한 번 이상 집계된 매체 (엑셀의 표기 오타는 바로잡음)
+const REPORT_ONLINE_MEDIA_NAMES = [
+  '라포르시안','더퍼스트','보건뉴스','의학신문','데일리메디','중앙일보','뉴시스','메디파나뉴스','코리아헬스로그','후생신보',
+  '뉴스1','서울경제','한국일보','머니투데이','데일리안','연합뉴스','세계일보','헬스경향','메디컬월드뉴스','동아일보',
+  '매일경제','한국경제','이데일리','청년의사','조선일보','헬스조선','파이낸셜뉴스','아시아경제','메디칼업저버','e-의료정보',
+  '로이슈','경향신문','이투데이','베리타스알파','백세시대','메디칼트리뷴','코메디닷컴','동아사이언스','서울신문','파이낸셜포스트',
+  '메가경제','메디칼타임즈','문화일보','디지틀조선일보','헤럴드경제','의사신문','하이뉴스','중앙일보 헬스미디어','전자신문','메디게이트뉴스',
+  '메디컬투데이','쿠키뉴스','국민일보','한겨레','마이데일리','인공지능신문','매경헬스','서울경제TV','EBN','에너지경제',
+  '시사저널','농민신문','아주경제','뉴데일리','건강다이제스트','TV조선','내일신문','팍스경제TV','데일리한국','메디팜스투데이',
+  '약사공론','조선비즈','스포츠월드','이뉴스투데이','노컷뉴스','한국경제TV','히트뉴스','아이뉴스24','글로벌경제','뉴스토마토',
+  '지디넷코리아','의협신문','MBC','SBS','연합뉴스TV','JTBC','하이닥','KBS','경기메디뉴스','글로벌이코노믹',
+  '인사이트','데일리팜','약업신문','경기일보','디지털타임스','한경TV','YTN','데일리굿뉴스','아시아투데이','키즈맘',
+  'MBN','헬스중앙','중앙헬스','데일리포스트','브릿지경제','금강일보','컨슈머타임스','핀포인트뉴스','아시아타임즈','여성경제신문',
+  '울산신문','천지일보','의약뉴스','한스경제','조세일보','주간조선','경상일보','메디칼옵저버','녹색경제신문','위키리크스한국',
+  '와이드경제','매일일보','울산매일신문','데일리아','스타뉴스','TJB','국제뉴스','YTN사이언스','일간스포츠','와이드데일리',
+  '더팩트','매일신문','경남매일신문','IT조선','비즈월드','SBS Biz','뉴스엔','울산제일일보','스포츠경향','경남일보',
+  '메디코파마','스포츠서울','위키트리','웰페어뉴스','화이트페이퍼','텐아시아','경남도민일보','비즈니스포스트','이코노믹리뷰','코리아타임즈',
+  '한경비즈니스','에이블뉴스','더퍼블릭',
 ];
+const normMedia = m => (m || '').replace(/[\s·\-_.()]/g, '').toLowerCase();
+const REPORT_ONLINE_MEDIA = new Set(REPORT_ONLINE_MEDIA_NAMES.map(normMedia));
+function isReportOnlineMedia(r) { return REPORT_ONLINE_MEDIA.has(normMedia(mediaOf(r))); }
+// 2026-06-11~09-10 대시보드의 서울아산병원 기사 3,515건을 연간 언론실적 엑셀과 대조해 만든 규칙.
+// rate = 해당 유형에 걸린 기사 중 실제로 실적에서 빠진 비율. 85% 이상인 유형만 쓴다.
+// (제약 기업 발표 속 교수 코멘트 52%, 정책 발언 57%, 학회 임원 소속 70% 등은 실적 기사와 구분이 안 돼 제외)
+const OTHER_ASAN_RE = /강릉아산병원|정선아산병원|보성아산병원|홍천아산병원|영덕아산병원|보령아산병원|금강아산병원|정읍아산병원|아산충무병원|아산시|아산소방서|아산경찰|충남 아산|아산 경찰병원|현대아산|아산 탕정|아산캠퍼스|아산의학관/;
+const REPORT_SUSPECT_RULES = [
+  {tag:'다른 아산병원·지명',     rate:100, test:(t,s,a) => OTHER_ASAN_RE.test(a) && !/서울아산병원/.test(a)},
+  {tag:'병원명 없음',            rate:97,  test:(t,s,a) => !/아산병원|서울아산/.test(a)},
+  {tag:'출신·경력 언급',         rate:86,  test:(t,s,a) => /출신|거쳐|전임의|수련|근무했|재직했|역임|졸업|펠로우?를|임상 경험/.test(s) || /영입|개원|합류|취임|선임/.test(t)},
+  {tag:'기업 IR·계약·수주',      rate:89,  test:(t,s,a) => /특징주|주가|공시|상장|매출|투자|계약 체결|계약을 체결|위탁계약|수주|코스닥|증권|IR|목표가|억원 규모|억 규모|공급/.test(a)},
+  {tag:'공동연구 참여기관 나열', rate:85,  test:(t,s,a) => /공동연구기관|참여기관|컨소시엄|국책과제|과제 선정|과제에 선정|공동연구개발기관|참여한다|참여하는|협력기관|등이 참여|등과 함께|공동으로 참여/.test(s) && !/서울아산/.test(t)},
+  {tag:'여러 병원 나열',         rate:87,  test:(t,s,a) => (s.match(/서울대병원|서울대학교병원|삼성서울|세브란스|서울성모|빅5|고려대|아주대/g) || []).length >= 2 && !/서울아산/.test(t)},
+  {tag:'연예·인물 화제',         rate:96,  test:(t,s,a) => /배우|가수|아이돌|방송인|개그맨|아나운서|헬스톡|건강!톡|유튜버/.test(a)},
+  {tag:'인사·수상 단신',         rate:86,  test:(t,s,a) => /수상|선정|선출|인사|동정|임명/.test(a) && !/서울아산/.test(t)},
+  {tag:'기부·후원 전달',         rate:91,  test:(t,s,a) => /기부|후원금|발전기금|성금|기탁|전달식/.test(a)},
+  {tag:'원내 처방·도입',         rate:100, test:(t,s,a) => /입성|처방권|신규약물|약사위원회|DC 통과|랜딩/.test(a)},
+  {tag:'부동산·광고 연계',       rate:100, test:(t,s,a) => /아이파크|푸르지오|분양|입주민|주거|레지던스|서울원|하이엔드|오피스텔|청약/.test(a)},
+  {tag:'사건·노동 이슈',         rate:96,  test:(t,s,a) => /태움|사망 사건|사고|노조|파업|교통체증|교통지옥|출입금지|논란|갑질|징계/.test(a)},
+];
+const SUSPECT_RATE = Object.fromEntries(REPORT_SUSPECT_RULES.map(rule => [rule.tag, rule.rate]));
 const REPORT_OTHER_GROUPS = ['삼성','서울대','세브란스'];   // 타병원 실적은 신문·방송만 집계
 
 function suspectTag(r) {
-  const text = (r['제목']||'') + ' ' + (r['요약']||'');
-  return REPORT_SUSPECT_RULES.find(rule => rule.kw.some(k => text.includes(k)))?.tag || '';
+  if (r['병원그룹'] !== '아산') return '';   // 규칙은 서울아산병원 기사로만 검증됨
+  const t = r['제목'] || '', s = r['요약'] || '', a = t + ' ' + s;
+  return REPORT_SUSPECT_RULES.find(rule => rule.test(t, s, a))?.tag || '';
 }
 
 function reportRange() {
@@ -865,7 +916,9 @@ function getReportSections() {
   const range = reportRange();
   const hideSuspect = document.getElementById('hide-suspect').checked;
   const base = applyFilters(allData.filter(r => r['날짜'] >= range.from && r['날짜'] <= range.to));
-  const printOrBroadcast = r => hasPaper(r) || isBroadcast(r);
+  // 방송 실적은 프로그램 출연이라 네이버 기사로 구분할 수 없고, 방송사 웹기사는 실적에서도 온라인으로 집계된다
+  // → 신문 섹션은 지면이 확인된 기사만, 방송사 기사는 온라인 섹션으로 보낸다
+  const printOrBroadcast = r => hasPaper(r);
   const prep = rows => rows
     .map(r => ({r, tag: suspectTag(r)}))
     .filter(x => !(hideSuspect && x.tag))
@@ -874,11 +927,11 @@ function getReportSections() {
   return {
     range,
     sections: [
-      {key:'asan-print',   title:'서울아산병원 신문·방송', color:HOSPITALS.asan.color,
+      {key:'asan-print',   title:'서울아산병원 신문 (지면 확인)', color:HOSPITALS.asan.color,
        items: prep(asan.filter(printOrBroadcast))},
       {key:'asan-online',  title:'서울아산병원 온라인', color:HOSPITALS.asan.color,
-       items: prep(asan.filter(r => !printOrBroadcast(r) && REPORT_ONLINE_MEDIA.has(mediaOf(r))))},
-      {key:'others-print', title:'타병원 신문·방송 (삼성·서울대·세브란스)', color:'#444',
+       items: prep(asan.filter(r => !printOrBroadcast(r) && isReportOnlineMedia(r)))},
+      {key:'others-print', title:'타병원 신문 (지면 확인, 삼성·서울대·세브란스)', color:'#444',
        items: prep(base.filter(r => REPORT_OTHER_GROUPS.includes(r['병원그룹']) && printOrBroadcast(r)))},
     ],
   };
@@ -910,7 +963,7 @@ function renderReport() {
             <td class="td-date">${mdOf(r)}</td>
             <td class="td-media">${mediaOf(r)}${hasPaper(r) ? `<span class="badge-paper">${r['지면']}</span>` : ''}</td>
             ${withHosp ? `<td class="td-tag"><span class="tag" style="background:${hColor}22;color:${hColor};font-weight:600">${hospLabel(r)}</span></td>` : ''}
-            <td class="td-title">${link ? `<a href="${link}" target="_blank" rel="noopener">${r['제목']}</a>` : r['제목']}${tag ? `<span class="badge-susp" title="보고 제외 추정 (임시 규칙)">제외 추정: ${tag}</span>` : ''}</td>
+            <td class="td-title">${link ? `<a href="${link}" target="_blank" rel="noopener">${r['제목']}</a>` : r['제목']}${tag ? `<span class="badge-susp" title="과거 실적 대조 시 이 유형의 ${SUSPECT_RATE[tag]}%가 실적에서 제외됨">제외 추정: ${tag}</span>` : ''}</td>
             <td class="td-reporter">${reporterCell(r)}</td>
             <td style="font-size:12px;color:#1a5fa8;white-space:nowrap;font-weight:${prof?'600':'400'}">${prof || '—'}</td>
             <td style="font-size:12px;color:var(--muted);white-space:nowrap">${reportKind(r)}</td>
