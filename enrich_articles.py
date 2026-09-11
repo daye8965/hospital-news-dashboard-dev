@@ -55,7 +55,8 @@ EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+")
 SURNAMES = set("김이박최정강조윤장임한오서신권황안송류전홍고문양손배백허유남심노하곽성차주우구나민진지엄채원천방공현함변염여추도소석선설마길연위표명기반왕금옥육인맹제모탁국어은편용예경봉사부가복태목계피두감음빈동온호")
 TITLE_SUFFIXES = ("기자", "특파원", "위원", "에디터", "앵커", "뉴스팀", "취재팀", "편집국", "보도국")
 NOT_NAMES = {"의사", "약사", "교수", "박사", "변호사", "한의사", "인턴", "객원", "선임", "수석",
-             "온라인", "디지털", "사진", "영상", "그래픽", "편집", "종합", "특별", "공동", "정리", "취재"}
+             "온라인", "디지털", "사진", "영상", "그래픽", "편집", "종합", "특별", "공동", "정리", "취재",
+             "공학", "인사이트", "기획", "특집", "칼럼", "기고", "제공", "자료", "보도", "데스크"}
 MEDIA_HINT_RE = re.compile(r"일보|신문|뉴스|경제|방송|닷컴|미디어|타임즈|타임스|저널|통신|데일리|투데이|헬스|메디|TV|http|\.com|\.kr", re.I)
 
 SESSION = requests.Session()
@@ -162,49 +163,74 @@ def byline_from_original(page):
     return names, emails
 
 
+def byline_sources(row):
+    """기자명을 찾아볼 페이지 목록 (앞에서 찾으면 뒤는 요청하지 않음)"""
+    sources = []
+    match = NAVER_ARTICLE_RE.search(row.get("네이버링크") or "")
+    if match:
+        sources.append((f"https://n.news.naver.com/mnews/article/{match.group(1)}/{match.group(2)}", byline_from_naver))
+    original = row.get("언론사원문") or ""
+    if original.startswith("http") and "naver.com" not in original:
+        sources.append((original, byline_from_original))
+    return sources
+
+
+def _naver_diagnosis(url, page):
+    title = re.search(r"<title[^>]*>(.*?)</title>", page, re.S)
+    return {"url": url, "길이": len(page), "title": _clean(title.group(1))[:80] if title else "",
+            "byline_s태그": "byline_s" in page, "journalist태그": "media_end_head_journalist" in page}
+
+
 def enrich_bylines(rows, status, deadline):
     targets = [r for r in rows if not (r.get("기자명") or "").strip()]
     targets.sort(key=lambda r: r.get("발행일시") or r.get("날짜") or "", reverse=True)
-    stats = {"대상": len(targets), "요청": 0, "채움": 0, "이름없음": 0, "오류": 0, "차단호스트": 0}
+    stats = {"대상": len(targets), "요청": 0, "채움": 0, "이름없음": 0, "오류": 0, "차단호스트": 0,
+             "네이버바이라인없음": 0}
     cache, blocked_hosts = {}, set()
 
     for row in targets:
         if stats["요청"] >= BYLINE_BUDGET or time.monotonic() > deadline:
             break
-        match = NAVER_ARTICLE_RE.search(row.get("네이버링크") or "")
-        if match:
-            url = f"https://n.news.naver.com/mnews/article/{match.group(1)}/{match.group(2)}"
-            parser = byline_from_naver
-        elif (row.get("언론사원문") or "").startswith("http"):
-            url, parser = row["언론사원문"], byline_from_original
-        else:
+        sources = byline_sources(row)
+        if not sources:
             row["기자명"] = CHECKED_NONE
             continue
 
-        host = re.sub(r"^https?://", "", url).split("/")[0].lower()
-        if host in blocked_hosts:
-            continue
-        if url not in cache:
-            stats["요청"] += 1
-            try:
-                page = fetch(url)
-            except Blocked:
-                blocked_hosts.add(host)
-                stats["차단호스트"] = len(blocked_hosts)
+        names, emails, retry_later = [], [], False
+        for url, parser in sources:
+            host = re.sub(r"^https?://", "", url).split("/")[0].lower()
+            if host in blocked_hosts:
+                retry_later = True
                 continue
-            except requests.RequestException:
-                stats["오류"] += 1   # 일시 오류는 비워 두고 다음 실행에서 재시도
-                continue
-            cache[url] = parser(page) if page else ([], [])
+            if url not in cache:
+                stats["요청"] += 1
+                try:
+                    page = fetch(url)
+                except Blocked:
+                    blocked_hosts.add(host)
+                    stats["차단호스트"] = len(blocked_hosts)
+                    retry_later = True
+                    continue
+                except requests.RequestException:
+                    stats["오류"] += 1   # 일시 오류는 비워 두고 다음 실행에서 재시도
+                    retry_later = True
+                    continue
+                cache[url] = parser(page) if page else ([], [])
+                if parser is byline_from_naver and page and not cache[url][0]:
+                    stats["네이버바이라인없음"] += 1
+                    stats.setdefault("네이버진단", _naver_diagnosis(url, page))
+            names, emails = cache[url]
+            if names:
+                break
 
-        names, emails = cache[url]
         if names:
             row["기자명"] = ", ".join(names)
+            row["기자이메일"] = ", ".join(emails)
             stats["채움"] += 1
-        else:
+        elif not retry_later:
             row["기자명"] = CHECKED_NONE
+            row["기자이메일"] = ""
             stats["이름없음"] += 1
-        row["기자이메일"] = ", ".join(emails)
 
     stats["남은대상"] = sum(1 for r in rows if not (r.get("기자명") or "").strip())
     status["기자명"] = stats
