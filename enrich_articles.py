@@ -177,14 +177,18 @@ def byline_from_original(page):
 
 
 def byline_sources(row):
-    """기자명을 찾아볼 페이지 목록 (앞에서 찾으면 뒤는 요청하지 않음)"""
+    """기자명을 찾아볼 페이지 목록 (앞에서 찾으면 뒤는 요청하지 않음).
+
+    GitHub Actions(해외 IP)가 받는 네이버 기사 페이지에는 기자 이름 요소가 아예 없어서
+    (컨테이너 div만 있고 이름·JSON-LD 모두 없음) 언론사 원문을 먼저 본다.
+    네이버는 원문 주소가 없는 기사에서만 쓴다."""
     sources = []
-    match = NAVER_ARTICLE_RE.search(row.get("네이버링크") or "")
-    if match:
-        sources.append((f"https://n.news.naver.com/mnews/article/{match.group(1)}/{match.group(2)}", byline_from_naver))
     original = row.get("언론사원문") or ""
     if original.startswith("http") and "naver.com" not in original:
         sources.append((original, byline_from_original))
+    match = NAVER_ARTICLE_RE.search(row.get("네이버링크") or "")
+    if match:
+        sources.append((f"https://n.news.naver.com/mnews/article/{match.group(1)}/{match.group(2)}", byline_from_naver))
     return sources
 
 
