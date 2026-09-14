@@ -171,8 +171,8 @@ td{padding:10px 12px;vertical-align:top}
 </header>
 
 <nav class="tab-nav">
-  <button class="tab-btn"        data-tab="paper"  onclick="switchTab('paper')">🗞️ 지면모음</button>
-  <button class="tab-btn active" data-tab="ours"   onclick="switchTab('ours')">🏥 우리병원</button>
+  <button class="tab-btn active" data-tab="paper"  onclick="switchTab('paper')">🗞️ 지면모음</button>
+  <button class="tab-btn"        data-tab="ours"   onclick="switchTab('ours')">🏥 우리병원</button>
   <button class="tab-btn"        data-tab="others" onclick="switchTab('others')">🔍 타병원</button>
   <button class="tab-btn"        data-tab="report" onclick="switchTab('report')">📑 서울아산병원-보고용</button>
   <button class="tab-btn"        data-tab="compare"onclick="switchTab('compare')">📊 병원 비교</button>
@@ -197,7 +197,7 @@ td{padding:10px 12px;vertical-align:top}
 
 <main>
   <!-- ① 우리병원 탭 -->
-  <div id="panel-ours" class="tab-panel active">
+  <div id="panel-ours" class="tab-panel">
     <div class="notice">📋 샘플 데이터 미리보기 — GitHub Pages 배포 후 실제 수집 데이터로 교체됩니다.</div>
     <div class="stats-row" id="stats-ours"></div>
     <div class="table-wrap" id="table-ours"></div>
@@ -250,7 +250,7 @@ td{padding:10px 12px;vertical-align:top}
   </div>
 
   <!-- ④ 지면모음 탭 -->
-  <div id="panel-paper" class="tab-panel">
+  <div id="panel-paper" class="tab-panel active">
     <div class="notice notice-keep">🗞️ 네이버 '신문 지면 보기'에 등록된 주요 신문 19곳의 지면 게재 기사만 모았습니다. 방송·전문지·지면 미제공 매체는 포함되지 않으며, 최근 기사의 면 정보는 신문 발행 후 1~2일 안에 채워집니다.</div>
     <div class="hospital-filter" id="paper-hosp-filter"></div>
     <div class="stats-row" id="stats-paper"></div>
@@ -505,7 +505,7 @@ function classifyMedia(media) {
 
 // ── 상태 ─────────────────────────────────────────────────────────────────────
 let allData = SAMPLE;
-let currentTab = 'ours';
+let currentTab = 'paper';   // 처음 열릴 때 보이는 탭
 const pages = {ours:1, others:1, paper:1};
 const pageTotals = {};
 const sorts = {
@@ -520,7 +520,7 @@ let barChart = null, pieChart = null;
 // ── 초기화 ───────────────────────────────────────────────────────────────────
 async function init() {
   buildHospFilter();
-  updateKeywordOptions('ours');
+  updateKeywordOptions(currentTab);
 
   // CSV 로드 시도 → 실패 시 샘플 데이터 사용
   try {
@@ -542,7 +542,7 @@ async function init() {
   }
 
   document.getElementById('total-badge').textContent = `총 ${allData.length.toLocaleString()}건`;
-  renderOurs();
+  switchTab(currentTab);   // 탭 강조·필터·엑셀 버튼 문구까지 한 번에 맞춘다
   renderCompare();
 }
 
