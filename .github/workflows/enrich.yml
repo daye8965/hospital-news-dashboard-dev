@@ -1,12 +1,7 @@
 name: 기사 보강 (기자명·지면·출입기자)
 
 on:
-  workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - enrich_articles.py
-      - .github/workflows/enrich.yml
+  workflow_dispatch:   # 수집 워크플로우 안에도 보강 단계가 있으므로 평소엔 손댈 필요 없음
 
 # 수집 워크플로우와 같은 CSV를 고치므로 동시에 돌지 않게 한다
 concurrency:
@@ -42,6 +37,15 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/
-          git diff --staged --quiet || git commit -m "기사 보강 $(date +'%Y-%m-%d %H:%M')"
-          git pull --rebase origin main
+          git diff --staged --quiet && { echo "변경 없음"; exit 0; }
+          git commit -m "기사 보강 $(date +'%Y-%m-%d %H:%M')"
+          # 보강이 도는 25분 사이에 수집 워크플로우가 같은 CSV를 올렸으면 rebase가 충돌한다.
+          # 그때는 이번 결과를 버리고 정상 종료한다 — 다음 실행이 같은 기사를 다시 채운다
+          if ! git pull --rebase origin main; then
+            git rebase --abort || true
+            git fetch origin main
+            git reset --hard origin/main
+            echo "원격이 앞서 있어 이번 보강 결과는 버렸습니다 (다음 실행에서 다시 채움)"
+            exit 0
+          fi
           git push

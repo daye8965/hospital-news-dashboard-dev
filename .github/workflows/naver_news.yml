@@ -59,6 +59,15 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/
-          git diff --staged --quiet || git commit -m "자동 수집 $(date +'%Y-%m-%d')"
-          git pull --rebase origin main
+          git diff --staged --quiet && { echo "변경 없음"; exit 0; }
+          git commit -m "자동 수집 $(date +'%Y-%m-%d')"
+          # 다른 실행이 먼저 같은 CSV를 올려 충돌하면 이번 결과를 버리고 정상 종료한다.
+          # 빠진 날짜는 다음 실행의 백필이 다시 수집한다
+          if ! git pull --rebase origin main; then
+            git rebase --abort || true
+            git fetch origin main
+            git reset --hard origin/main
+            echo "원격이 앞서 있어 이번 수집 결과는 버렸습니다 (다음 실행에서 백필)"
+            exit 0
+          fi
           git push
