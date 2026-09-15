@@ -1,36 +1,36 @@
 {
-  "실행시각": "2026-09-15 08:49",
-  "전체기사": 17222,
+  "실행시각": "2026-09-15 10:29",
+  "전체기사": 17229,
   "기자명": {
-    "대상": 11520,
+    "대상": 10947,
     "요청": 800,
-    "채움": 487,
-    "이름없음": 93,
-    "오류": 24,
-    "차단호스트": 6,
-    "네이버바이라인없음": 189,
+    "채움": 452,
+    "이름없음": 92,
+    "오류": 31,
+    "차단호스트": 5,
+    "네이버바이라인없음": 220,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/002/0002456590",
-      "길이": 275867,
-      "title": "상지대 앵커사업단 ‘G-Tech 브릿지’ 공동 개최",
+      "url": "https://n.news.naver.com/mnews/article/421/0009169463",
+      "길이": 262323,
+      "title": "원주 세브란스 제2병원 첫 삽…기업도시 의료 환경 개선되나",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
-    "남은대상": 10940
+    "남은대상": 10363
   },
   "지면": {
-    "대상": 84,
-    "요청": 73,
-    "게재확인": 7,
-    "미게재": 77,
+    "대상": 78,
+    "요청": 67,
+    "게재확인": 0,
+    "미게재": 78,
     "오류": 0
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 533,
-    "표시기사": 985
+    "표시기사": 1098
   },
   "결과": "완료"
 }
