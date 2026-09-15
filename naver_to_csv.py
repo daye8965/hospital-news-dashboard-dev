@@ -308,11 +308,29 @@ def collect_news(query):
         if last_pub < start_dt: break
     return collected
 
+def load_saved_urls():
+    """이미 저장된 기사 링크. 백필로 같은 날짜를 다시 수집해도 중복으로 쌓이지 않게 한다.
+    제목은 쓰지 않는다 — '[오늘의 인사]'처럼 매번 같은 제목으로 나오는 연재가 영영 빠지기 때문"""
+    urls = set()
+    if not CSV_PATH.exists():
+        return urls
+    try:
+        with open(CSV_PATH, encoding="utf-8-sig", newline="") as f:
+            for row in csv.DictReader(f):
+                url = (row.get("언론사원문") or row.get("네이버링크") or "").strip()
+                if url:
+                    urls.add(url)
+    except Exception as e:
+        print(f"기존 기사 링크 확인 실패({e}) — 중복 검사 없이 진행")
+    return urls
+
+
 def collect_all():
     all_items = []
-    # 전체 URL 중복 + 제목 유사 중복 모두 잡기
-    seen_urls   = set()
+    # 이미 저장된 링크 + 이번 실행에서 본 링크·제목
+    seen_urls   = load_saved_urls()
     seen_titles = set()
+    print(f"기존 저장 기사 {len(seen_urls)}건은 건너뜁니다\n")
 
     for group, queries in HOSPITAL_QUERIES.items():
         group_count = 0
