@@ -1,36 +1,36 @@
 {
-  "실행시각": "2026-09-16 07:14",
-  "전체기사": 17521,
+  "실행시각": "2026-09-16 10:27",
+  "전체기사": 17523,
   "기자명": {
-    "대상": 10662,
+    "대상": 10111,
     "요청": 800,
-    "채움": 460,
-    "이름없음": 94,
-    "오류": 23,
-    "차단호스트": 4,
-    "네이버바이라인없음": 219,
+    "채움": 456,
+    "이름없음": 93,
+    "오류": 17,
+    "차단호스트": 5,
+    "네이버바이라인없음": 227,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/028/0002823216",
-      "길이": 271173,
-      "title": "9월16일 알림",
+      "url": "https://n.news.naver.com/mnews/article/421/0009171611",
+      "길이": 250959,
+      "title": "메디인테크 AI 로봇내시경, 췌장담도학회서 임상 연구 소개",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
-    "남은대상": 10107
+    "남은대상": 9553
   },
   "지면": {
-    "대상": 85,
-    "요청": 63,
-    "게재확인": 6,
-    "미게재": 79,
+    "대상": 80,
+    "요청": 59,
+    "게재확인": 0,
+    "미게재": 80,
     "오류": 0
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 533,
-    "표시기사": 1193
+    "표시기사": 1303
   },
   "결과": "완료"
 }
