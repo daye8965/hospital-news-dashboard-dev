@@ -1,36 +1,36 @@
 {
-  "실행시각": "2026-09-17 07:11",
-  "전체기사": 17789,
+  "실행시각": "2026-09-17 10:27",
+  "전체기사": 17792,
   "기자명": {
-    "대상": 9823,
+    "대상": 9445,
     "요청": 800,
-    "채움": 474,
-    "이름없음": 79,
-    "오류": 11,
-    "차단호스트": 5,
-    "네이버바이라인없음": 231,
+    "채움": 522,
+    "이름없음": 20,
+    "오류": 30,
+    "차단호스트": 6,
+    "네이버바이라인없음": 222,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/081/0003680961",
-      "길이": 280535,
-      "title": "양천구, 서울대와 함께하는 평생학습 ‘양천 지식 브런치’",
+      "url": "https://n.news.naver.com/mnews/article/421/0009174567",
+      "길이": 252983,
+      "title": "\"지역 의료에 AI 심기 위해선 기술보다 사람·데이터·제도 중요\"",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
-    "남은대상": 9270
+    "남은대상": 8903
   },
   "지면": {
-    "대상": 104,
-    "요청": 72,
-    "게재확인": 8,
+    "대상": 96,
+    "요청": 70,
+    "게재확인": 0,
     "미게재": 96,
     "오류": 0
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 533,
-    "표시기사": 1421
+    "표시기사": 1566
   },
   "결과": "완료"
 }
