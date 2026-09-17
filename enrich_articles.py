@@ -3,6 +3,7 @@
 
 1) 기자명·기자이메일 : 네이버 기사 페이지 바이라인 (네이버 링크가 없으면 언론사 원문)
 2) 지면              : 네이버 '신문 지면 보기' 페이지의 면 정보 (주요 신문 19곳)
+                      + paper_manual.csv에 사람이 직접 적어 둔 면 (특집 별지 등 네이버에 없는 면)
 3) 출입기자          : 구글 시트 출입기자 명단으로 CSV 전체를 매 실행마다 다시 대조
 
 출입기자 명단 자체는 어디에도 저장하지 않고, 기사별 표시(Y)만 CSV에 남긴다.
@@ -386,6 +387,71 @@ def enrich_paper(rows, status, deadline):
     status["지면"] = stats
 
 
+# ── 2-1) 직접 지정한 지면 ────────────────────────────────────────────────────
+# 네이버 '신문 지면 보기'에 없는 면은 자동으로 못 찾는다. 특집 별지(H면 등)가 그렇고,
+# 전문지처럼 네이버 기사 링크가 아예 없는 기사도 마찬가지다.
+# paper_manual.csv에 '링크,면'을 적어 두면 그 값으로 덮어쓴다 — 사람이 적은 값이 우선이다.
+PAPER_MANUAL_PATH = Path("paper_manual.csv")
+PAPER_LABEL_RE = re.compile(r"^[A-Z]?\d{1,3}면$")
+
+
+def url_key(url):
+    """주소 비교용 정규화 — 프로토콜·www·추적 파라미터·끝 슬래시 차이를 무시한다"""
+    text = (url or "").strip()
+    if not text:
+        return ""
+    text = re.sub(r"^https?://", "", text, flags=re.I)
+    text = re.sub(r"^www\.", "", text, flags=re.I)
+    base, _, query = text.partition("?")
+    keep = [p for p in query.split("&") if p and not re.match(r"(utm_|fbclid|gclid|ref=)", p, re.I)]
+    return base.rstrip("/").lower() + ("?" + "&".join(keep) if keep else "")
+
+
+def load_paper_manual():
+    """{정규화한 주소: '면'} 과 형식이 잘못된 줄 목록"""
+    if not PAPER_MANUAL_PATH.exists():
+        return {}, []
+    manual, bad = {}, []
+    with open(PAPER_MANUAL_PATH, encoding="utf-8-sig", newline="") as f:
+        for line_no, row in enumerate(csv.DictReader(f), start=2):
+            link = (row.get("링크") or "").strip()
+            label = (row.get("면") or "").strip()
+            if not link and not label:
+                continue
+            if not link:
+                bad.append(f"{line_no}행: 링크가 비었습니다")
+            elif not PAPER_LABEL_RE.match(label):
+                bad.append(f"{line_no}행: 면 표기 '{label}' — A16면·H4면 형식으로 적어주세요")
+            else:
+                manual[url_key(link)] = label
+    return manual, bad
+
+
+def apply_paper_manual(rows, status):
+    manual, bad = load_paper_manual()
+    if not manual and not bad:
+        return
+    matched, changed = set(), 0
+    for row in rows:
+        for field in ("언론사원문", "네이버링크"):
+            key = url_key(row.get(field))
+            label = manual.get(key)
+            if not label:
+                continue
+            matched.add(key)
+            if row.get("지면") != label:
+                row["지면"] = label
+                changed += 1
+            break
+    stats = {"목록": len(manual), "찾은기사": len(matched), "이번에바뀐행": changed}
+    missing = [k for k in manual if k not in matched]
+    if missing:
+        stats["기사를못찾은링크"] = missing[:10]   # 주소가 다르거나 아직 수집되지 않은 기사
+    if bad:
+        stats["형식오류"] = bad[:10]
+    status["직접지정지면"] = stats
+
+
 # ── 3) 출입기자 ──────────────────────────────────────────────────────────────
 def _norm(text):
     return re.sub(r"[\s()·\-_.]", "", text or "").lower()
@@ -539,6 +605,7 @@ def main(status):
 
     enrich_bylines(rows, status, deadline)
     enrich_paper(rows, status, deadline)
+    apply_paper_manual(rows, status)   # 사람이 적은 지면이 네이버에서 찾은 값보다 우선
     mark_beat_reporters(rows, status)
 
     write_rows(rows)
