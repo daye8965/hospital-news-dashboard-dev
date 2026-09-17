@@ -230,22 +230,62 @@ def extract_media(orig_url, naver_url=""):
             continue
     return ""
 
+# ── 교수명 추출 ──────────────────────────────────────────────────────────────
+# docs/index.html의 isPersonName·extractProfessor와 같은 규칙이다. 한쪽만 고치지 말 것.
+# 오탐 대부분은 '혈액종양내과 교수'의 꼬리를 이름으로 오인한 것이었다(→ 양내과).
+# 그래서 이름 앞에 한글이 붙어 있으면 이름으로 보지 않는다(경계 검사)가 핵심 규칙이다.
+SURNAMES = set("강견경계고공곽구국권근금기길김나남노다도동라류마맹명모목문민박반방배백범변복봉부빈"
+               "사삼상서석선설성소손송승시신심안양어엄여연염예오옥온왕용우원위유육윤은음이인임장전정"
+               "제조종주지진차창채천초최추탁태판팽편평표피하학한함해허현형호홍화황")
+SURNAMES2 = {"남궁", "황보", "제갈", "사공", "선우", "서문", "독고", "동방", "어금", "강전", "망절"}
+# 이름 자리에 자주 끼어드는 일반어·직함·진료과 어근 (수집 데이터에서 실제로 잡히던 것들)
+NOT_NAME = set("""
+서울 서울권 지방권 경인권 전국 지역 지방 지난 이번 이어 이후 이전 오전 오후 공동 신임 최근 당시
+기존 향후 현재 관련 대상 이날 이때 주요 국내 해외 국제 세계 우리 자신 사람 환자 의사 간호 진료
+임상 명예 석좌 주임 초빙 겸임 객원 특임 전임 부임 담당 지도 발표 조사 분석 개발 초청 위촉 추대
+취임 우수 고려해 이상 이하 미만 초과 대해 통해 위해 따라 함께 각각 이런 그런 어떤 이제 아직 이미
+다시 매우 가장 더욱 아주 정말 바로 결국 물론 사실 우선 일단 제일 향년 본인 최고 최대 최초 최신
+다음 처음 실제 특히 다만 또한 한편 아울러 동시 이용 사용 적용 포함 제외 확인 예상 전망 계획 예정
+결정 시작 종료 소아 산부 정형 흉부 신경 비뇨 피부 정신 가정 응급 영상 병리 재활 마취 예방 종양
+혈액 순환 호흡 소화 내분 감염 완화 중환 통증 부속 선정 명의 한국 미국 일본 중국 영국 독일 호주
+대만 유럽 남미 북미 아시아
+""".split())
+NOT_NAME_RE = re.compile(r"병원|의원|센터|학과|학부|의대|대학|학교|연구|재단|학회|협회|공단|본부|지부|교실|클리닉|보건소|의료원")
+# '이 부회장은', '장 박사는'처럼 직함이 이름 자리에 오는 경우 (조사가 붙어도 걸러낸다)
+TITLE_WORD_RE = re.compile(r"(?:회장|이사장|원장|총장|학장|소장|실장|팀장|본부장|박사|교수|대표|위원|의원|장관|차관|사장|부장|국장)(?:은|는|이|가|도|의|를|을)?$")
+
+_NAME = r"[가-힣]{2,4}"
+_CHAIN = _NAME + r"(?:\s*[·ㆍ‧•]\s*" + _NAME + r")*"      # 장윤혁·이순태 교수
+_TITLE = r"(?:주임|책임|명예|석좌|특임|초빙|겸임|객원|임상|진료|전임|정|부|조)*"   # 임상조교수·명예교수
+# '서준범 서울아산병원 교수'처럼 이름과 '교수' 사이에 소속이 끼는 형태가 많다.
+# 아무 단어나 허용하면 '서울 아산병원 교수'가 이름 '서울'이 되므로, 소속으로 보이는 말만 허용한다.
+_AFFIL = r"(?:[가-힣]{1,10}(?:병원|의원|센터|의대|대학교|대학|학교|교실|연구소|연구원|학부|의료원|보건소)|[가-힣]{1,8}[과대])"
+PROF_PATTERNS = [
+    re.compile(r"(?:^|[^가-힣])(" + _CHAIN + r")\s+(?:" + _AFFIL + r"\s+){0,2}" + _TITLE + r"교수"),
+    re.compile(r"(?:^|[^가-힣])(" + _CHAIN + r")\s+(?:전문의|과장|원장)(?![가-힣])"),
+]
+
+def is_person_name(name):
+    if not name or not (2 <= len(name) <= 4):
+        return False
+    if name in NOT_NAME or NOT_NAME_RE.search(name) or TITLE_WORD_RE.search(name):
+        return False
+    if name.endswith("과"):      # 내과·안과·신경과
+        return False
+    if name.endswith("대"):      # 연세대·충남대 같은 대학 약칭
+        return False
+    return name[:2] in SURNAMES2 or name[0] in SURNAMES
+
 def extract_professor(title, summary):
-    """제목+요약에서 아산병원 교수명 추출"""
+    """제목+요약에서 교수명 추출 (최대 3명)"""
     combined = title + " " + summary
-    # 패턴: 이름(2~4자) + 교수 / 교수 + 이름
-    patterns = [
-        r"([가-힣]{2,4})\s*(?:서울아산병원|아산병원)?\s*(?:\w+과?\s*)?교수",
-        r"(?:서울아산병원|아산병원)\s*(?:\w+과?\s*)?([가-힣]{2,4})\s*교수",
-        r"교수\s+([가-힣]{2,4})(?:\s|,|·|$)",
-    ]
     found = []
-    for pat in patterns:
-        for m in re.finditer(pat, combined):
-            name = m.group(1).strip()
-            if 2 <= len(name) <= 4 and name not in found:
-                found.append(name)
-    return ", ".join(found[:3])  # 최대 3명
+    for pat in PROF_PATTERNS:
+        for m in pat.finditer(combined):
+            for name in re.split(r"[·ㆍ‧•\s]+", m.group(1)):
+                if is_person_name(name) and name not in found:
+                    found.append(name)
+    return ", ".join(found[:3])
 
 def is_excluded(title: str, summary: str = "") -> bool:
     combined = title + " " + summary

@@ -343,7 +343,9 @@ function hasPaper(r) { return /^[A-Z]?\d{1,3}면$/.test(r['지면'] || ''); }
 function mediaOf(r) { return resolveMedia(r['매체']||'', r['언론사원문']||r['네이버링크']||''); }
 function isBroadcast(r) { return BROADCAST.has(mediaOf(r)); }
 function hospLabel(r) { return Object.values(HOSPITALS).find(h => h.group === r['병원그룹'])?.label || r['병원그룹'] || ''; }
-function profOf(r) { return extractProfessor(r['제목'], r['요약'], r['병원그룹']) || validateName(r['교수명']) || ''; }
+// CSV의 교수명 컬럼은 예전 규칙으로 모은 값이라 '평균'·'반도체' 같은 게 섞여 있다.
+// 지금은 본문 추출이 더 정확해서 그것만 쓴다 (새로 수집되는 행은 같은 규칙으로 채워진다).
+function profOf(r) { return extractProfessor(r['제목'], r['요약']); }
 function reporterNames(r) {
   const v = (r['기자명'] || '').trim();
   return v === CHECKED_NONE ? '' : v;
@@ -363,32 +365,56 @@ function mdOf(r) {
   return m ? `${+m[1]}/${+m[2]}` : '';
 }
 
-function validateName(name) {
-  if (!name) return '';
-  const SURNAMES = '김이박최정강조윤장임한오서신권황안송류전홍고문양손배백허유남심노정하곽성차주우구신임나전민유진지엄채원천방공강현함변염양변복예편';
-  const parts = name.split(/[,\s·]+/).filter(Boolean);
-  const valid = parts.filter(p => p.length >= 2 && p.length <= 3 && SURNAMES.includes(p[0]) && !/병원|센터|의대|대학|학과|내과|외과|연구/.test(p));
-  return valid.join(', ');
+// 사람 이름 판정 ─ 오탐 대부분은 '혈액종양내과 교수'의 꼬리를 이름으로 오인한 것이었다.
+// 그래서 이름 앞뒤에 한글이 붙어 있으면 이름으로 보지 않는다(경계 검사)가 핵심 규칙이다.
+const SURNAMES = new Set([...'강견경계고공곽구국권근금기길김나남노다도동라류마맹명모목문민박반방배백범변복봉부빈사삼상서석선설성소손송승시신심안양어엄여연염예오옥온왕용우원위유육윤은음이인임장전정제조종주지진차창채천초최추탁태판팽편평표피하학한함해허현형호홍화황']);
+const SURNAMES2 = new Set(['남궁','황보','제갈','사공','선우','서문','독고','동방','어금','강전','망절']);
+// 이름 자리에 자주 끼어드는 일반어·직함·진료과 어근 (데이터에서 실제로 잡히던 것들)
+const NOT_NAME = new Set(`
+서울 서울권 지방권 경인권 전국 지역 지방 지난 이번 이어 이후 이전 오전 오후 공동 신임 최근 당시
+기존 향후 현재 관련 대상 이날 이때 주요 국내 해외 국제 세계 우리 자신 사람 환자 의사 간호 진료
+임상 명예 석좌 주임 초빙 겸임 객원 특임 전임 부임 담당 지도 발표 조사 분석 개발 초청 위촉 추대
+취임 우수 고려해 이상 이하 미만 초과 대해 통해 위해 따라 함께 각각 이런 그런 어떤 이제 아직 이미
+다시 매우 가장 더욱 아주 정말 바로 결국 물론 사실 우선 일단 제일 향년 본인 최고 최대 최초 최신
+다음 처음 실제 특히 다만 또한 한편 아울러 동시 이용 사용 적용 포함 제외 확인 예상 전망 계획 예정
+결정 시작 종료 소아 산부 정형 흉부 신경 비뇨 피부 정신 가정 응급 영상 병리 재활 마취 예방 종양
+혈액 순환 호흡 소화 내분 감염 완화 중환 통증 부속 선정 명의 한국 미국 일본 중국 영국 독일 호주
+대만 유럽 남미 북미 아시아
+`.trim().split(/\s+/));
+const NOT_NAME_RE = /병원|의원|센터|학과|학부|의대|대학|학교|연구|재단|학회|협회|공단|본부|지부|교실|클리닉|보건소|의료원/;
+// '이 부회장은', '장 박사는'처럼 직함이 이름 자리에 오는 경우 (조사가 붙어도 걸러낸다)
+const TITLE_WORD_RE = /(?:회장|이사장|원장|총장|학장|소장|실장|팀장|본부장|박사|교수|대표|위원|의원|장관|차관|사장|부장|국장)(?:은|는|이|가|도|의|를|을)?$/;
+
+function isPersonName(n) {
+  if (!n || n.length < 2 || n.length > 4) return false;
+  if (NOT_NAME.has(n) || NOT_NAME_RE.test(n) || TITLE_WORD_RE.test(n)) return false;
+  if (n.endsWith('과')) return false;   // 내과·안과·신경과
+  if (n.endsWith('대')) return false;   // 연세대·충남대 같은 대학 약칭
+  return SURNAMES2.has(n.slice(0, 2)) || SURNAMES.has(n[0]);
 }
 
-function extractProfessor(title, summary, group) {
+// '장윤혁·이순태 교수'처럼 가운뎃점으로 이어진 공동 저자를 함께 잡는다
+const NAME_TOKEN = '[가-힣]{2,4}';
+const NAME_CHAIN = NAME_TOKEN + '(?:\\s*[·ㆍ‧•]\\s*' + NAME_TOKEN + ')*';
+const TITLE_PREFIX = '(?:주임|책임|명예|석좌|특임|초빙|겸임|객원|임상|진료|전임|정|부|조)*';   // 임상조교수·명예교수
+// '서준범 서울아산병원 교수'처럼 이름과 '교수' 사이에 소속이 끼는 형태가 많다.
+// 아무 단어나 허용하면 '서울 아산병원 교수'가 이름 '서울'이 되므로, 소속으로 보이는 말만 허용한다.
+const AFFIL = '(?:[가-힣]{1,10}(?:병원|의원|센터|의대|대학교|대학|학교|교실|연구소|연구원|학부|의료원|보건소)|[가-힣]{1,8}[과대])';
+const PROF_PATTERNS = [
+  new RegExp('(?:^|[^가-힣])(' + NAME_CHAIN + ')\\s+(?:' + AFFIL + '\\s+){0,2}' + TITLE_PREFIX + '교수', 'g'),
+  new RegExp('(?:^|[^가-힣])(' + NAME_CHAIN + ')\\s+(?:전문의|과장|원장)(?![가-힣])', 'g'),
+];
+
+function extractProfessor(title, summary) {
   const combined = (title || '') + ' ' + (summary || '');
   const found = [];
-  const SURNAMES = '김이박최정강조윤장임한오서신권황안송류전홍고문양손배백허유남심노정하곽성차주우구신임나전민유진지엄채원천방공강현함변염양변복예편';
-  const patterns = [
-    /([가-힣]{2,3})\s+(?:[가-힣]+\s+)?교수/g,
-    /교수\s+([가-힣]{2,3})(?=[\s,·(]|$)/g,
-    /([가-힣]{2,3})\s+(?:교수|전문의|원장)/g,
-  ];
-  for (const pat of patterns) {
+  for (const pat of PROF_PATTERNS) {
+    pat.lastIndex = 0;
     let m;
     while ((m = pat.exec(combined)) !== null) {
-      const name = m[1];
-      if (name.length < 2 || name.length > 3) continue;
-      if (!SURNAMES.includes(name[0])) continue;
-      if (/^(병원|센터|연구|의료|대학|학교|환자|치료|수술|진료|의사|간호|임상|학과|정신|내분|분비|종양|외과|흉부|신경|소아|비뇨|성형|재활|마취|응급|영상|방사|진단|예방|가정|산부|해부|약리|병리|면역|유전|세포|보건|공동|공식|공사|공급|공학|공단|공립|공공|공중|내과|산의)$/.test(name)) continue;
-      if (found.includes(name)) continue;
-      found.push(name);
+      for (const name of m[1].split(/[·ㆍ‧•\s]+/)) {
+        if (isPersonName(name) && !found.includes(name)) found.push(name);
+      }
     }
   }
   return found.slice(0, 3).join(', ');
@@ -1004,7 +1030,7 @@ function renderTable(id, rows, page, panelKey, defaultColor) {
       const color = HOSPITALS[hKey]?.color || defaultColor;
       const link = r['언론사원문']||r['네이버링크']||'';
       const naverLink = r['네이버링크']||'';
-      const prof = extractProfessor(r['제목'], r['요약'], r['병원그룹']) || validateName(r['교수명']) || '';
+      const prof = profOf(r);
       // 날짜: 발행일시 우선, 없으면 날짜 컬럼, URL처럼 생긴 값은 무시
       const rawDate = r['발행일시']||r['날짜']||'';
       const displayDate = (rawDate && !rawDate.startsWith('http')) ? rawDate.slice(0,16) : '—';
@@ -1349,7 +1375,7 @@ function openMediaModal(category) {
         <tbody>${rows.map(r => {
           const link = r['언론사원문']||r['네이버링크']||'';
           const naver = r['네이버링크']||'';
-          const prof = extractProfessor(r['제목'], r['요약'], r['병원그룹']) || validateName(r['교수명']) || '';
+          const prof = profOf(r);
           const rawDate = r['발행일시']||r['날짜']||'';
           const displayDate = (rawDate && !rawDate.startsWith('http')) ? rawDate.slice(0,16) : '—';
           const media = resolveMedia(r['매체']||'', r['언론사원문']||r['네이버링크']||'');
