@@ -1,36 +1,41 @@
 {
-  "실행시각": "2026-09-17 10:27",
-  "전체기사": 17792,
+  "실행시각": "2026-09-18 07:10",
+  "전체기사": 18112,
   "기자명": {
-    "대상": 9445,
-    "요청": 800,
-    "채움": 522,
-    "이름없음": 20,
-    "오류": 30,
-    "차단호스트": 6,
-    "네이버바이라인없음": 222,
+    "대상": 9228,
+    "요청": 721,
+    "채움": 400,
+    "이름없음": 44,
+    "오류": 40,
+    "차단호스트": 5,
+    "네이버바이라인없음": 232,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/421/0009174567",
-      "길이": 252983,
-      "title": "\"지역 의료에 AI 심기 위해선 기술보다 사람·데이터·제도 중요\"",
+      "url": "https://n.news.naver.com/mnews/article/025/0003552176",
+      "길이": 289239,
+      "title": "“가위 주세요” 10여분 만에 담낭 절제…수술실에 뜬 ‘로봇 막내’",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
-    "남은대상": 8903
+    "남은대상": 8784
   },
   "지면": {
-    "대상": 96,
-    "요청": 70,
+    "대상": 124,
+    "요청": 0,
     "게재확인": 0,
-    "미게재": 96,
+    "미게재": 0,
     "오류": 0
+  },
+  "직접지정지면": {
+    "목록": 1,
+    "찾은기사": 1,
+    "이번에바뀐행": 0
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 533,
-    "표시기사": 1566
+    "표시기사": 1656
   },
   "결과": "완료"
 }
