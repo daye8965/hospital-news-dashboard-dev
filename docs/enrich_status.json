@@ -1,30 +1,11 @@
 {
-  "실행시각": "2026-09-18 07:10",
+  "실행시각": "2026-09-18 08:27",
   "전체기사": 18112,
-  "기자명": {
-    "대상": 9228,
-    "요청": 721,
-    "채움": 400,
-    "이름없음": 44,
-    "오류": 40,
-    "차단호스트": 5,
-    "네이버바이라인없음": 232,
-    "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/025/0003552176",
-      "길이": 289239,
-      "title": "“가위 주세요” 10여분 만에 담낭 절제…수술실에 뜬 ‘로봇 막내’",
-      "byline_s태그": false,
-      "journalist태그": true,
-      "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
-      "jsonld_author": false
-    },
-    "남은대상": 8784
-  },
   "지면": {
     "대상": 124,
-    "요청": 0,
-    "게재확인": 0,
-    "미게재": 0,
+    "요청": 71,
+    "게재확인": 13,
+    "미게재": 111,
     "오류": 0
   },
   "직접지정지면": {
@@ -32,10 +13,30 @@
     "찾은기사": 1,
     "이번에바뀐행": 0
   },
+  "기자명": {
+    "대상": 8784,
+    "요청": 800,
+    "채움": 505,
+    "이름없음": 37,
+    "오류": 12,
+    "차단호스트": 5,
+    "네이버바이라인없음": 241,
+    "네이버진단": {
+      "url": "https://n.news.naver.com/mnews/article/421/0009177266",
+      "길이": 253513,
+      "title": "얼굴 크기 '혹' 달고 살던 아프리카 소년…한국서 기적 같은 새 삶",
+      "byline_s태그": false,
+      "journalist태그": true,
+      "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
+      "jsonld_author": false
+    },
+    "예산소진": true,
+    "남은대상": 8227
+  },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 533,
-    "표시기사": 1656
+    "표시기사": 1749
   },
   "결과": "완료"
 }
