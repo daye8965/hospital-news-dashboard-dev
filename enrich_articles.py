@@ -268,7 +268,11 @@ def enrich_bylines(rows, status, deadline):
     cache, blocked_hosts = {}, set()
 
     for row in targets:
-        if stats["요청"] >= BYLINE_BUDGET or time.monotonic() > deadline:
+        if stats["요청"] >= BYLINE_BUDGET:
+            stats["예산소진"] = True
+            break
+        if time.monotonic() > deadline:
+            stats["시간초과"] = True
             break
         sources = byline_sources(row)
         if not sources:
@@ -363,7 +367,11 @@ def enrich_paper(rows, status, deadline):
     stats = {"대상": len(candidates), "요청": 0, "게재확인": 0, "미게재": 0, "오류": 0}
     pages = {}
     for key in needed:
-        if stats["요청"] >= PAPER_BUDGET or time.monotonic() > deadline:
+        if stats["요청"] >= PAPER_BUDGET:
+            stats["예산소진"] = True
+            break
+        if time.monotonic() > deadline:
+            stats["시간초과"] = True
             break
         stats["요청"] += 1
         try:
@@ -603,9 +611,12 @@ def main(status):
     status["전체기사"] = len(rows)
     deadline = time.monotonic() + TIME_LIMIT_SEC
 
-    enrich_bylines(rows, status, deadline)
+    # 지면을 먼저 한다 — 기자명 백필은 남은 기사가 수천 건이라 시간 상한을 다 쓰는데,
+    # 그러면 지면이 매번 요청 0건으로 굶는다. 지면은 대상이 최근 기사뿐이라 금방 끝나고,
+    # 네이버가 지면을 며칠만 제공하므로 놓치면 그 날짜는 영영 못 채운다.
     enrich_paper(rows, status, deadline)
     apply_paper_manual(rows, status)   # 사람이 적은 지면이 네이버에서 찾은 값보다 우선
+    enrich_bylines(rows, status, deadline)
     mark_beat_reporters(rows, status)
 
     write_rows(rows)
