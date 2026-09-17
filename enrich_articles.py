@@ -141,11 +141,18 @@ def byline_from_naver(page):
         for fragment in NAVER_JOURNALIST_RE.findall(page):
             _add_unique(names, parse_byline(fragment)[0])
     if not names:
-        for block in JSONLD_AUTHOR_RE.findall(page):
-            for value in re.findall(r'"name"\s*:\s*"([^"]+)"', block):
-                if not MEDIA_HINT_RE.search(value):
-                    _add_unique(names, parse_byline(value)[0])
+        _add_unique(names, names_from_jsonld(page))
     return names, emails
+
+
+def names_from_jsonld(page):
+    """구조화 데이터의 author (예: "author": [{"@type":"Person","name":"홍길동 기자"}])"""
+    names = []
+    for block in JSONLD_AUTHOR_RE.findall(page):
+        for value in re.findall(r'"name"\s*:\s*"([^"]+)"', block):
+            if not MEDIA_HINT_RE.search(value):
+                _add_unique(names, parse_byline(value)[0])
+    return names
 
 
 META_AUTHOR_RE = re.compile(
@@ -157,17 +164,55 @@ BODY_BYLINE_RE = re.compile(
     r"([A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)")
 
 
+# 이데일리처럼 dable:author 메타태그에 기자명 대신 기사 제목을 넣는 매체가 있다.
+# 그대로 믿으면 '심방세동·심부전 …' 같은 제목 조각이 기자명이 된다 → 페이지 제목과 대조해 걸러낸다.
+PAGE_TITLE_RES = [
+    re.compile(r'<meta\b[^>]*?(?:property|name)\s*=\s*["\'](?:og:title|twitter:title)["\'][^>]*>', re.I),
+]
+HTML_TITLE_RE = re.compile(r"<title[^>]*>(.*?)</title>", re.S | re.I)
+HEADLINE_CHARS_RE = re.compile(r"[‘’“”\"…?!]")
+
+
+def _title_keys(page):
+    """페이지가 스스로 밝히는 기사 제목들 (공백·기호를 뗀 형태)"""
+    titles = []
+    for pattern in PAGE_TITLE_RES:
+        for tag in pattern.findall(page):
+            match = META_CONTENT_RE.search(tag)
+            if match:
+                titles.append(html.unescape(match.group(1)))
+    match = HTML_TITLE_RE.search(page)
+    if match:
+        titles.append(html.unescape(match.group(1)))
+    keys = [re.sub(r"[^0-9A-Za-z가-힣]+", "", t) for t in titles]
+    return [k for k in keys if len(k) >= 8]
+
+
+def _looks_like_headline(value, title_keys):
+    if len(value) > 40 or HEADLINE_CHARS_RE.search(value):
+        return True
+    key = re.sub(r"[^0-9A-Za-z가-힣]+", "", value)
+    if len(key) < 8:
+        return False       # 짧은 값은 제목일 리 없다 (기자명일 가능성)
+    return any(key in t or t in key for t in title_keys)
+
+
 def byline_from_original(page):
     """언론사 원문: 기사 전용 메타태그 우선, 없으면 본문의 '홍길동 기자 (메일)' 형식"""
     names, emails = [], []
+    title_keys = _title_keys(page)
     for tag in META_AUTHOR_RE.findall(page):
         match = META_CONTENT_RE.search(tag)
         value = html.unescape(match.group(1)).strip() if match else ""
         if not value or MEDIA_HINT_RE.search(value):
             continue   # 매체명·URL이 들어간 메타태그는 기자 정보가 아님
+        if _looks_like_headline(value, title_keys):
+            continue   # 기자명 자리에 기사 제목이 들어 있는 경우
         found_names, found_emails = parse_byline(value)
         _add_unique(names, found_names)
         _add_unique(emails, found_emails)
+    if not names:
+        _add_unique(names, names_from_jsonld(page))   # 이데일리 등은 여기에 진짜 기자명이 있다
     if not names:
         match = BODY_BYLINE_RE.search(_clean(page))
         if match:
