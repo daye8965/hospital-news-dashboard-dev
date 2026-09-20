@@ -1,10 +1,10 @@
 {
-  "실행시각": "2026-09-20 06:28",
+  "실행시각": "2026-09-20 10:11",
   "전체기사": 18531,
   "지면": {
-    "대상": 123,
-    "요청": 74,
-    "게재확인": 3,
+    "대상": 120,
+    "요청": 73,
+    "게재확인": 0,
     "미게재": 120,
     "오류": 0
   },
@@ -14,29 +14,29 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 7108,
+    "대상": 6603,
     "요청": 800,
-    "채움": 465,
+    "채움": 440,
     "이름없음": 42,
-    "오류": 14,
+    "오류": 26,
     "차단호스트": 5,
-    "네이버바이라인없음": 274,
+    "네이버바이라인없음": 283,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/123/0002390539",
-      "길이": 257086,
-      "title": "세계 '톱10'에 이름 올린 한국 병원들…뉴스위크 평가 보니",
+      "url": "https://n.news.naver.com/mnews/article/421/0009179479",
+      "길이": 246468,
+      "title": "김혜경 여사 \"장애·거주지 상관없이 누구나 필요할 때 치료받아야\"",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "예산소진": true,
-    "남은대상": 6601
+    "남은대상": 6070
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 533,
-    "표시기사": 2168
+    "표시기사": 2277
   },
   "결과": "완료"
 }
