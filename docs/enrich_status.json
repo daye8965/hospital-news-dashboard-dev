@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-09-21 10:08",
-  "전체기사": 18597,
+  "실행시각": "2026-09-21 11:45",
+  "전체기사": 18795,
   "지면": {
-    "대상": 97,
-    "요청": 61,
-    "게재확인": 0,
-    "미게재": 97,
+    "대상": 132,
+    "요청": 80,
+    "게재확인": 11,
+    "미게재": 121,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,29 +14,29 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 5658,
+    "대상": 5365,
     "요청": 800,
-    "채움": 428,
-    "이름없음": 55,
-    "오류": 11,
+    "채움": 443,
+    "이름없음": 43,
+    "오류": 24,
     "차단호스트": 6,
-    "네이버바이라인없음": 299,
+    "네이버바이라인없음": 306,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/421/0009181287",
-      "길이": 262179,
-      "title": "추석 당일 서울 24개구 쓰레기 못 버린다…공영주차장 61곳 무료",
+      "url": "https://n.news.naver.com/mnews/article/020/0003749500",
+      "길이": 281782,
+      "title": "서울 의대 지원자 10년새 최저…지역의사제·반도체 계약학과 영향",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "예산소진": true,
-    "남은대상": 5160
+    "남은대상": 4879
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 533,
-    "표시기사": 2485
+    "표시기사": 2561
   },
   "결과": "완료"
 }
