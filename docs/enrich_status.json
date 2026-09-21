@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-09-21 11:45",
-  "전체기사": 18795,
+  "실행시각": "2026-09-22 07:35",
+  "전체기사": 19009,
   "지면": {
-    "대상": 132,
-    "요청": 80,
-    "게재확인": 11,
-    "미게재": 121,
+    "대상": 111,
+    "요청": 72,
+    "게재확인": 9,
+    "미게재": 102,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,29 +14,29 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 5365,
+    "대상": 5229,
     "요청": 800,
-    "채움": 443,
-    "이름없음": 43,
-    "오류": 24,
+    "채움": 452,
+    "이름없음": 27,
+    "오류": 15,
     "차단호스트": 6,
-    "네이버바이라인없음": 306,
+    "네이버바이라인없음": 299,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/020/0003749500",
-      "길이": 281782,
-      "title": "서울 의대 지원자 10년새 최저…지역의사제·반도체 계약학과 영향",
+      "url": "https://n.news.naver.com/mnews/article/421/0009183753",
+      "길이": 251191,
+      "title": "신장이식 후 보존, 혈압관리 중요…잘 관리하면 저하 위험 53%↓",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "예산소진": true,
-    "남은대상": 4879
+    "남은대상": 4750
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 533,
-    "표시기사": 2561
+    "표시기사": 2624
   },
   "결과": "완료"
 }
