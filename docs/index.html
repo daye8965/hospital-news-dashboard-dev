@@ -74,6 +74,8 @@ thead th{font-size:11px;font-weight:600;color:var(--muted);text-transform:upperc
 thead th:hover{color:var(--accent)}
 thead th .si{margin-left:3px;opacity:.4}
 thead th.sorted .si{opacity:1;color:var(--accent)}
+thead th.nosort{cursor:default}
+thead th.nosort:hover{color:var(--muted)}
 tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
 tbody tr:last-child{border-bottom:none}
 tbody tr:hover{background:var(--accent-bg)}
@@ -540,6 +542,8 @@ const sorts = {
   others: {col:'발행일시', asc:false},
   paper:  {col:'발행일시', asc:false},
 };
+// 보고용 탭은 실적 양식대로 날짜 오름차순이 기본. 화면에서만 바꿀 수 있고 엑셀은 늘 날짜순으로 받는다
+const reportSort = {col:'날짜', asc:true};
 let selectedHosp = null; // null = 전체 타병원
 let paperHosp = null;    // null = 지면모음 전체 병원
 let barChart = null, pieChart = null;
@@ -966,6 +970,36 @@ function getReportSections() {
 
 function reportKind(r) { return isBroadcast(r) ? '방송' : hasPaper(r) ? '신문' : '온라인'; }
 
+// 보고용 탭 정렬 — 화면에 보이는 값 기준으로 맞춘다 (병원은 '삼성서울병원' 같은 표시 이름)
+const REPORT_SORT_VALUE = {
+  '날짜': r => r['발행일시'] || r['날짜'] || '',
+  '매체': r => mediaOf(r),
+  '병원': r => hospLabel(r),
+};
+
+function doReportSort(col) {
+  if (reportSort.col === col) reportSort.asc = !reportSort.asc;
+  else { reportSort.col = col; reportSort.asc = true; }
+  renderReport();
+}
+
+function sortReportItems(items) {
+  const valueOf = REPORT_SORT_VALUE[reportSort.col] || REPORT_SORT_VALUE['날짜'];
+  const dir = reportSort.asc ? 1 : -1;
+  return [...items].sort((a, b) => {
+    const diff = valueOf(a.r).localeCompare(valueOf(b.r), 'ko', {numeric:true});
+    if (diff) return diff * dir;
+    return (a.r['발행일시']||'').localeCompare(b.r['발행일시']||'');   // 같은 값이면 날짜순
+  });
+}
+
+function reportTh(label, col, style = '') {
+  const on = reportSort.col === col;
+  const arrow = on ? (reportSort.asc ? '↑' : '↓') : '↕';
+  return `<th ${style} class="${on ? 'sorted' : ''}" onclick="doReportSort('${col}')"
+    title="${label} 기준 정렬">${label} <span class="si">${arrow}</span></th>`;
+}
+
 function renderReport() {
   const {range, sections} = getReportSections();
   document.getElementById('result-count').textContent = `${sections.reduce((s, x) => s + x.items.length, 0)}건`;
@@ -975,12 +1009,15 @@ function renderReport() {
     `<div style="font-size:12px;color:var(--muted);margin:0 0 14px;font-family:var(--mono)">기간: ${range.label}${range.isDefault ? ' (기간 미설정 시 최근 7일)' : ''}</div>` +
     sections.map(sec => {
       const withHosp = sec.key === 'others-print';
+      const items = sortReportItems(sec.items);
       const table = !sec.items.length ? empty : `<table>
         <thead><tr>
-          <th style="width:56px">날짜</th><th>매체</th>${withHosp ? '<th>병원</th>' : ''}<th>보도내용</th>
-          <th>기자</th><th>교수명</th><th>구분</th><th style="min-width:50px">링크</th>
+          ${reportTh('날짜', '날짜', 'style="width:56px"')}${reportTh('매체', '매체')}${withHosp ? reportTh('병원', '병원') : ''}
+          <th class="nosort">보도내용</th>
+          <th class="nosort">기자</th><th class="nosort">교수명</th><th class="nosort">구분</th>
+          <th class="nosort" style="min-width:50px">링크</th>
         </tr></thead>
-        <tbody>${sec.items.map(({r, tag}) => {
+        <tbody>${items.map(({r, tag}) => {
           const link = r['언론사원문']||r['네이버링크']||'';
           const naver = r['네이버링크']||'';
           const prof = profOf(r);
@@ -1005,6 +1042,14 @@ function renderReport() {
 }
 
 // ── 공통 테이블 렌더 ──────────────────────────────────────────────────────────
+// 정렬되는 열에만 화살표가 서고(↑ 오름차순 ↓ 내림차순), 나머지는 ↕로 둔다
+function sortTh(panelKey, label, col, style = '') {
+  const on = sorts[panelKey].col === col;
+  const arrow = on ? (sorts[panelKey].asc ? '↑' : '↓') : '↕';
+  return `<th ${style} data-col="${col}" class="${on ? 'sorted' : ''}" onclick="doSort('${panelKey}','${col}')"
+    title="${label} 기준 정렬">${label} <span class="si">${arrow}</span></th>`;
+}
+
 function renderTable(id, rows, page, panelKey, defaultColor) {
   const wrap = document.getElementById(id);
   const pageRows = rows.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE);
@@ -1014,16 +1059,16 @@ function renderTable(id, rows, page, panelKey, defaultColor) {
   }
   wrap.innerHTML = `<table>
     <thead><tr>
-      <th onclick="doSort('${panelKey}','발행일시')" data-col="발행일시" class="${sorts[panelKey].col==='발행일시'?'sorted':''}">날짜 <span class="si">↕</span></th>
-      ${panelKey!=='ours'?'<th>병원</th>':''}
-      ${panelKey==='paper'?'':'<th>키워드</th>'}
-      <th onclick="doSort('${panelKey}','매체')" data-col="매체" class="${sorts[panelKey].col==='매체'?'sorted':''}">매체 <span class="si">↕</span></th>
-      ${panelKey==='paper'?`<th onclick="doSort('paper','지면')" data-col="지면" class="${sorts.paper.col==='지면'?'sorted':''}">면 <span class="si">↕</span></th>`:''}
-      <th>제목</th>
-      <th style="white-space:nowrap">기자</th>
-      <th style="white-space:nowrap">교수명</th>
-      ${panelKey==='paper'?'':'<th class="td-summary">요약</th>'}
-      <th style="white-space:nowrap;min-width:50px">링크</th>
+      ${sortTh(panelKey,'날짜','발행일시')}
+      ${panelKey!=='ours'?'<th class="nosort">병원</th>':''}
+      ${panelKey==='paper'?'':'<th class="nosort">키워드</th>'}
+      ${sortTh(panelKey,'매체','매체')}
+      ${panelKey==='paper'?sortTh('paper','면','지면'):''}
+      <th class="nosort">제목</th>
+      <th class="nosort" style="white-space:nowrap">기자</th>
+      <th class="nosort" style="white-space:nowrap">교수명</th>
+      ${panelKey==='paper'?'':'<th class="nosort td-summary">요약</th>'}
+      <th class="nosort" style="white-space:nowrap;min-width:50px">링크</th>
     </tr></thead>
     <tbody>${pageRows.map(r => {
       const hKey = Object.keys(HOSPITALS).find(k=>HOSPITALS[k].group===r['병원그룹']);
