@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-09-22 10:37",
-  "전체기사": 19020,
+  "실행시각": "2026-09-23 07:10",
+  "전체기사": 19270,
   "지면": {
-    "대상": 105,
-    "요청": 72,
-    "게재확인": 0,
-    "미게재": 105,
+    "대상": 84,
+    "요청": 69,
+    "게재확인": 5,
+    "미게재": 79,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,29 +14,29 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 4762,
+    "대상": 4585,
     "요청": 800,
-    "채움": 410,
-    "이름없음": 27,
-    "오류": 37,
-    "차단호스트": 6,
-    "네이버바이라인없음": 318,
+    "채움": 408,
+    "이름없음": 43,
+    "오류": 13,
+    "차단호스트": 5,
+    "네이버바이라인없음": 331,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/421/0009183753",
-      "길이": 251064,
-      "title": "신장이식 후 보존, 혈압관리 중요…잘 관리하면 저하 위험 53%↓",
+      "url": "https://n.news.naver.com/mnews/article/421/0009187211",
+      "길이": 253236,
+      "title": "\"유방암 수술 후 방사선치료, 피부암 위험 높이지 않았다\"",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "예산소진": true,
-    "남은대상": 4325
+    "남은대상": 4107
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 533,
-    "표시기사": 2686
+    "표시기사": 2788
   },
   "결과": "완료"
 }
