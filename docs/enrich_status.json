@@ -1,10 +1,10 @@
 {
-  "실행시각": "2026-09-24 07:18",
-  "전체기사": 19438,
+  "실행시각": "2026-09-24 10:26",
+  "전체기사": 19440,
   "지면": {
-    "대상": 107,
+    "대상": 98,
     "요청": 73,
-    "게재확인": 9,
+    "게재확인": 0,
     "미게재": 98,
     "오류": 0
   },
@@ -14,29 +14,29 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 3854,
+    "대상": 3423,
     "요청": 800,
-    "채움": 399,
-    "이름없음": 38,
-    "오류": 12,
+    "채움": 380,
+    "이름없음": 47,
+    "오류": 16,
     "차단호스트": 6,
-    "네이버바이라인없음": 344,
+    "네이버바이라인없음": 349,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/661/0000083771",
-      "길이": 266016,
-      "title": "'악덕 고용주' 의혹에 국힘 김민수 \"추석 끝나고 법적 조치\"",
+      "url": "https://n.news.naver.com/mnews/article/421/0009188281",
+      "길이": 251156,
+      "title": "손바닥만 했던 '팡팡 레인저' 오둥이…\"우리들 두 살 됐어요\"",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "예산소진": true,
-    "남은대상": 3417
+    "남은대상": 2996
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 533,
-    "표시기사": 2948
+    "표시기사": 3009
   },
   "결과": "완료"
 }
