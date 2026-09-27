@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-09-27 10:30",
-  "전체기사": 19562,
+  "실행시각": "2026-09-28 07:13",
+  "전체기사": 19607,
   "지면": {
-    "대상": 71,
-    "요청": 67,
-    "게재확인": 0,
-    "미게재": 71,
+    "대상": 55,
+    "요청": 56,
+    "게재확인": 1,
+    "미게재": 54,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,29 +14,28 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 1041,
-    "요청": 800,
-    "채움": 307,
-    "이름없음": 43,
-    "오류": 28,
+    "대상": 736,
+    "요청": 625,
+    "채움": 150,
+    "이름없음": 17,
+    "오류": 35,
     "차단호스트": 5,
-    "네이버바이라인없음": 416,
+    "네이버바이라인없음": 415,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/421/0009192007",
-      "길이": 266183,
-      "title": "[르포]\"아버님, 눈 떠보세요\"…쉴 틈 없는 '동해안 최종 응급실'의 추석",
+      "url": "https://n.news.naver.com/mnews/article/030/0003470093",
+      "길이": 269438,
+      "title": "수천억 투입·암종 확대…대형병원, 양성자·중입자 인프라 경쟁",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
-    "예산소진": true,
-    "남은대상": 691
+    "남은대상": 569
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 533,
-    "표시기사": 3477
+    "표시기사": 3495
   },
   "결과": "완료"
 }
