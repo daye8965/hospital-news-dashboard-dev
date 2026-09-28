@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-09-29 08:23",
-  "전체기사": 19878,
+  "실행시각": "2026-09-29 08:49",
+  "전체기사": 19884,
   "지면": {
-    "대상": 62,
-    "요청": 54,
-    "게재확인": 6,
-    "미게재": 56,
+    "대상": 58,
+    "요청": 53,
+    "게재확인": 0,
+    "미게재": 58,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,28 +14,28 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 771,
-    "요청": 639,
-    "채움": 198,
-    "이름없음": 15,
-    "오류": 15,
-    "차단호스트": 6,
-    "네이버바이라인없음": 404,
+    "대상": 565,
+    "요청": 429,
+    "채움": 11,
+    "이름없음": 2,
+    "오류": 10,
+    "차단호스트": 5,
+    "네이버바이라인없음": 400,
     "네이버진단": {
       "url": "https://n.news.naver.com/mnews/article/421/0009195772",
-      "길이": 261009,
+      "길이": 261317,
       "title": "충남대병원 한국형 ARPA-H 프로젝트 공동연구개발기관 선정",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
-    "남은대상": 558
+    "남은대상": 552
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 533,
-    "표시기사": 3545
+    "표시기사": 3548
   },
   "결과": "완료"
 }
