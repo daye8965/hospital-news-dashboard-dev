@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-10-02 11:17",
-  "전체기사": 20716,
+  "실행시각": "2026-10-03 07:58",
+  "전체기사": 20902,
   "지면": {
-    "대상": 94,
-    "요청": 69,
-    "게재확인": 0,
-    "미게재": 94,
+    "대상": 97,
+    "요청": 70,
+    "게재확인": 4,
+    "미게재": 93,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,28 +14,28 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 584,
-    "요청": 442,
-    "채움": 8,
-    "이름없음": 0,
-    "오류": 10,
-    "차단호스트": 6,
-    "네이버바이라인없음": 417,
+    "대상": 768,
+    "요청": 627,
+    "채움": 174,
+    "이름없음": 14,
+    "오류": 11,
+    "차단호스트": 5,
+    "네이버바이라인없음": 422,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/421/0009203809",
-      "길이": 260986,
-      "title": "국립대병원 연구역량도 격차…서울대병원 SCIE 논문, 2위 전남대의 4배",
+      "url": "https://n.news.naver.com/mnews/article/421/0009207322",
+      "길이": 251218,
+      "title": "탄광서 쌓은 진폐증 진료 경험 몽골로…서울성모병원 광산 조사",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
-    "남은대상": 576
+    "남은대상": 580
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 532,
-    "표시기사": 3701
+    "표시기사": 3736
   },
   "결과": "완료"
 }
