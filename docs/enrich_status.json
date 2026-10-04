@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-10-04 07:08",
-  "전체기사": 20980,
+  "실행시각": "2026-10-04 11:41",
+  "전체기사": 20981,
   "지면": {
-    "대상": 76,
-    "요청": 70,
-    "게재확인": 5,
-    "미게재": 71,
+    "대상": 72,
+    "요청": 67,
+    "게재확인": 0,
+    "미게재": 72,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,28 +14,28 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 657,
-    "요청": 518,
-    "채움": 69,
-    "이름없음": 5,
-    "오류": 12,
-    "차단호스트": 6,
-    "네이버바이라인없음": 424,
+    "대상": 585,
+    "요청": 442,
+    "채움": 4,
+    "이름없음": 1,
+    "오류": 11,
+    "차단호스트": 5,
+    "네이버바이라인없음": 420,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/022/0004163825",
-      "길이": 247658,
-      "title": "젊은 뇌경색, 심장 속 ‘작은 통로’ 탓일 수도 [김태정의 진료실은 오늘도 맑음]",
+      "url": "https://n.news.naver.com/mnews/article/449/0000362908",
+      "길이": 269437,
+      "title": "박지만 입 열었다…“우리 아버지 그리 미운가”",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
-    "남은대상": 583
+    "남은대상": 580
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 532,
-    "표시기사": 3746
+    "표시기사": 3747
   },
   "결과": "완료"
 }
