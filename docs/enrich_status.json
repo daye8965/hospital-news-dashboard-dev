@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-10-06 12:00",
-  "전체기사": 21117,
+  "실행시각": "2026-10-07 08:04",
+  "전체기사": 21357,
   "지면": {
-    "대상": 55,
-    "요청": 57,
-    "게재확인": 1,
-    "미게재": 54,
+    "대상": 70,
+    "요청": 69,
+    "게재확인": 12,
+    "미게재": 58,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,28 +14,28 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 583,
-    "요청": 439,
-    "채움": 3,
-    "이름없음": 0,
-    "오류": 9,
+    "대상": 820,
+    "요청": 676,
+    "채움": 205,
+    "이름없음": 18,
+    "오류": 18,
     "차단호스트": 5,
-    "네이버바이라인없음": 421,
+    "네이버바이라인없음": 429,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/421/0009210322",
-      "길이": 250943,
-      "title": "빛으로 신경세포 켜고 끈다…뇌의 비밀 밝힌 '광유전학'",
+      "url": "https://n.news.naver.com/mnews/article/009/0005744626",
+      "길이": 250347,
+      "title": "\"피부 ECM 안전성 95% 이상 신뢰\"… 커지는 시장, 과학적 관리 기준 필요",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
-    "남은대상": 580
+    "남은대상": 597
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 532,
-    "표시기사": 3784
+    "표시기사": 3840
   },
   "결과": "완료"
 }
