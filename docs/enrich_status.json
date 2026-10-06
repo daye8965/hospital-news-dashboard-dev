@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-10-05 12:27",
-  "전체기사": 21133,
+  "실행시각": "2026-10-06 09:50",
+  "전체기사": 21117,
   "지면": {
-    "대상": 95,
-    "요청": 66,
-    "게재확인": 6,
-    "미게재": 89,
+    "대상": 65,
+    "요청": 61,
+    "게재확인": 10,
+    "미게재": 55,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,17 +14,17 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 689,
-    "요청": 538,
-    "채움": 97,
-    "이름없음": 9,
-    "오류": 9,
+    "대상": 662,
+    "요청": 521,
+    "채움": 74,
+    "이름없음": 5,
+    "오류": 12,
     "차단호스트": 5,
-    "네이버바이라인없음": 423,
+    "네이버바이라인없음": 424,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/421/0009208713",
-      "길이": 252288,
-      "title": "[100세건강] \"애는 언제 낳니\"…임신 결심했다면 꼭 챙길 것은",
+      "url": "https://n.news.naver.com/mnews/article/015/0005339319",
+      "길이": 274064,
+      "title": "소주 한 두잔은 괜찮을 줄 알았더니…뜻밖의 경고",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
@@ -35,7 +35,7 @@
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 532,
-    "표시기사": 3762
+    "표시기사": 3782
   },
   "결과": "완료"
 }
