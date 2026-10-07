@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-10-07 08:04",
-  "전체기사": 21357,
+  "실행시각": "2026-10-07 11:24",
+  "전체기사": 21362,
   "지면": {
-    "대상": 70,
-    "요청": 69,
-    "게재확인": 12,
-    "미게재": 58,
+    "대상": 59,
+    "요청": 63,
+    "게재확인": 0,
+    "미게재": 59,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,28 +14,28 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 820,
-    "요청": 676,
-    "채움": 205,
-    "이름없음": 18,
-    "오류": 18,
+    "대상": 603,
+    "요청": 455,
+    "채움": 12,
+    "이름없음": 1,
+    "오류": 11,
     "차단호스트": 5,
-    "네이버바이라인없음": 429,
+    "네이버바이라인없음": 425,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/009/0005744626",
-      "길이": 250347,
-      "title": "\"피부 ECM 안전성 95% 이상 신뢰\"… 커지는 시장, 과학적 관리 기준 필요",
+      "url": "https://n.news.naver.com/mnews/article/421/0009212140",
+      "길이": 252744,
+      "title": "\"수술 전 딱 8개만 보면 안다\"…AI가 콩팥 손상 위험 잡아낸다",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
-    "남은대상": 597
+    "남은대상": 590
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 532,
-    "표시기사": 3840
+    "표시기사": 3816
   },
   "결과": "완료"
 }
