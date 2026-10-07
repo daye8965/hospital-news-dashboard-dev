@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-10-07 11:24",
-  "전체기사": 21362,
+  "실행시각": "2026-10-08 08:35",
+  "전체기사": 21640,
   "지면": {
-    "대상": 59,
-    "요청": 63,
-    "게재확인": 0,
-    "미게재": 59,
+    "대상": 87,
+    "요청": 68,
+    "게재확인": 8,
+    "미게재": 79,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,28 +14,28 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 603,
-    "요청": 455,
-    "채움": 12,
-    "이름없음": 1,
-    "오류": 11,
+    "대상": 872,
+    "요청": 726,
+    "채움": 247,
+    "이름없음": 19,
+    "오류": 21,
     "차단호스트": 5,
-    "네이버바이라인없음": 425,
+    "네이버바이라인없음": 433,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/421/0009212140",
-      "길이": 252744,
-      "title": "\"수술 전 딱 8개만 보면 안다\"…AI가 콩팥 손상 위험 잡아낸다",
+      "url": "https://n.news.naver.com/mnews/article/468/0001271211",
+      "길이": 228346,
+      "title": "조용호“오산시 미래 결정 핵심은 교통과 일자리...기회 확대하겠다”",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
-    "남은대상": 590
+    "남은대상": 606
   },
   "출입기자": {
     "결과": "대조 완료",
-    "명단인원": 532,
-    "표시기사": 3816
+    "명단인원": 534,
+    "표시기사": 3862
   },
   "결과": "완료"
 }
