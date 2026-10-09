@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-10-08 11:42",
-  "전체기사": 21647,
+  "실행시각": "2026-10-09 08:45",
+  "전체기사": 21889,
   "지면": {
-    "대상": 80,
-    "요청": 67,
-    "게재확인": 0,
-    "미게재": 80,
+    "대상": 103,
+    "요청": 72,
+    "게재확인": 7,
+    "미게재": 96,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,28 +14,28 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 615,
-    "요청": 466,
-    "채움": 17,
-    "이름없음": 1,
-    "오류": 12,
+    "대상": 848,
+    "요청": 701,
+    "채움": 223,
+    "이름없음": 15,
+    "오류": 23,
     "차단호스트": 5,
-    "네이버바이라인없음": 430,
+    "네이버바이라인없음": 434,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/421/0009215441",
-      "길이": 250550,
-      "title": "오가노이드사이언스, 美 CGT 무대서 NAMs·재생치료제 잇단 발표",
+      "url": "https://n.news.naver.com/mnews/article/449/0000363500",
+      "길이": 274750,
+      "title": "[단독]“비만약 먹고 시력 나빠졌다”…4천명 이상 진료",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
-    "남은대상": 597
+    "남은대상": 610
   },
   "출입기자": {
     "결과": "대조 완료",
-    "명단인원": 534,
-    "표시기사": 3870
+    "명단인원": 535,
+    "표시기사": 3921
   },
   "결과": "완료"
 }
