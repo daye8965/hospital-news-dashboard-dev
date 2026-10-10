@@ -1,10 +1,10 @@
 {
-  "실행시각": "2026-10-10 08:17",
+  "실행시각": "2026-10-10 11:21",
   "전체기사": 21928,
   "지면": {
-    "대상": 98,
-    "요청": 62,
-    "게재확인": 6,
+    "대상": 92,
+    "요청": 59,
+    "게재확인": 0,
     "미게재": 92,
     "오류": 0
   },
@@ -14,23 +14,23 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 643,
-    "요청": 495,
-    "채움": 37,
-    "이름없음": 4,
-    "오류": 15,
+    "대상": 602,
+    "요청": 452,
+    "채움": 2,
+    "이름없음": 2,
+    "오류": 11,
     "차단호스트": 5,
-    "네이버바이라인없음": 433,
+    "네이버바이라인없음": 431,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/243/0000104017",
-      "길이": 251056,
-      "title": "“탈모약 오래 먹으면 간 망가진다?”… 의사가 밝힌 진실은",
+      "url": "https://n.news.naver.com/mnews/article/421/0009216797",
+      "길이": 250907,
+      "title": "숨 멎어가던 60대 승객…퇴근하던 15년차 간호사가 살렸다",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
-    "남은대상": 602
+    "남은대상": 598
   },
   "출입기자": {
     "결과": "대조 완료",
