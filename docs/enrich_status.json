@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-10-11 10:55",
-  "전체기사": 21955,
+  "실행시각": "2026-10-12 07:55",
+  "전체기사": 22002,
   "지면": {
-    "대상": 78,
-    "요청": 52,
-    "게재확인": 0,
-    "미게재": 78,
+    "대상": 59,
+    "요청": 58,
+    "게재확인": 4,
+    "미게재": 55,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,17 +14,17 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 599,
-    "요청": 448,
-    "채움": 2,
-    "이름없음": 0,
-    "오류": 10,
+    "대상": 644,
+    "요청": 493,
+    "채움": 41,
+    "이름없음": 6,
+    "오류": 9,
     "차단호스트": 5,
-    "네이버바이라인없음": 430,
+    "네이버바이라인없음": 431,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/353/0000056819",
-      "길이": 228545,
-      "title": "무릎 아프면 쉬어야 한다? 관절염 첫 번째 약은 운동",
+      "url": "https://n.news.naver.com/mnews/article/421/0009220403",
+      "길이": 262243,
+      "title": "장애인 고용 못 채운 서울대병원…4년 간 부담금만 94억",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
@@ -35,7 +35,7 @@
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 535,
-    "표시기사": 3945
+    "표시기사": 3953
   },
   "결과": "완료"
 }
