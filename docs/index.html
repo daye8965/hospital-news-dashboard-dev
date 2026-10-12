@@ -1235,23 +1235,55 @@ function pressMatches(item) {
   return found;
 }
 
+// 기사 하나는 보도자료 하나에만 — 날짜가 가깝고 주제어가 겹치는 보도자료가 여럿이면
+// 점수가 가장 높은 쪽으로 보낸다. 이게 없으면 10/13 '로봇 전립선 조직검사' 보도자료가
+// 10/12 '전립선암 방사선치료' 기사를 통째로 가져간다.
+// 배정은 화면 기간 필터와 무관하게 전체 보도자료로 한 번에 한다 — 그래야 기간을 좁혀도 결과가 같다.
+let pressAssignCache = null;
+function pressAssignments(dataFrom) {
+  if (pressAssignCache) return pressAssignCache;
+  const items = pressData.filter(it => it['날짜'] >= dataFrom);
+  const hitsPer = items.map(it => pressMatches(it));
+  const best = new Map();   // 기사 → {score, idx}
+  hitsPer.forEach((hits, idx) => {
+    for (const h of hits) {
+      const prev = best.get(h.r);
+      if (prev && prev.score > h.score) continue;
+      // 점수가 같으면 배포일이 기사 날짜에 더 가까운 보도자료가 가져간다
+      if (prev && prev.score === h.score) {
+        const day = (h.r['날짜'] || '').slice(0, 10);
+        const gapNew = Math.abs(new Date(day) - new Date(items[idx]['날짜']));
+        const gapOld = Math.abs(new Date(day) - new Date(items[prev.idx]['날짜']));
+        if (gapOld <= gapNew) continue;
+      }
+      best.set(h.r, {score: h.score, idx});
+    }
+  });
+  pressAssignCache = new Map();
+  hitsPer.forEach((hits, idx) =>
+    pressAssignCache.set(items[idx], hits.filter(h => best.get(h.r).idx === idx)));
+  return pressAssignCache;
+}
+
 // 기사 수집이 시작되기 전의 보도자료는 게재 0건으로 보일 수밖에 없어 아예 빼고 센다
 function pressRows() {
   if (!pressData.length || !allData.length) return {rows: [], dataFrom: '', dataTo: ''};
   const days = allData.map(r => (r['날짜'] || '').slice(0, 10)).filter(Boolean).sort();
   const dataFrom = days[0], dataTo = days[days.length - 1];
+  const assigned = pressAssignments(dataFrom);
   const {dateFrom, dateTo} = getFilters();
   const zeroOnly = document.getElementById('press-zero-only').checked;
   const rows = pressData
     .filter(it => it['날짜'] >= dataFrom)
     .filter(it => (!dateFrom || it['날짜'] >= dateFrom) && (!dateTo || it['날짜'] <= dateTo))
     .map(it => {
-      const hits = pressMatches(it);
+      const hits = assigned.get(it) || [];
       const media = new Set(hits.map(h => mediaOf(h.r)));
       return {it, hits, media,
               paper: hits.filter(h => hasPaper(h.r)).length,
               beat:  hits.filter(h => h.r['출입기자'] === 'Y').length,
-              pending: it['날짜'] > dataTo};   // 아직 수집이 안 닿은 미래 배포 건
+              // 배포일이 수집 범위를 넘어선 건 — 엠바고로 하루 먼저 난 기사는 잡힐 수 있다
+              pending: it['날짜'] > dataTo};
     })
     .filter(x => !zeroOnly || (x.hits.length === 0 && !x.pending));
   rows.sort((a, b) => reportSortPress(a, b));
