@@ -1295,7 +1295,17 @@ function reportSortPress(a, b) {
   const dir = pressSort.asc ? 1 : -1;
   if (pressSort.col === '게재') return (a.hits.length - b.hits.length) * dir;
   if (pressSort.col === '매체') return (a.media.size - b.media.size) * dir;
+  if (pressSort.col === '담당') {
+    const cmp = pressOwner(a.it).localeCompare(pressOwner(b.it), 'ko') * dir;
+    if (cmp) return cmp;
+    return b.it['날짜'].localeCompare(a.it['날짜']);   // 같은 담당자면 최근 배포가 위로
+  }
   return a.it['날짜'].localeCompare(b.it['날짜']) * dir;
+}
+
+// 공동 담당은 시트에 줄바꿈이나 쉼표로 들어 있다 (박준규 / 오혜성) → '박준규·오혜성'
+function pressOwner(it) {
+  return (it['담당'] || '').trim().split(/[\s,/]+/).filter(Boolean).join('·');
 }
 function doPressSort(col) {
   if (pressSort.col === col) pressSort.asc = !pressSort.asc;
@@ -1337,6 +1347,7 @@ function renderPress() {
   wrap.innerHTML = `<table>
     <thead><tr>
       ${pressTh('배포일', '배포일', 'style="width:84px"')}
+      ${pressTh('담당', '담당', 'style="width:84px"')}
       <th class="nosort">보도자료</th>
       <th class="nosort" style="white-space:nowrap">의료진</th>
       ${pressTh('게재', '게재', 'style="width:78px;white-space:nowrap"')}
@@ -1352,6 +1363,7 @@ function renderPress() {
         : (x.hits.length ? `<b style="color:#1a7a3c">${x.hits.length}</b>` : '<span class="badge-none">0</span>');
       const main = `<tr class="press-row" onclick="togglePress('${key}')">
         <td class="td-date">${x.it['날짜'].slice(5).replace('-', '/')}</td>
+        <td style="font-size:12px;color:var(--text);white-space:nowrap">${pressOwner(x.it) || '—'}</td>
         <td class="td-title">${open ? '▾ ' : '▸ '}${x.it['제목']}
           ${x.it['배포범위'] ? `<span style="font-size:11px;color:var(--muted);margin-left:6px">${x.it['배포범위']}</span>` : ''}</td>
         <td style="font-size:12px;color:#1a5fa8;white-space:nowrap">${(x.it['의료진'] || []).join(', ') || '—'}</td>
@@ -1374,20 +1386,21 @@ function renderPress() {
                <td class="td-reporter">${reporterCell(h.r)}</td>
              </tr>`;
            }).join('')}</tbody></table>`;
-      return main + `<tr class="press-sub"><td colspan="7">${sub}</td></tr>`;
+      return main + `<tr class="press-sub"><td colspan="8">${sub}</td></tr>`;
     }).join('')}</tbody></table>`;
 }
 
 function downloadPressExcel() {
   const {rows} = pressRows();
-  const data = [['배포일', '보도자료', '의료진', '진료과', '배포범위', '게재 건수', '매체 수', '지면', '출입기자', '게재 매체']];
+  const data = [['배포일', '담당', '보도자료', '의료진', '진료과', '배포범위', '게재 건수', '매체 수', '지면', '출입기자', '게재 매체']];
   rows.forEach(x => data.push([
-    x.it['날짜'], x.it['제목'], (x.it['의료진'] || []).join(', '), x.it['진료과'] || '', x.it['배포범위'] || '',
+    x.it['날짜'], pressOwner(x.it), x.it['제목'], (x.it['의료진'] || []).join(', '),
+    x.it['진료과'] || '', x.it['배포범위'] || '',
     x.pending ? '수집 전' : x.hits.length, x.media.size, x.paper, x.beat,
     [...x.media].join(', '),
   ]));
   const ws = XLSX.utils.aoa_to_sheet(data);
-  ws['!cols'] = [{wch:11},{wch:50},{wch:14},{wch:12},{wch:14},{wch:9},{wch:8},{wch:6},{wch:9},{wch:60}];
+  ws['!cols'] = [{wch:11},{wch:12},{wch:50},{wch:14},{wch:12},{wch:14},{wch:9},{wch:8},{wch:6},{wch:9},{wch:60}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, '보도자료 게재율');
   const {dateFrom, dateTo} = getFilters();
