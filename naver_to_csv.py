@@ -11,7 +11,12 @@ CLIENT_SECRET = os.environ.get("NAVER_CLIENT_SECRET", "")
 
 # ── 병원별 검색 키워드 ────────────────────────────────────────────────────────
 HOSPITAL_QUERIES = {
-    "아산":    ["서울아산병원", "아산병원"],
+    # 재단 보도자료는 기사에 병원 이름이 안 나오는 경우가 많아 '서울아산병원'만으로는 빠진다
+    # (2026-09 아산재단 네팔 구호 보도자료는 이 때문에 1건만 수집됐다).
+    # 네이버는 공백을 AND로 처리하지 않아 '아산사회복지재단 심포지움'으로 검색하면
+    # 재단과 무관한 심포지엄 기사가 쏟아진다. 그래서 재단 이름으로만 넓게 긁고
+    # 아래 FOUNDATION_MUST_HAVE 로 추려 낸다.
+    "아산":    ["서울아산병원", "아산병원", "아산사회복지재단"],
     # 울산의대 제거 → 의대입시/지역의사제/울산범죄 노이즈 주범
     # 성대의대/성균관의대 제거 → 삼성병원 제거 → 타병원/제약 노이즈
     "삼성":    ["삼성서울병원", "성균관의대"],
@@ -100,7 +105,19 @@ MAX_BACKFILL_DAYS = 7   # 네이버 API가 되짚을 수 있는 현실적 한계
 
 def _resolve_start_date():
     """CSV의 마지막 수집일 다음 날부터 수집.
-    스케줄 실행이 지연·누락돼도 빠진 날짜를 다음 실행에서 자동으로 메운다."""
+    스케줄 실행이 지연·누락돼도 빠진 날짜를 다음 실행에서 자동으로 메운다.
+
+    COLLECT_FROM=2026-06-11 처럼 날짜를 주면 그 날부터 다시 수집한다.
+    검색어를 새로 넣었을 때 과거 기사를 한 번 채우려고 쓰는 수동 옵션이며,
+    이미 저장된 기사는 링크·제목으로 걸러지므로 중복이 쌓이지 않는다."""
+    forced = os.environ.get("COLLECT_FROM", "").strip()
+    if forced:
+        try:
+            day = datetime.strptime(forced, "%Y-%m-%d").date()
+            print(f"COLLECT_FROM 지정 — {day}부터 다시 수집합니다")
+            return min(day, target_date)
+        except ValueError:
+            print(f"COLLECT_FROM 형식이 잘못됨({forced}) — 평소 규칙대로 진행")
     earliest = target_date - timedelta(days=MAX_BACKFILL_DAYS - 1)
     if not CSV_PATH.exists():
         return target_date
@@ -287,6 +304,23 @@ def extract_professor(title, summary):
                     found.append(name)
     return ", ".join(found[:3])
 
+# '아산사회복지재단'으로 긁으면 재단 이름이 스쳐 갈 뿐인 기업·지자체 기사도 딸려 온다
+# (쿠팡 가전행사, HD현대 정기선 회장, 천안시 소식 등). 재단이 실제로 주체인 기사만 남긴다.
+FOUNDATION_QUERY = "아산사회복지재단"
+FOUNDATION_MUST_HAVE = ("아산사회복지재단", "아산재단")
+# 주의: '복지'·'재단'·'사회'는 넣지 말 것 — '아산사회복지재단' 자체에 들어 있어 조건이 무력해진다
+FOUNDATION_TOPICS = ("아산의학상", "아산상", "심포지", "장학", "수여식", "학술",
+                     "구호", "성금", "기부", "후원", "봉사", "지원사업", "의료봉사")
+
+
+def keep_foundation(title: str, summary: str = "") -> bool:
+    """재단 기사인지 — 재단 이름이 있고, 재단이 하는 일에 해당하는 말이 함께 있어야 한다"""
+    combined = title + " " + summary
+    if not any(k in combined for k in FOUNDATION_MUST_HAVE):
+        return False
+    return any(k in combined for k in FOUNDATION_TOPICS)
+
+
 def is_excluded(title: str, summary: str = "") -> bool:
     combined = title + " " + summary
     # 키워드 제외
@@ -324,6 +358,8 @@ def collect_news(query):
             if start_dt <= pub_dt < end_dt:
                 title = clean_text(item.get("title",""))
                 summ  = clean_text(item.get("description",""))
+                if query == FOUNDATION_QUERY and not keep_foundation(title, summ):
+                    continue
                 if not is_excluded(title, summ):
                     orig  = item.get("originallink","")
                     naver = item.get("link","")
