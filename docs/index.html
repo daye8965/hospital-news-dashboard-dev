@@ -760,6 +760,8 @@ const HOSP_PROF_RE = /(아산병원|삼성서울병원|세브란스|서울대병
 const BRANCH_RULES = [
   {re: /은평성모병원|여의도성모병원|의정부성모병원|대전성모병원|성빈센트병원|성바오로병원|동두천성모병원|포천성모병원/,
    main: '서울성모병원'},
+  // 원주세브란스기독병원 — 연세대 원주캠퍼스 소속 별개 병원. 원주 지역 기사가 대량으로 딸려 온다
+  {re: /원주세브란스|세브란스기독병원/, main: '세브란스병원'},
 ];
 function isBranchArticle(title, headSumm) {
   return BRANCH_RULES.some(({re, main}) =>
