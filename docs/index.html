@@ -1078,6 +1078,7 @@ const PRESS_BEFORE = 1;      // 엠바고를 깨고 하루 먼저 나오는 기�
 const PRESS_AFTER  = 7;      // 전문지는 1주일쯤 뒤에 받아쓰기도 한다
 const PRESS_MIN_SCORE = 6.0;
 const PRESS_RARE = 5.2;      // 이보다 드문 말이 기사 '제목'에 있으면 점수가 모자라도 인정한다
+const PRESS_RARE_LONG = 4.5; // 3글자 이상이면 조금 덜 드물어도 인정 ('아산상' 같은 고유명사)
 const PRESS_DOCTOR_WEIGHT = 4.0;
 // 거의 모든 기사에 들어 있어 변별력이 없는 말들
 const PRESS_STOP = new Set(`서울아산병원 아산병원 서울 아산 병원 교수 연구팀 국내 최초 세계 규명 개최 발표
@@ -1146,7 +1147,9 @@ function pressMatches(item) {
       for (const [k, w] of keys) {
         if (!a.text.includes(k)) continue;
         score += w;
-        if (w >= PRESS_RARE && a.title.includes(k)) titleRare = true;
+        // '아산상'·'태아심장센터'처럼 그 자체로 사건을 가리키는 말이 기사 제목에 박혀 있으면
+        // 본문 점수가 모자라도 그 보도자료 기사로 본다
+        if (a.title.includes(k) && (w >= PRESS_RARE || (w >= PRESS_RARE_LONG && k.length >= 3))) titleRare = true;
       }
       if (!score) continue;
       const byDoctor = (item['의료진'] || []).some(n => a.text.includes(n));
