@@ -755,6 +755,17 @@ const PHARMA_RE = /유한양행|대웅제약|한미약품|종근당|녹십자|�
 const HOSP_NAME_RE = /아산병원|삼성서울병원|세브란스|서울대병원|서울대학교병원|서울성모병원|연세암병원/;
 const HOSP_PROF_RE = /(아산병원|삼성서울병원|세브란스|서울대병원|서울대학교병원|서울성모병원|연세암병원)[^.]{0,40}교수/;
 
+// 분원 기사 — 본원 이름이 함께 나오지 않으면 그 분원 기사로 본다.
+// 제목에 분원만 있고 본원은 요약에만 있는 경우(SCL사이언스, 은평성모병원 원내 코드 확보)도 분원 기사다.
+const BRANCH_RULES = [
+  {re: /은평성모병원|여의도성모병원|의정부성모병원|대전성모병원|성빈센트병원|성바오로병원|동두천성모병원|포천성모병원/,
+   main: '서울성모병원'},
+];
+function isBranchArticle(title, headSumm) {
+  return BRANCH_RULES.some(({re, main}) =>
+    (re.test(headSumm) && !headSumm.includes(main)) || (re.test(title) && !title.includes(main)));
+}
+
 function isNoise(r) {
   if (r['검색어'] === '서울중앙병원') return true;
   if (FE_EXCLUDE_QUERY.includes(r['검색어'])) return true;
@@ -765,6 +776,7 @@ function isNoise(r) {
   // 강릉·정읍아산병원, 충남 아산시 등 — 서울아산병원이 함께 나오면 우리 기사일 수 있어 남긴다
   if (OTHER_ASAN_RE.test(headSumm) && !headSumm.includes('서울아산병원')) return true;
   if (PHARMA_RE.test(headSumm) && !HOSP_NAME_RE.test(r['제목'] || '') && !HOSP_PROF_RE.test(headSumm)) return true;
+  if (isBranchArticle(r['제목'] || '', headSumm)) return true;
   if (FE_EXCLUDE_KW.some(kw => combined.includes(kw))) return true;
   const url = (r['언론사원문']||r['네이버링크']||'').toLowerCase();
   return FE_EXCLUDE_MEDIA.some(m => url.includes(m));

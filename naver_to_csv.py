@@ -337,6 +337,17 @@ PHARMA_RE = re.compile(r"유한양행|대웅제약|한미약품|종근당|녹십
                        r"|아스트라제네카|로슈|화이자|MSD|노바티스|길리어드|애브비|베링거|암젠|사노피|얀센")
 HOSP_NAME_RE = re.compile(r"아산병원|삼성서울병원|세브란스|서울대병원|서울대학교병원|서울성모병원|연세암병원")
 HOSP_PROF_RE = re.compile(r"(아산병원|삼성서울병원|세브란스|서울대병원|서울대학교병원|서울성모병원|연세암병원)[^.]{0,40}교수")
+# 분원 기사 — 본원 이름이 함께 나오지 않으면 그 분원 기사로 본다
+BRANCH_RULES = [
+    (re.compile(r"은평성모병원|여의도성모병원|의정부성모병원|대전성모병원|성빈센트병원"
+                r"|성바오로병원|동두천성모병원|포천성모병원"), "서울성모병원"),
+]
+
+
+def is_branch_article(title: str, combined: str) -> bool:
+    return any((pat.search(combined) and main not in combined)
+               or (pat.search(title) and main not in title)
+               for pat, main in BRANCH_RULES)
 
 
 def keep_foundation(title: str, summary: str = "") -> bool:
@@ -363,6 +374,8 @@ def is_excluded(title: str, summary: str = "") -> bool:
     # 병원이 스쳐 지나갈 뿐이다. 교수가 나오는 기사는 실적에 잡히므로 남긴다
     if (PHARMA_RE.search(combined) and not HOSP_NAME_RE.search(title)
             and not HOSP_PROF_RE.search(combined)):
+        return True
+    if is_branch_article(title, combined):
         return True
     # 키워드 제외
     if any(kw in combined for kw in EXCLUDE_KEYWORDS):
