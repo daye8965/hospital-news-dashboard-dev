@@ -524,6 +524,70 @@ def parse_roster(values):
     return {"emails": emails, "by_name": by_name, "has_media": media_col is not None}
 
 
+# ── 4) 보도자료 목록 ─────────────────────────────────────────────────────────
+# 같은 구글 시트의 '언론 업무' 탭에서 구분이 '보도자료'인 행만 추려 둔다.
+# 대시보드가 이 목록과 수집 기사를 맞춰 보도자료별 게재 건수를 센다.
+PRESS_PATH  = Path("docs/press_releases.json")
+PRESS_RANGE = os.environ.get("PRESS_SHEET_RANGE", "").strip() or "'언론 업무'!A:M"
+# '언론 업무' 탭 4행이 머리글: 완·년도·월·게재일·구분·담당·제목/내용·진료과·의료진·요청·비고·배포범위
+P_YEAR, P_MONTH, P_DAY, P_KIND, P_OWNER, P_TITLE, P_DEPT, P_DOCTOR, P_SCOPE = 1, 2, 3, 4, 5, 6, 7, 8, 11
+
+
+def update_press_releases(status):
+    sa_json  = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
+    sheet_id = os.environ.get("REPORTER_SHEET_ID", "").strip()
+    if not (sa_json and sheet_id):
+        status["보도자료"] = {"결과": "시트 설정 없음 — 기존 목록 유지"}
+        return
+    try:
+        from google.oauth2 import service_account
+        from google.auth.transport.requests import AuthorizedSession
+        creds = service_account.Credentials.from_service_account_info(
+            json.loads(sa_json), scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"])
+        url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/{quote(PRESS_RANGE, safe='')}"
+        resp = AuthorizedSession(creds).get(url, timeout=30)
+        resp.raise_for_status()
+        values = resp.json().get("values", [])
+    except Exception as e:
+        status["보도자료"] = {"결과": f"불러오기 실패 ({type(e).__name__}) — 기존 목록 유지"}
+        return
+
+    def cell(row, i):
+        return str(row[i]).strip() if i < len(row) else ""
+
+    items, skipped = [], 0
+    for row in values:
+        if cell(row, P_KIND) != "보도자료":
+            continue
+        y, m, d = cell(row, P_YEAR), cell(row, P_MONTH), cell(row, P_DAY)
+        if not (y.isdigit() and m.isdigit() and d.isdigit()):
+            skipped += 1      # 배포일이 아직 안 정해진 건은 집계 대상이 아니다
+            continue
+        try:
+            day = datetime(int(y), int(m), int(d)).date()
+        except ValueError:
+            skipped += 1
+            continue
+        items.append({
+            "날짜": day.isoformat(),
+            "제목": re.sub(r"\s+", " ", cell(row, P_TITLE)),
+            "의료진": [n.strip() for n in re.split(r"[,/\n·]+", cell(row, P_DOCTOR))
+                     if re.fullmatch(r"[가-힣]{2,4}", n.strip())],
+            "진료과": re.sub(r"\s+", " ", cell(row, P_DEPT)),
+            "배포범위": re.sub(r"\s+", " ", cell(row, P_SCOPE)),
+            "담당": cell(row, P_OWNER),
+        })
+    if not items:
+        status["보도자료"] = {"결과": "보도자료 행을 찾지 못함 — 기존 목록 유지"}
+        return
+    items.sort(key=lambda x: x["날짜"])
+    PRESS_PATH.write_text(json.dumps(
+        {"생성": NOW.strftime("%Y-%m-%d %H:%M"), "건수": len(items), "목록": items},
+        ensure_ascii=False, indent=1), encoding="utf-8")
+    status["보도자료"] = {"목록": len(items), "배포일없음": skipped,
+                      "기간": f"{items[0]['날짜']} ~ {items[-1]['날짜']}"}
+
+
 def load_roster():
     """서비스 계정(권장) 또는 웹 게시 CSV 주소로 명단을 읽는다. 둘 다 없으면 None"""
     sa_json     = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
@@ -618,6 +682,7 @@ def main(status):
     apply_paper_manual(rows, status)   # 사람이 적은 지면이 네이버에서 찾은 값보다 우선
     enrich_bylines(rows, status, deadline)
     mark_beat_reporters(rows, status)
+    update_press_releases(status)      # 실패해도 기존 목록을 그대로 두고 넘어간다
 
     write_rows(rows)
     status["결과"] = "완료"

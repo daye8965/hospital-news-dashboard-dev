@@ -34,6 +34,14 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:1
 .tab-btn.active[data-tab="compare"]{color:var(--text);border-bottom-color:var(--text)}
 .tab-btn.active[data-tab="paper"]{color:#8a5a00;border-bottom-color:#8a5a00}
 .tab-btn.active[data-tab="report"]{color:var(--c-asan);border-bottom-color:var(--c-asan)}
+.tab-btn.active[data-tab="press"]{color:#1a7a3c;border-bottom-color:#1a7a3c}
+.press-row{cursor:pointer}
+.press-row:hover{background:var(--accent-bg)}
+.press-sub td{background:#fafaf8;padding:0}
+.press-sub table{margin:0}
+.press-sub thead th{background:#f2f2ee;font-size:10px}
+.badge-none{display:inline-block;font-size:10px;padding:1px 6px;border-radius:4px;background:#fdecec;color:#c0392b;font-weight:600}
+.badge-wait{display:inline-block;font-size:10px;padding:1px 6px;border-radius:4px;background:#f0f0ec;color:#888;font-weight:600}
 
 /* 보강 정보 뱃지 */
 .badge-beat{display:inline-block;font-size:10px;font-weight:600;color:#fff;background:#1a7a3c;padding:0 5px;border-radius:3px;margin-left:4px;vertical-align:1px}
@@ -178,6 +186,7 @@ td{padding:10px 12px;vertical-align:top}
   <button class="tab-btn"        data-tab="ours"   onclick="switchTab('ours')">🏥 우리병원</button>
   <button class="tab-btn"        data-tab="others" onclick="switchTab('others')">🔍 타병원</button>
   <button class="tab-btn"        data-tab="report" onclick="switchTab('report')">📑 서울아산병원-보고용</button>
+  <button class="tab-btn"        data-tab="press"  onclick="switchTab('press')">📣 보도자료 게재율</button>
   <button class="tab-btn"        data-tab="compare"onclick="switchTab('compare')">📊 병원 비교</button>
 </nav>
 
@@ -267,6 +276,15 @@ td{padding:10px 12px;vertical-align:top}
       <label class="check-label" style="margin-left:8px"><input type="checkbox" id="hide-suspect"> 제외 추정 기사 숨기기</label>
     </div>
     <div id="report-body"></div>
+  </div>
+
+  <!-- ⑥ 보도자료 게재율 탭 -->
+  <div id="panel-press" class="tab-panel">
+    <div class="notice notice-keep">📣 구글 시트 <b>'언론 업무'</b> 탭에서 구분이 <b>보도자료</b>이고 게재일이 적힌 건을 가져와, 배포일 전후에 수집된 서울아산병원 기사와 맞춰 봤습니다. <b>의료진 이름과 제목 키워드가 겹치는 기사</b>를 그 보도자료에서 나온 것으로 셉니다. 줄을 누르면 실제 기사 목록이 펼쳐집니다.
+      <label class="check-label" style="margin-left:8px"><input type="checkbox" id="press-zero-only"> 게재 0건만 보기</label>
+    </div>
+    <div class="stats-row" id="stats-press"></div>
+    <div class="table-wrap" id="table-press"></div>
   </div>
 </main>
 
@@ -544,6 +562,7 @@ const sorts = {
 };
 // 보고용 탭은 실적 양식대로 날짜 오름차순이 기본. 화면에서만 바꿀 수 있고 엑셀은 늘 날짜순으로 받는다
 const reportSort = {col:'날짜', asc:true};
+let pressData = [];   // docs/press_releases.json 의 보도자료 목록
 let selectedHosp = null; // null = 전체 타병원
 let paperHosp = null;    // null = 지면모음 전체 병원
 let barChart = null, pieChart = null;
@@ -570,6 +589,14 @@ async function init() {
     }
   } catch(e) {
     console.log('CSV 로드 실패, 샘플 데이터 사용:', e);
+  }
+
+  // 보도자료 목록 (없으면 보도자료 탭만 비어 보이고 나머지는 그대로 동작한다)
+  try {
+    const res = await fetch('./press_releases.json?t=' + Date.now());
+    if (res.ok) pressData = (await res.json())['목록'] || [];
+  } catch(e) {
+    console.log('보도자료 목록 로드 실패:', e);
   }
 
   document.getElementById('total-badge').textContent = `총 ${allData.length.toLocaleString()}건`;
@@ -643,7 +670,8 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-'+tab));
   document.getElementById('filter-bar').style.display = tab === 'compare' ? 'none' : 'flex';
   document.getElementById('excel-label').textContent =
-    tab === 'paper' ? '지면모음 엑셀 다운로드' : tab === 'report' ? '보고용 엑셀 다운로드' : '주간 엑셀 다운로드';
+    tab === 'paper' ? '지면모음 엑셀 다운로드' : tab === 'report' ? '보고용 엑셀 다운로드'
+    : tab === 'press' ? '게재율 엑셀 다운로드' : '주간 엑셀 다운로드';
   if (tab === 'compare') { renderCompare(); return; }
   updateKeywordOptions(tab);
   renderCurrent();
@@ -654,6 +682,7 @@ function renderCurrent() {
   else if (currentTab === 'others') renderOthers();
   else if (currentTab === 'paper')  renderPaper();
   else if (currentTab === 'report') renderReport();
+  else if (currentTab === 'press')  renderPress();
 }
 
 function updateKeywordOptions(tab) {
@@ -1041,6 +1070,188 @@ function renderReport() {
     }).join('');
 }
 
+// ── 보도자료 게재율 ───────────────────────────────────────────────────────────
+// 배포일 전후에 나온 아산 기사 중, 보도자료의 의료진 이름이나 제목 키워드가 겹치는 것을 센다.
+// 2026-06~10 보도자료 51건으로 맞춰 본 결과 기준이며, 사람이 본 것과 거의 일치했다.
+const PRESS_BEFORE = 1;      // 엠바고를 깨고 하루 먼저 나오는 기사가 있다
+const PRESS_AFTER  = 7;      // 전문지는 1주일쯤 뒤에 받아쓰기도 한다
+const PRESS_MIN_SCORE = 3;
+const PRESS_DOCTOR_WEIGHT = 3;
+// 거의 모든 기사에 들어 있어 변별력이 없는 말들
+const PRESS_STOP = new Set(`서울아산병원 아산병원 서울 아산 병원 교수 연구팀 국내 최초 세계 규명 개최 발표
+확인 성공 제시 기술 환자 치료 진단 수술 연구 질환 효과 가능 대상 관련 통해 위해 이후 기존 새로운 밝혀 입증`
+  .trim().split(/\s+/));
+
+function pressTokens(text) {
+  return new Set((text || '').split(/[^0-9A-Za-z가-힣]+/).filter(t => t.length >= 2 && !PRESS_STOP.has(t)));
+}
+
+let pressArticleCache = null;   // 아산 기사를 날짜별로 묶고 토큰을 미리 만들어 둔다
+function pressArticleIndex() {
+  if (pressArticleCache) return pressArticleCache;
+  const byDate = new Map();
+  for (const r of allData) {
+    if (r['병원그룹'] !== '아산' || isNoise(r)) continue;
+    const day = (r['날짜'] || '').slice(0, 10);
+    if (!day) continue;
+    if (!byDate.has(day)) byDate.set(day, []);
+    byDate.get(day).push({r, tokens: pressTokens((r['제목'] || '') + ' ' + (r['요약'] || '')),
+                          text: (r['제목'] || '') + ' ' + (r['요약'] || '')});
+  }
+  pressArticleCache = byDate;
+  return byDate;
+}
+
+function shiftDay(ymd, days) {
+  const d = new Date(ymd + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return ymdLocal(d);
+}
+
+function pressMatches(item) {
+  const idx = pressArticleIndex();
+  const want = pressTokens(item['제목']);
+  const found = [];
+  for (let off = -PRESS_BEFORE; off <= PRESS_AFTER; off++) {
+    for (const a of idx.get(shiftDay(item['날짜'], off)) || []) {
+      let shared = 0;
+      for (const t of want) if (a.tokens.has(t)) shared++;
+      const byDoctor = (item['의료진'] || []).some(n => a.text.includes(n));
+      const score = shared + (byDoctor ? PRESS_DOCTOR_WEIGHT : 0);
+      if (score >= PRESS_MIN_SCORE) found.push({r: a.r, score, shared, byDoctor});
+    }
+  }
+  found.sort((x, y) => y.score - x.score || (x.r['발행일시'] || '').localeCompare(y.r['발행일시'] || ''));
+  return found;
+}
+
+// 기사 수집이 시작되기 전의 보도자료는 게재 0건으로 보일 수밖에 없어 아예 빼고 센다
+function pressRows() {
+  if (!pressData.length || !allData.length) return {rows: [], dataFrom: '', dataTo: ''};
+  const days = allData.map(r => (r['날짜'] || '').slice(0, 10)).filter(Boolean).sort();
+  const dataFrom = days[0], dataTo = days[days.length - 1];
+  const {dateFrom, dateTo} = getFilters();
+  const zeroOnly = document.getElementById('press-zero-only').checked;
+  const rows = pressData
+    .filter(it => it['날짜'] >= dataFrom)
+    .filter(it => (!dateFrom || it['날짜'] >= dateFrom) && (!dateTo || it['날짜'] <= dateTo))
+    .map(it => {
+      const hits = pressMatches(it);
+      const media = new Set(hits.map(h => mediaOf(h.r)));
+      return {it, hits, media,
+              paper: hits.filter(h => hasPaper(h.r)).length,
+              beat:  hits.filter(h => h.r['출입기자'] === 'Y').length,
+              pending: it['날짜'] > dataTo};   // 아직 수집이 안 닿은 미래 배포 건
+    })
+    .filter(x => !zeroOnly || (x.hits.length === 0 && !x.pending));
+  rows.sort((a, b) => reportSortPress(a, b));
+  return {rows, dataFrom, dataTo};
+}
+
+const pressSort = {col: '배포일', asc: false};
+function reportSortPress(a, b) {
+  const dir = pressSort.asc ? 1 : -1;
+  if (pressSort.col === '게재') return (a.hits.length - b.hits.length) * dir;
+  if (pressSort.col === '매체') return (a.media.size - b.media.size) * dir;
+  return a.it['날짜'].localeCompare(b.it['날짜']) * dir;
+}
+function doPressSort(col) {
+  if (pressSort.col === col) pressSort.asc = !pressSort.asc;
+  else { pressSort.col = col; pressSort.asc = false; }
+  renderPress();
+}
+
+const pressOpen = new Set();
+function togglePress(key) {
+  if (pressOpen.has(key)) pressOpen.delete(key); else pressOpen.add(key);
+  renderPress();
+}
+
+function pressTh(label, col, style = '') {
+  const on = pressSort.col === col;
+  return `<th ${style} class="${on ? 'sorted' : ''}" onclick="doPressSort('${col}')"
+    title="${label} 기준 정렬">${label} <span class="si">${on ? (pressSort.asc ? '↑' : '↓') : '↕'}</span></th>`;
+}
+
+function renderPress() {
+  const {rows, dataFrom, dataTo} = pressRows();
+  document.getElementById('result-count').textContent = `${rows.length}건`;
+  const counted = rows.filter(x => !x.pending);
+  const total = counted.reduce((s, x) => s + x.hits.length, 0);
+  const zero = counted.filter(x => x.hits.length === 0).length;
+  document.getElementById('stats-press').innerHTML = [
+    statCard('배포 보도자료', counted.length, '#1a7a3c'),
+    statCard('게재 기사', total, '#1a7a3c'),
+    statCard('보도자료당 평균', counted.length ? (total / counted.length).toFixed(1) + '건' : '—', '#1a7a3c'),
+    statCard('게재 0건', zero, zero ? '#c0392b' : '#888'),
+  ].join('');
+
+  const wrap = document.getElementById('table-press');
+  if (!rows.length) {
+    wrap.innerHTML = `<div style="text-align:center;padding:50px 20px;color:var(--muted);font-size:13px">
+      해당 기간에 배포한 보도자료가 없습니다. (기사 수집은 ${dataFrom}부터라 그 이전 보도자료는 집계하지 않습니다)</div>`;
+    return;
+  }
+  wrap.innerHTML = `<table>
+    <thead><tr>
+      ${pressTh('배포일', '배포일', 'style="width:84px"')}
+      <th class="nosort">보도자료</th>
+      <th class="nosort" style="white-space:nowrap">의료진</th>
+      ${pressTh('게재', '게재', 'style="width:78px;white-space:nowrap"')}
+      ${pressTh('매체', '매체', 'style="width:66px"')}
+      <th class="nosort" style="width:54px">지면</th>
+      <th class="nosort" style="width:66px">출입기자</th>
+    </tr></thead>
+    <tbody>${rows.map((x, i) => {
+      const key = x.it['날짜'] + '|' + i;
+      const open = pressOpen.has(key);
+      const cnt = x.pending
+        ? '<span class="badge-wait">수집 전</span>'
+        : (x.hits.length ? `<b style="color:#1a7a3c">${x.hits.length}</b>` : '<span class="badge-none">0</span>');
+      const main = `<tr class="press-row" onclick="togglePress('${key}')">
+        <td class="td-date">${x.it['날짜'].slice(5).replace('-', '/')}</td>
+        <td class="td-title">${open ? '▾ ' : '▸ '}${x.it['제목']}
+          ${x.it['배포범위'] ? `<span style="font-size:11px;color:var(--muted);margin-left:6px">${x.it['배포범위']}</span>` : ''}</td>
+        <td style="font-size:12px;color:#1a5fa8;white-space:nowrap">${(x.it['의료진'] || []).join(', ') || '—'}</td>
+        <td style="font-family:var(--mono);font-size:14px;white-space:nowrap">${cnt}</td>
+        <td style="font-family:var(--mono);font-size:13px;color:var(--muted)">${x.media.size || '—'}</td>
+        <td style="font-family:var(--mono);font-size:13px;color:var(--muted)">${x.paper || '—'}</td>
+        <td style="font-family:var(--mono);font-size:13px;color:var(--muted)">${x.beat || '—'}</td>
+      </tr>`;
+      if (!open) return main;
+      const sub = !x.hits.length
+        ? `<div style="padding:14px 18px;color:var(--muted);font-size:12px">맞는 기사를 찾지 못했습니다.</div>`
+        : `<table><thead><tr><th class="nosort" style="width:96px">날짜</th><th class="nosort" style="width:110px">매체</th>
+             <th class="nosort">제목</th><th class="nosort" style="width:96px">기자</th></tr></thead>
+           <tbody>${x.hits.map(h => {
+             const link = h.r['언론사원문'] || h.r['네이버링크'] || '';
+             return `<tr>
+               <td class="td-date">${(h.r['발행일시'] || h.r['날짜'] || '').slice(0, 16)}</td>
+               <td class="td-media">${mediaOf(h.r)}${hasPaper(h.r) ? `<span class="badge-paper">${h.r['지면']}</span>` : ''}</td>
+               <td class="td-title">${link ? `<a href="${link}" target="_blank" rel="noopener">${h.r['제목']}</a>` : h.r['제목']}</td>
+               <td class="td-reporter">${reporterCell(h.r)}</td>
+             </tr>`;
+           }).join('')}</tbody></table>`;
+      return main + `<tr class="press-sub"><td colspan="7">${sub}</td></tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+function downloadPressExcel() {
+  const {rows} = pressRows();
+  const data = [['배포일', '보도자료', '의료진', '진료과', '배포범위', '게재 건수', '매체 수', '지면', '출입기자', '게재 매체']];
+  rows.forEach(x => data.push([
+    x.it['날짜'], x.it['제목'], (x.it['의료진'] || []).join(', '), x.it['진료과'] || '', x.it['배포범위'] || '',
+    x.pending ? '수집 전' : x.hits.length, x.media.size, x.paper, x.beat,
+    [...x.media].join(', '),
+  ]));
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = [{wch:11},{wch:50},{wch:14},{wch:12},{wch:14},{wch:9},{wch:8},{wch:6},{wch:9},{wch:60}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '보도자료 게재율');
+  const {dateFrom, dateTo} = getFilters();
+  XLSX.writeFile(wb, `보도자료_게재율_${dateFrom || '처음'}_${dateTo || '오늘'}.xlsx`);
+}
+
 // ── 공통 테이블 렌더 ──────────────────────────────────────────────────────────
 // 정렬되는 열에만 화살표가 서고(↑ 오름차순 ↓ 내림차순), 나머지는 ↕로 둔다
 function sortTh(panelKey, label, col, style = '') {
@@ -1252,7 +1463,7 @@ function onFilterChange() {
   renderCurrent();
 }
 
-['date-from','date-to','keyword-filter','beat-only','hide-suspect'].forEach(id =>
+['date-from','date-to','keyword-filter','beat-only','hide-suspect','press-zero-only'].forEach(id =>
   document.getElementById(id).addEventListener('change', onFilterChange));
 document.getElementById('search-input').addEventListener('input', onFilterChange);
 
@@ -1336,6 +1547,7 @@ function downloadExcel() {
 function downloadCurrent() {
   if (currentTab === 'paper')  return downloadPaperExcel();
   if (currentTab === 'report') return downloadReportExcel();
+  if (currentTab === 'press')  return downloadPressExcel();
   downloadExcel();
 }
 
