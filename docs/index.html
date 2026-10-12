@@ -745,12 +745,26 @@ const NOISE_FIELDS = ['검색어','매체','제목','교수명','요약','언론
 // 제목에만 보면 '…삼성서울병원에 3천만원 기부'(생일은 요약에만)를 놓쳐서 요약까지 함께 본다.
 const BIRTHDAY_DONATION_RE = /기부|기탁|후원|성금|쾌척/;
 
+// 의대 입시 기사 — 병원 뉴스가 아니라 입시 뉴스다 (지역선발·수시 합격선 등)
+const MED_SCHOOL_RE = /의대|의과대학|의예과/;
+const ADMISSION_RE = /지역선발|지역인재|수시|정시|합격선|등급컷|모집요강|증원|입시|내신/;
+
+// 제약사가 주체인 기사 — 병원 이름이 제목에 없고 '○○병원 … 교수' 코멘트도 없으면
+// 병원이 스쳐 지나갈 뿐이다. 교수가 나오는 기사는 실적에 잡히므로 남긴다
+const PHARMA_RE = /유한양행|대웅제약|한미약품|종근당|녹십자|제일약품|동아에스티|JW중외제약|셀트리온|HK이노엔|일동제약|삼일제약|보령제약|광동제약|휴젤|메디톡스|온코닉|시지바이오|아스트라제네카|로슈|화이자|MSD|노바티스|길리어드|애브비|베링거|암젠|사노피|얀센/;
+const HOSP_NAME_RE = /아산병원|삼성서울병원|세브란스|서울대병원|서울대학교병원|서울성모병원|연세암병원/;
+const HOSP_PROF_RE = /(아산병원|삼성서울병원|세브란스|서울대병원|서울대학교병원|서울성모병원|연세암병원)[^.]{0,40}교수/;
+
 function isNoise(r) {
   if (r['검색어'] === '서울중앙병원') return true;
   if (FE_EXCLUDE_QUERY.includes(r['검색어'])) return true;
   const combined = NOISE_FIELDS.map(f => r[f] || '').join(' ');
   const headSumm = (r['제목'] || '') + ' ' + (r['요약'] || '');
   if (headSumm.includes('생일') && BIRTHDAY_DONATION_RE.test(headSumm)) return true;
+  if (MED_SCHOOL_RE.test(headSumm) && ADMISSION_RE.test(headSumm)) return true;
+  // 강릉·정읍아산병원, 충남 아산시 등 — 서울아산병원이 함께 나오면 우리 기사일 수 있어 남긴다
+  if (OTHER_ASAN_RE.test(headSumm) && !headSumm.includes('서울아산병원')) return true;
+  if (PHARMA_RE.test(headSumm) && !HOSP_NAME_RE.test(r['제목'] || '') && !HOSP_PROF_RE.test(headSumm)) return true;
   if (FE_EXCLUDE_KW.some(kw => combined.includes(kw))) return true;
   const url = (r['언론사원문']||r['네이버링크']||'').toLowerCase();
   return FE_EXCLUDE_MEDIA.some(m => url.includes(m));

@@ -326,6 +326,19 @@ FOUNDATION_TOPICS = ("아산의학상", "아산상", "심포지", "장학", "수
                      "구호", "성금", "기부", "후원", "봉사", "지원사업", "의료봉사")
 
 
+# 화면 쪽 isNoise()에도 같은 규칙이 있다 — 한쪽만 고치지 말 것
+MED_SCHOOL_RE = re.compile(r"의대|의과대학|의예과")
+ADMISSION_RE  = re.compile(r"지역선발|지역인재|수시|정시|합격선|등급컷|모집요강|증원|입시|내신")
+OTHER_ASAN_RE = re.compile(r"강릉아산병원|정선아산병원|보성아산병원|홍천아산병원|영덕아산병원|보령아산병원"
+                           r"|금강아산병원|정읍아산병원|아산충무병원|아산시|아산소방서|아산경찰|충남 아산"
+                           r"|아산 경찰병원|현대아산|아산 탕정|아산캠퍼스|아산의학관")
+PHARMA_RE = re.compile(r"유한양행|대웅제약|한미약품|종근당|녹십자|제일약품|동아에스티|JW중외제약|셀트리온"
+                       r"|HK이노엔|일동제약|삼일제약|보령제약|광동제약|휴젤|메디톡스|온코닉|시지바이오"
+                       r"|아스트라제네카|로슈|화이자|MSD|노바티스|길리어드|애브비|베링거|암젠|사노피|얀센")
+HOSP_NAME_RE = re.compile(r"아산병원|삼성서울병원|세브란스|서울대병원|서울대학교병원|서울성모병원|연세암병원")
+HOSP_PROF_RE = re.compile(r"(아산병원|삼성서울병원|세브란스|서울대병원|서울대학교병원|서울성모병원|연세암병원)[^.]{0,40}교수")
+
+
 def keep_foundation(title: str, summary: str = "") -> bool:
     """재단 기사인지 — 재단 이름이 있고, 재단이 하는 일에 해당하는 말이 함께 있어야 한다"""
     combined = title + " " + summary
@@ -339,6 +352,17 @@ def is_excluded(title: str, summary: str = "") -> bool:
     # 연예인·팬덤 생일 기부 — 아이돌 이름을 하나씩 막으면 새 그룹이 나올 때마다 또 샌다.
     # 화면 쪽 isNoise()에도 같은 규칙이 있다
     if "생일" in combined and re.search(r"기부|기탁|후원|성금|쾌척", combined):
+        return True
+    # 의대 입시 기사 — 병원 뉴스가 아니라 입시 뉴스다 (지역선발·수시 합격선 등)
+    if MED_SCHOOL_RE.search(combined) and ADMISSION_RE.search(combined):
+        return True
+    # 강릉·정읍아산병원, 충남 아산시 등 — 서울아산병원이 함께 나오면 우리 기사일 수 있어 남긴다
+    if OTHER_ASAN_RE.search(combined) and "서울아산병원" not in combined:
+        return True
+    # 제약사가 주체인 기사 — 병원 이름이 제목에 없고 '○○병원 … 교수' 코멘트도 없으면
+    # 병원이 스쳐 지나갈 뿐이다. 교수가 나오는 기사는 실적에 잡히므로 남긴다
+    if (PHARMA_RE.search(combined) and not HOSP_NAME_RE.search(title)
+            and not HOSP_PROF_RE.search(combined)):
         return True
     # 키워드 제외
     if any(kw in combined for kw in EXCLUDE_KEYWORDS):
