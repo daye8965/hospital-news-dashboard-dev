@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-10-12 12:42",
-  "전체기사": 22162,
+  "실행시각": "2026-10-13 07:02",
+  "전체기사": 22277,
   "지면": {
-    "대상": 95,
-    "요청": 63,
-    "게재확인": 13,
-    "미게재": 82,
+    "대상": 69,
+    "요청": 62,
+    "게재확인": 7,
+    "미게재": 62,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,28 +14,33 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 755,
-    "요청": 575,
-    "채움": 140,
-    "이름없음": 13,
-    "오류": 7,
-    "차단호스트": 6,
-    "네이버바이라인없음": 434,
+    "대상": 845,
+    "요청": 698,
+    "채움": 214,
+    "이름없음": 11,
+    "오류": 18,
+    "차단호스트": 8,
+    "네이버바이라인없음": 446,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/661/0000084700",
-      "길이": 285242,
-      "title": "지역의사제 첫해 지방의대 지원자 40% 폭증...제주대 의대 정원 확대 예정",
+      "url": "https://n.news.naver.com/mnews/article/025/0003557353",
+      "길이": 286707,
+      "title": "전범석 현대병원 교수, 파킨슨병 관련 세계 권위 학술상 수상",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
-    "남은대상": 600
+    "남은대상": 620
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 535,
-    "표시기사": 3960
+    "표시기사": 4014
+  },
+  "보도자료": {
+    "목록": 607,
+    "배포일없음": 13,
+    "기간": "2021-01-05 ~ 2026-10-28"
   },
   "결과": "완료"
 }
