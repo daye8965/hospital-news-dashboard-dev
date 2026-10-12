@@ -729,6 +729,10 @@ const FE_EXCLUDE_KW = [
   '신동국','위약벌','라데팡스','송영숙','임주현',                        // 한미약품 경영권 분쟁
   'KB국민은행','신한금융','하나은행','우리은행','IBK기업은행',              // 은행·금융 제휴
   '혁신도시','랩허브','대단지','입주민','아파트',                        // 부동산·단지 개발
+  // 스포츠 구단 — '삼성'·'아산'이 구단 이름과 겹쳐서 들어온다
+  '충남아산FC','라이온즈','프로야구','유격수','[프로농구]','하츠투하츠',
+  // ※ '썬더스'·'히어로즈'·'프로농구'는 넣지 말 것 — 우리 '아워히어로즈' 보도자료와
+  //    민윤기치료센터 기사가 함께 걸린다
 ];
 
 const FE_EXCLUDE_MEDIA = ['celuvmedia'];
@@ -736,10 +740,17 @@ const FE_EXCLUDE_QUERY = ['서울의대'];
 
 // 노이즈 판정은 기사 본래 필드만 본다 — 기자명 같은 보강 열이 제외 키워드(인명)에 걸리지 않도록
 const NOISE_FIELDS = ['검색어','매체','제목','교수명','요약','언론사원문','네이버링크'];
+// 연예인·팬덤 생일 기부 — 아이돌 이름을 하나씩 막으면 새 그룹이 나올 때마다 또 샌다.
+// '생일' + '기부·기탁·후원' 조합으로 거르면 이름을 몰라도 걸린다.
+// 제목에만 보면 '…삼성서울병원에 3천만원 기부'(생일은 요약에만)를 놓쳐서 요약까지 함께 본다.
+const BIRTHDAY_DONATION_RE = /기부|기탁|후원|성금|쾌척/;
+
 function isNoise(r) {
   if (r['검색어'] === '서울중앙병원') return true;
   if (FE_EXCLUDE_QUERY.includes(r['검색어'])) return true;
   const combined = NOISE_FIELDS.map(f => r[f] || '').join(' ');
+  const headSumm = (r['제목'] || '') + ' ' + (r['요약'] || '');
+  if (headSumm.includes('생일') && BIRTHDAY_DONATION_RE.test(headSumm)) return true;
   if (FE_EXCLUDE_KW.some(kw => combined.includes(kw))) return true;
   const url = (r['언론사원문']||r['네이버링크']||'').toLowerCase();
   return FE_EXCLUDE_MEDIA.some(m => url.includes(m));

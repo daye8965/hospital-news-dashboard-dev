@@ -77,6 +77,9 @@ EXCLUDE_KEYWORDS = {
     "신동국", "위약벌", "라데팡스", "송영숙", "임주현",                      # 한미약품 경영권 분쟁
     "KB국민은행", "신한금융", "하나은행", "우리은행", "IBK기업은행",            # 은행·금융 제휴
     "혁신도시", "랩허브", "대단지", "입주민", "아파트",                      # 부동산·단지 개발
+    # 스포츠 구단 — '삼성'·'아산'이 구단 이름과 겹쳐서 들어온다
+    "충남아산FC", "라이온즈", "프로야구", "유격수", "[프로농구]", "하츠투하츠",
+    # ※ '썬더스'·'히어로즈'·'프로농구'는 넣지 말 것 — '아워히어로즈' 보도자료 기사가 걸린다
 
     # 인물/브랜드/기타 노이즈
     "김우빈", "김희선", "김동일", "파크로쉬", "추도사",
@@ -333,6 +336,10 @@ def keep_foundation(title: str, summary: str = "") -> bool:
 
 def is_excluded(title: str, summary: str = "") -> bool:
     combined = title + " " + summary
+    # 연예인·팬덤 생일 기부 — 아이돌 이름을 하나씩 막으면 새 그룹이 나올 때마다 또 샌다.
+    # 화면 쪽 isNoise()에도 같은 규칙이 있다
+    if "생일" in combined and re.search(r"기부|기탁|후원|성금|쾌척", combined):
+        return True
     # 키워드 제외
     if any(kw in combined for kw in EXCLUDE_KEYWORDS):
         return True
