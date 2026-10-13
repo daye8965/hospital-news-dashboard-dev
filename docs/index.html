@@ -24,6 +24,8 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:1
 .header-left h1{font-size:16px;font-weight:600;letter-spacing:-.3px}
 .header-left p{font-size:11px;color:var(--muted);margin-top:1px}
 #total-badge{font-family:var(--mono);font-size:11px;background:var(--accent-bg);color:var(--accent);padding:3px 10px;border-radius:20px;font-weight:500}
+/* 대외 공개 가능 딱지 — 밖으로 보내도 되는 자료임을 알리는 표시 */
+#open-badge{font-size:11px;font-weight:500;background:#e1f5ee;color:#0f6e56;padding:3px 9px;border-radius:20px;vertical-align:middle;white-space:nowrap;letter-spacing:0}
 
 /* 탭 */
 .tab-nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;display:flex;gap:0;overflow-x:auto;scrollbar-width:thin}
@@ -177,7 +179,7 @@ td{padding:10px 12px;vertical-align:top}
 
 <header>
   <div class="header-left">
-    <h1>빅5 병원 뉴스 대시보드 <span id="dev-badge" hidden style="font-size:11px;font-weight:600;color:#fff;background:#d4780a;padding:2px 7px;border-radius:4px;vertical-align:middle">개발 버전</span></h1>
+    <h1>빅5 병원 뉴스 대시보드 <span id="dev-badge" hidden style="font-size:11px;font-weight:600;color:#fff;background:#d4780a;padding:2px 7px;border-radius:4px;vertical-align:middle">개발 버전</span> <span id="open-badge" title="대외로 공유해도 되는 자료입니다">🔓 대외 공개 가능</span></h1>
     <p style="font-size:11px;color:var(--muted);margin-top:1px">대시보드 제작 : 이다예</p>
     <p id="last-updated">샘플 데이터 미리보기</p>
     <p id="dev-notice" hidden style="font-size:11px;color:#d4780a;font-weight:600;margin-top:3px">본 사이트는 현재 개발중인 버전으로, 수시로 구성이 바뀔 수 있습니다</p>

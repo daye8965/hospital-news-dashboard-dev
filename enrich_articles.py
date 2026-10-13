@@ -1,7 +1,9 @@
 """
 기사 보강 스크립트 — 뉴스 수집 뒤에 실행
 
-1) 기자명·기자이메일 : 네이버 기사 페이지 바이라인 (네이버 링크가 없으면 언론사 원문)
+1) 기자명 : 네이버 기사 페이지 바이라인 (네이버 링크가 없으면 언론사 원문)
+   바이라인에서 뽑은 이메일은 이름을 깨끗이 떼어내는 데만 쓰고 저장하지 않는다 —
+   docs/ 아래 파일은 전부 공개되므로 기자 이메일을 올리지 않는다
 2) 지면              : 네이버 '신문 지면 보기' 페이지의 면 정보 (주요 신문 19곳)
                       + paper_manual.csv에 사람이 직접 적어 둔 면 (특집 별지 등 네이버에 없는 면)
 3) 출입기자          : 구글 시트 출입기자 명단으로 CSV 전체를 매 실행마다 다시 대조
@@ -26,7 +28,7 @@ CSV_PATH    = Path("docs/news.csv")
 STATUS_PATH = Path("docs/enrich_status.json")
 
 FIELDNAMES = ["날짜","병원그룹","검색어","매체","제목","교수명","요약","언론사원문","네이버링크",
-              "발행일시","수집일시","기자명","기자이메일","지면","출입기자"]
+              "발행일시","수집일시","기자명","지면","출입기자"]
 
 KST = timezone(timedelta(hours=9))
 NOW = datetime.now(KST)
@@ -307,12 +309,10 @@ def enrich_bylines(rows, status, deadline):
                 break
 
         if names:
-            row["기자명"] = ", ".join(names)
-            row["기자이메일"] = ", ".join(emails)
+            row["기자명"] = ", ".join(names)   # emails는 이름 정리용으로만 쓰고 버린다
             stats["채움"] += 1
         elif not retry_later:
             row["기자명"] = CHECKED_NONE
-            row["기자이메일"] = ""
             stats["이름없음"] += 1
 
     stats["남은대상"] = sum(1 for r in rows if not (r.get("기자명") or "").strip())
@@ -508,7 +508,7 @@ def parse_roster(values):
     media_col = _find_col(header, ROSTER_MEDIA_HEADERS)
     email_col = _find_col(header, ROSTER_EMAIL_HEADERS)
 
-    emails, by_name, current_media = set(), {}, ""
+    by_name, current_media = {}, ""
     for row in values[header_idx + 1:]:
         def cell(i):
             return str(row[i]).strip() if i is not None and i < len(row) else ""
@@ -519,9 +519,9 @@ def parse_roster(values):
         name = _clean_reporter_name(cell(name_col))
         if not name:
             continue
-        emails.update(e.lower() for e in EMAIL_RE.findall(cell(email_col)))
+
         by_name.setdefault(name, set()).add(_norm(current_media))
-    return {"emails": emails, "by_name": by_name, "has_media": media_col is not None}
+    return {"by_name": by_name, "has_media": media_col is not None}
 
 
 # ── 4) 보도자료 목록 ─────────────────────────────────────────────────────────
@@ -615,9 +615,8 @@ def load_roster():
 
 
 def is_beat_reporter(row, roster):
-    row_emails = {e.lower() for e in EMAIL_RE.findall(row.get("기자이메일") or "")}
-    if row_emails & roster["emails"]:
-        return True
+    # 예전엔 기사에 적힌 기자 이메일도 명단과 맞춰 봤지만, 그 열을 더는 저장하지 않는다.
+    # 출입기자로 잡힌 기사 4,020건이 모두 기자명을 갖고 있어 이름만으로 충분하다
     media = _norm(row.get("매체"))
     for name in re.split(r"[,\s]+", row.get("기자명") or ""):
         roster_media = roster["by_name"].get(name)

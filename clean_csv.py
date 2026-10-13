@@ -115,7 +115,7 @@ with open(CSV_PATH, encoding="utf-8-sig", newline="") as f:
 # 신버전 컬럼 순서로 통일해서 저장
 # 뒤쪽 4개는 enrich_articles.py가 채우는 보강 열 — 여기서 빠지면 매 실행마다 지워진다
 NEW_FIELDNAMES = ["날짜","병원그룹","검색어","매체","제목","교수명","요약","언론사원문","네이버링크","발행일시","수집일시",
-                  "기자명","기자이메일","지면","출입기자"]
+                  "기자명","지면","출입기자"]
 
 with open(CSV_PATH, "w", encoding="utf-8-sig", newline="") as f:
     writer = csv.DictWriter(f, fieldnames=NEW_FIELDNAMES, extrasaction='ignore', restval='')

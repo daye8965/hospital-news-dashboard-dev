@@ -30,7 +30,7 @@ start_dt    = datetime(target_date.year, target_date.month, target_date.day, tzi
 end_dt      = datetime(today.year,       today.month,       today.day,       tzinfo=KST)
 
 FIELDNAMES = ["날짜", "병원그룹", "검색어", "매체", "제목", "교수명", "요약", "언론사원문", "네이버링크", "발행일시", "수집일시",
-              "기자명", "기자이메일", "지면", "출입기자"]   # 뒤쪽 4개는 enrich_articles.py가 채움
+              "기자명", "지면", "출입기자"]   # 뒤쪽 3개는 enrich_articles.py가 채움
 
 # 도메인 → 매체명 매핑 (자주 등장하는 주요 언론사)
 MEDIA_MAP = {
