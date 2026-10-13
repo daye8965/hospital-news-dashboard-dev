@@ -56,8 +56,8 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:1
 .report-section h2 .cnt{font-family:var(--mono);font-size:12px;font-weight:400;color:var(--muted)}
 .report-section h2{cursor:pointer;user-select:none;padding:4px 0;border-radius:var(--radius)}
 .report-section h2:hover{color:var(--accent)}
-.report-section h2 .caret{font-size:11px;color:var(--muted);width:10px}
-.report-section h2:hover .caret{color:var(--accent)}
+.report-section h2 .caret{font-size:17px;line-height:1;width:16px;text-align:center;transition:transform .12s}
+.report-section h2:hover .caret{transform:scale(1.15)}
 
 /* 필터 바 */
 .filter-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 32px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -1124,8 +1124,7 @@ function renderReport() {
       const open = reportSectionOpen[sec.key] !== false;
       return `<div class="report-section">
         <h2 onclick="toggleReportSection('${sec.key}')" title="${open ? '접기' : '펼치기'}">
-          <span class="caret">${open ? '▾' : '▸'}</span>
-          <span style="width:9px;height:9px;border-radius:50%;background:${sec.color}"></span>${sec.title}<span class="cnt">${sec.items.length}건</span></h2>
+          <span class="caret" style="color:${sec.color}">${open ? '▼' : '▶'}</span>${sec.title}<span class="cnt">${sec.items.length}건</span></h2>
         ${open ? `<div class="table-wrap">${table}</div>` : ''}
       </div>`;
     }).join('');
