@@ -1,10 +1,10 @@
 {
-  "실행시각": "2026-10-13 07:02",
-  "전체기사": 22277,
+  "실행시각": "2026-10-13 10:22",
+  "전체기사": 22281,
   "지면": {
-    "대상": 69,
-    "요청": 62,
-    "게재확인": 7,
+    "대상": 62,
+    "요청": 59,
+    "게재확인": 0,
     "미게재": 62,
     "오류": 0
   },
@@ -14,28 +14,28 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 845,
-    "요청": 698,
-    "채움": 214,
-    "이름없음": 11,
-    "오류": 18,
-    "차단호스트": 8,
-    "네이버바이라인없음": 446,
+    "대상": 625,
+    "요청": 473,
+    "채움": 14,
+    "이름없음": 3,
+    "오류": 7,
+    "차단호스트": 7,
+    "네이버바이라인없음": 440,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/025/0003557353",
-      "길이": 286707,
-      "title": "전범석 현대병원 교수, 파킨슨병 관련 세계 권위 학술상 수상",
+      "url": "https://n.news.naver.com/mnews/article/421/0009222918",
+      "길이": 249591,
+      "title": "자살률 2030년까지 18.9명으로 낮춘다…범정부 총력 대응(종합)",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
-    "남은대상": 620
+    "남은대상": 608
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 535,
-    "표시기사": 4014
+    "표시기사": 4020
   },
   "보도자료": {
     "목록": 607,
