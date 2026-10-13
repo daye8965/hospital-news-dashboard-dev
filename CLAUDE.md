@@ -6,16 +6,34 @@
 - 공개 주소: https://daye8965.github.io/hospital-news-dashboard-dev/
 - 운영 버전: `../hospital-news-dashboard` (별도 저장소 `hospital-news-dashboard`)
 
-## 운영본과의 차이 (2026-09 기준)
+## 운영본과의 차이 (2026-10-13 반영 기준)
 
-dev에만 있는 것:
+**두 저장소의 파일은 같게 유지합니다.** 보강·노이즈 규칙·지면모음·보고용 탭은
+2026-10-13에 운영본으로 전부 옮겼습니다. 아래 파일은 바이트까지 같아야 합니다.
 
-- `enrich_articles.py` — 기사 보강 (기자명·기자이메일·지면·출입기자)
-- `.github/workflows/enrich.yml` — 보강 단독 실행용 (평소엔 수집 워크플로 안에서 같이 돌아감)
-- 대시보드 탭 `paper`(🗞️ 지면모음), `report`(📑 서울아산병원-보고용)
-- 헤더 아래 개발 버전 안내 문구
+`naver_to_csv.py` · `clean_csv.py` · `generate_weekly_report.py` · `enrich_articles.py` · `paper_manual.csv`
 
-운영본 탭은 `ours`/`others`/`compare` 3개뿐입니다.
+`docs/index.html`도 같은 파일이고, **딱 한 줄만 다릅니다.**
+
+```js
+const IS_DEV = true;   // 운영 저장소에서는 false
+```
+
+이 플래그가 가르는 것 (`false`면 가려짐):
+
+| | 대상 |
+|---|---|
+| 문서 제목 | `[개발]` 접두사 (`document.title`에 붙임) |
+| 헤더 | `개발 버전` 배지(`#dev-badge`), "개발중인 버전" 안내 문구(`#dev-notice`) |
+| 탭 | `📣 보도자료 게재율`(`#tab-btn-press`) |
+| 데이터 | `docs/press_releases.json` fetch — 운영본엔 파일이 없어 읽지 않습니다 |
+
+**보도자료 게재율은 개발 버전 전용입니다.** 보도자료 목록에 담당자 이름이 들어 있어
+공개 페이지에 올리지 않습니다. 운영 워크플로는 `SKIP_PRESS_RELEASES=1`을 주어
+`update_press_releases()`를 건너뛰므로 그 파일이 아예 만들어지지 않습니다.
+
+탭 코드(`renderPress` 등)는 운영본 파일에도 그대로 남아 있습니다. 버튼이 숨겨져 들어갈 수
+없고, 파일을 둘로 가르지 않아야 다음 반영이 단순 복사로 끝나기 때문입니다.
 
 ## 구조
 
@@ -64,10 +82,10 @@ dev에만 있는 것:
 (이때만 "샘플 데이터 미리보기" 안내가 보이고, `notice-keep` 클래스가 붙은 안내는 항상 남습니다).
 외부 의존은 CDN 2개뿐 — Chart.js 4.4.1(비교 탭 차트), SheetJS xlsx 0.18.5(엑셀 다운로드).
 
-- 문서 제목 `[개발] 빅5 병원 뉴스 대시보드`, 헤더에 `대시보드 제작 : 이다예`, 개발 버전 배지와 안내 문구.
+- 문서 제목 `빅5 병원 뉴스 대시보드`(`IS_DEV`면 `[개발]`이 붙음), 헤더에 `대시보드 제작 : 이다예`.
 - 헤더 우측 `총 N건` 배지 = 중복 제거 후 전체 행 수, 좌측 `마지막 수집:` = `수집일시` 최댓값.
 
-### 탭 5개 (처음 열리는 탭은 `paper`)
+### 탭 6개 (처음 열리는 탭은 `paper`, 운영본은 `press`가 빠져 5개)
 
 | 탭 | 내용 |
 |---|---|
@@ -252,5 +270,10 @@ https://www.k-health.com/news/articleView.html?idxno=101201,H4면,경향신문 2
 
 - 커밋 메시지는 기존 히스토리를 따릅니다 — 한글 서술형 또는 영문 명령형 한 줄.
 - 워크플로의 `자동 수집 …` 커밋과 섞이므로 push 전에 항상 `git pull --rebase`.
-- 운영 반영은 이 세션에서 하지 않습니다. dev에서 검증을 끝낸 뒤 운영 세션에서 옮기세요.
+- **운영 반영 절차** — dev에서 검증을 끝낸 뒤 위 파일들을 `../hospital-news-dashboard`로
+  복사하고, `docs/index.html`의 `IS_DEV`만 `false`로 되돌립니다. 복사 후
+  `diff docs/index.html ../hospital-news-dashboard/docs/index.html`이 **`IS_DEV` 블록만**
+  보여야 맞습니다. 워크플로 2개는 `SKIP_PRESS_RELEASES: "1"` 한 줄이 더 있습니다.
+- 운영본 push는 GitHub Pages로 **즉시 배포**되어 실제 업무 화면이 바뀝니다. 반영 전에
+  `python -m http.server`로 운영본 폴더를 띄워 탭이 5개인지 확인하세요.
 - 정적 페이지 확인: `python -m http.server 8765` 후 `http://localhost:8765/docs/`
