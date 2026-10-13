@@ -682,7 +682,12 @@ def main(status):
     apply_paper_manual(rows, status)   # 사람이 적은 지면이 네이버에서 찾은 값보다 우선
     enrich_bylines(rows, status, deadline)
     mark_beat_reporters(rows, status)
-    update_press_releases(status)      # 실패해도 기존 목록을 그대로 두고 넘어간다
+    # 운영본은 보도자료 게재율 탭이 없다 — 보도자료 목록(담당자 이름 포함)을 공개 페이지에
+    # 올리지 않도록 SKIP_PRESS_RELEASES=1 로 끈다
+    if os.environ.get("SKIP_PRESS_RELEASES", "").strip() in ("", "0"):
+        update_press_releases(status)  # 실패해도 기존 목록을 그대로 두고 넘어간다
+    else:
+        status["보도자료"] = "건너뜀 (SKIP_PRESS_RELEASES)"
 
     write_rows(rows)
     status["결과"] = "완료"
