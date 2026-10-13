@@ -1153,18 +1153,33 @@ const HAS_LETTER = /[가-힣A-Za-z]/;
 // 흔한 말은 아예 빼 둔다 — 'AI'(2.0)·'개발'(2.3) 같은 게 여러 개 모이면 임계를 넘겨
 // 비브레스트 수면앱, 쎄크 국책과제 같은 무관한 기사가 묶였다.
 const PRESS_KEY_FLOOR = 4.0;
+// 보도자료 제목 끝에 오는 서술형은 키로 쓰지 않는다 — '…심장 뛰어'의 '뛰어'가
+// 기사의 '13계단 뛰어올라'와 맞아 엉뚱한 보도자료로 묶인 적이 있다
+const PRESS_VERBISH_RE = /(다|요|죠)$/;
+const PRESS_SHORT_VERB_RE = /[어아여워해져며네]$/;
+function pressVerbish(key) {
+  const kn = pressNorm(key);
+  if (PRESS_VERBISH_RE.test(kn)) return true;                       // 찾는다·나선다·막는다
+  return kn.length === 2 && PRESS_SHORT_VERB_RE.test(kn);           // 뛰어·높여
+}
+
+// 다섯 글자 넘는 드문 고유명사는 기사 제목이 아니라 본문에 있어도 인정한다
+// ('네이처인덱스'가 제목에 없고 요약에만 있는 기사를 살리기 위한 규칙)
+const PRESS_LONG_NOUN_LEN = 5;
+
 function pressKeys(title) {
   const words = (title || '').split(/[^0-9A-Za-z가-힣]+/).filter(Boolean);
   const singles = new Map(), phrases = new Map();
   for (const x of words) {
-    if (x.length >= 2 && !PRESS_STOP.has(x) && HAS_LETTER.test(x)) {
+    if (x.length >= 2 && !PRESS_STOP.has(x) && HAS_LETTER.test(x) && !pressVerbish(x)) {
       const w = pressWeight(x);
       if (w >= PRESS_KEY_FLOOR) singles.set(x, w);
     }
   }
   for (let i = 0; i < words.length - 1; i++) {
     const phrase = words[i] + ' ' + words[i+1];
-    if (phrase.length >= 5 && HAS_LETTER.test(words[i]) && HAS_LETTER.test(words[i+1])) {
+    if (phrase.length >= 5 && HAS_LETTER.test(words[i]) && HAS_LETTER.test(words[i+1])
+        && !pressVerbish(phrase)) {
       const w = pressWeight(phrase);
       if (w >= PRESS_KEY_FLOOR) phrases.set(phrase, w);
     }
@@ -1177,11 +1192,16 @@ const pressDf = new Map();
 function pressWeight(key) {
   if (!pressDf.has(key)) {
     let n = 0;
-    for (const a of pressArticleList()) if (a.text.includes(key)) n++;
+    const needle = pressNorm(key);
+    for (const a of pressArticleList()) if (a.textN.includes(needle)) n++;
     pressDf.set(key, Math.max(n, 1));
   }
   return Math.log(pressArticleList().length / pressDf.get(key));
 }
+
+// 띄어쓰기는 매체마다 다르다 — 보도자료는 '네이처인덱스', 기사는 '네이처 인덱스'로 쓴다.
+// 그래서 찾을 때는 양쪽 다 공백을 떼고 비교한다
+function pressNorm(text) { return (text || '').replace(/\s+/g, ''); }
 
 let pressArticleCache = null;   // 아산 기사를 한 번만 추려 두고 날짜별로도 묶어 둔다
 function pressArticleList() {
@@ -1191,7 +1211,9 @@ function pressArticleList() {
       if (r['병원그룹'] !== '아산' || isNoise(r)) continue;
       const day = (r['날짜'] || '').slice(0, 10);
       if (!day) continue;
-      const item = {r, day, title: r['제목'] || '', text: (r['제목'] || '') + ' ' + (r['요약'] || '')};
+      const full = (r['제목'] || '') + ' ' + (r['요약'] || '');
+      const item = {r, day, title: r['제목'] || '', text: full,
+                    titleN: pressNorm(r['제목'] || ''), textN: pressNorm(full)};
       list.push(item);
       if (!byDate.has(day)) byDate.set(day, []);
       byDate.get(day).push(item);
@@ -1217,12 +1239,12 @@ function pressMatches(item) {
       let score = 0, matched = 0;
       const used = new Set();
       for (const [k, w] of phrases) {                 // 구를 먼저 세고
-        if (!a.text.includes(k)) continue;
+        if (!a.textN.includes(pressNorm(k))) continue;
         score += w; matched++;
         for (const part of k.split(' ')) used.add(part);
       }
       for (const [k, w] of singles) {                 // 구에 이미 들어간 낱말은 다시 세지 않는다
-        if (used.has(k) || !a.text.includes(k)) continue;
+        if (used.has(k) || !a.textN.includes(pressNorm(k))) continue;
         score += w; matched++;
       }
       if (!matched) continue;
@@ -1230,9 +1252,12 @@ function pressMatches(item) {
       // 제목에 박힌 '아산상'을 못 보고 넘어가면 안 된다
       let titleRare = false;
       for (const [k, w] of [...phrases, ...singles]) {
-        if (a.title.includes(k) && (w >= PRESS_RARE || (w >= PRESS_RARE_LONG && k.length >= 3))) titleRare = true;
+        const kn = pressNorm(k);
+        if (a.titleN.includes(kn) && (w >= PRESS_RARE || (w >= PRESS_RARE_LONG && kn.length >= 3))) titleRare = true;
+        // 긴 고유명사는 본문에만 있어도 인정 ('네이처인덱스'가 요약에만 나오는 기사)
+        if (kn.length >= PRESS_LONG_NOUN_LEN && w >= PRESS_RARE_LONG && a.textN.includes(kn)) titleRare = true;
       }
-      const byDoctor = (item['의료진'] || []).some(n => a.text.includes(n));
+      const byDoctor = (item['의료진'] || []).some(n => a.textN.includes(pressNorm(n)));
       if (byDoctor) score += PRESS_DOCTOR_WEIGHT;
       if (score >= PRESS_MIN_SCORE || titleRare) found.push({r: a.r, score, byDoctor});
     }
