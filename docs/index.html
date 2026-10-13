@@ -307,6 +307,10 @@ if (IS_DEV) {
     const el = document.getElementById(id);
     if (el) el.hidden = false;
   }
+  // 대외 공개는 운영본으로만 합니다 — 개발본은 숫자와 필터가 수시로 바뀌어
+  // 밖으로 내보내도 되는 자료가 아닙니다
+  const open = document.getElementById('open-badge');
+  if (open) open.hidden = true;
 }
 
 // ── 상수 ─────────────────────────────────────────────────────────────────────
