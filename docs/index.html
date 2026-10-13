@@ -1373,6 +1373,15 @@ function togglePress(key) {
   renderPress();
 }
 
+// 배포 요일에 따라 게재가 달라져서 배포일 옆에 요일을 같이 보여 준다.
+// 'YYYY-MM-DD'를 숫자로 쪼개 만든다 — new Date('2026-10-13')은 UTC 자정으로 읽혀 시차가 섞인다
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+function pressWeekday(ymd) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd || '');
+  if (!m) return '';
+  return WEEKDAYS[new Date(+m[1], +m[2] - 1, +m[3]).getDay()];
+}
+
 function pressTh(label, col, style = '') {
   const on = pressSort.col === col;
   return `<th ${style} class="${on ? 'sorted' : ''}" onclick="doPressSort('${col}')"
@@ -1416,7 +1425,7 @@ function renderPress() {
         ? '<span class="badge-wait">수집 전</span>'
         : (x.hits.length ? `<b style="color:#1a7a3c">${x.hits.length}</b>` : '<span class="badge-none">0</span>');
       const main = `<tr class="press-row" onclick="togglePress('${key}')">
-        <td class="td-date">${x.it['날짜'].slice(5).replace('-', '/')}</td>
+        <td class="td-date">${x.it['날짜'].slice(5).replace('-', '/')}<span style="margin-left:4px">(${pressWeekday(x.it['날짜'])})</span></td>
         <td class="td-title">${open ? '▾ ' : '▸ '}${x.it['제목']}
           ${x.it['배포범위'] ? `<span style="font-size:11px;color:var(--muted);margin-left:6px">${x.it['배포범위']}</span>` : ''}</td>
         <td style="font-size:12px;color:#1a5fa8;white-space:nowrap">${(x.it['의료진'] || []).join(', ') || '—'}</td>
