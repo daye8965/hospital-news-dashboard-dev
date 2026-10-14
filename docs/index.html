@@ -47,7 +47,9 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:1
 .ai-issue p{font-size:12px;color:var(--text);margin:0 0 6px}
 .ai-issue details summary{font-size:11px;color:var(--accent);cursor:pointer}
 .ai-issue ul{margin:6px 0 0 16px;font-size:12px}
-.ai-day{font-family:var(--mono);font-size:12px;color:var(--muted);margin:12px 0 6px}
+.ai-day{font-family:var(--mono);font-size:12px;color:var(--muted);margin:12px 0 6px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;padding:3px 0;border-radius:var(--radius)}
+.ai-day:hover{color:var(--text)}
+.ai-day .caret{font-size:15px;line-height:1;width:14px;text-align:center}
 .press-row{cursor:pointer}
 .press-row:hover{background:var(--accent-bg)}
 .press-sub td{background:#fafaf8;padding:0}
@@ -96,6 +98,10 @@ main{padding:20px 32px;max-width:1280px;margin:0 auto}
 /* 통계 카드 */
 .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px}
+/* 눌러서 기사 목록을 볼 수 있는 카드 */
+.stat-card.clickable{cursor:pointer;transition:border-color .12s,background .12s}
+.stat-card.clickable:hover{border-color:var(--accent);background:var(--accent-bg)}
+.stat-card.clickable .label::after{content:' ▸';font-size:10px;color:var(--muted)}
 .stat-card .label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
 .stat-card .value{font-size:20px;font-weight:600;font-family:var(--mono)}
 
@@ -1575,6 +1581,74 @@ function aiTitleCell(r) {
   return link ? `<a href="${link}" target="_blank" rel="noopener">${r['제목']}</a>` : r['제목'];
 }
 
+// 오늘의 이슈 — 날짜별로 접었다 펼 수 있다. 기본은 가장 최근 날짜만 펼침.
+// 7일치를 다 펼치면 화면이 길어져 그날 무슨 일이 있었는지 한눈에 안 들어온다
+const aiDayOpen = new Set();
+let aiDayInit = false;
+function toggleAIDay(day) {
+  if (aiDayOpen.has(day)) aiDayOpen.delete(day); else aiDayOpen.add(day);
+  renderAI();
+}
+
+// 타병원 참고점 — 머리글을 눌러 날짜·병원으로 정렬한다 (화면에서만 바뀐다)
+const aiBenchSort = {col: '날짜', asc: false};
+function doAIBenchSort(col) {
+  if (aiBenchSort.col === col) aiBenchSort.asc = !aiBenchSort.asc;
+  else { aiBenchSort.col = col; aiBenchSort.asc = col === '병원'; }
+  renderAI();
+}
+function aiTh(label, col, style = '') {
+  const on = aiBenchSort.col === col;
+  const arrow = on ? (aiBenchSort.asc ? '↑' : '↓') : '↕';
+  return `<th ${style} class="${on ? 'sorted' : ''}" onclick="doAIBenchSort('${col}')"
+    title="${label} 기준 정렬">${label} <span class="si">${arrow}</span></th>`;
+}
+function sortBench(list) {
+  const dir = aiBenchSort.asc ? 1 : -1;
+  return [...list].sort((x, y) => {
+    if (aiBenchSort.col === '병원') {
+      const c = hospLabel(x.r).localeCompare(hospLabel(y.r), 'ko') * dir;
+      // 같은 병원이면 늘 최신 기사부터 — 정렬을 바꿔도 읽는 순서가 유지된다
+      if (c) return c;
+      return (y.r['발행일시'] || '').localeCompare(x.r['발행일시'] || '');
+    }
+    return (x.r['발행일시'] || '').localeCompare(y.r['발행일시'] || '') * dir;
+  });
+}
+
+// 통계 카드에서 연 기사 목록 — 카드마다 거르는 기준이 다르다
+const AI_CARD = {
+  '긍정': {label: '우리병원 긍정 기사', color: '#1a7a3c', pick: S => S.asan.filter(x => x.a.t === '긍정')},
+  '중립': {label: '우리병원 중립 기사', color: '#888',    pick: S => S.asan.filter(x => x.a.t === '중립')},
+  '부정': {label: '우리병원 부정 기사', color: '#c0392b', pick: S => S.asan.filter(x => x.a.t === '부정')},
+  '대응': {label: '대응 검토 이슈 기사', color: '#c0392b', pick: S => S.asan.filter(x => x.a.c && x.a.c !== '없음')},
+  '정책': {label: '정책 관심 기사',     color: '#6a3fb5', pick: S => S.policy},
+};
+function openAIModal(kind) {
+  const def = AI_CARD[kind];
+  if (!def || !aiData) return;
+  const list = def.pick(aiSections());
+  document.getElementById('modal-title').innerHTML =
+    `<span style="display:inline-flex;align-items:center;gap:8px">
+      <span style="width:10px;height:10px;border-radius:50%;background:${def.color};flex-shrink:0"></span>
+      ${def.label} <span style="font-family:var(--mono);font-size:12px;font-weight:400;color:var(--muted);margin-left:4px">${list.length}건</span>
+    </span>`;
+  document.getElementById('modal-table').innerHTML = !list.length
+    ? `<div style="text-align:center;padding:40px;color:var(--muted)">기사가 없습니다.</div>`
+    : `<table style="width:100%">
+        <colgroup><col style="width:118px"><col style="width:100px"><col style="min-width:420px"><col style="width:200px"></colgroup>
+        <thead><tr><th>날짜</th><th>매체</th><th>제목</th><th>AI 판정</th></tr></thead>
+        <tbody>${list.map(({r, a}) => `<tr>
+          <td style="font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap">${(r['발행일시'] || r['날짜'] || '').slice(0, 16)}</td>
+          <td style="font-size:12px;white-space:nowrap">${mediaOf(r)}</td>
+          <td>${aiTitleCell(r)}</td>
+          <td style="font-size:11px">${aiBadges(r) || '<span style="color:var(--muted)">중립</span>'}
+            ${a.sr ? `<div style="color:var(--muted);margin-top:2px">${aiEsc(a.sr)}</div>` : ''}</td>
+        </tr>`).join('')}</tbody></table>`;
+  document.getElementById('modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
 function aiSections() {
   const range = reportRange();
   const rows = applyFilters(allData.filter(r => r['날짜'] >= range.from && r['날짜'] <= range.to));
@@ -1630,11 +1704,11 @@ function renderAI() {
   document.getElementById('result-count').textContent = `${S.labeled.length}건 판정`;
   document.getElementById('stats-ai').innerHTML = [
     statCard('AI 판정 기사', `${S.labeled.length}/${S.rows.length}`, '#6a3fb5'),
-    statCard('우리병원 긍정', tone('긍정'), '#1a7a3c'),
-    statCard('우리병원 중립', tone('중립'), '#888'),
-    statCard('우리병원 부정', tone('부정'), tone('부정') ? '#c0392b' : '#888'),
-    statCard('대응 검토 이슈', crisis, crisis ? '#c0392b' : '#888'),
-    statCard('정책 관심 기사', S.policy.length, '#6a3fb5'),
+    statCard('우리병원 긍정', tone('긍정'), '#1a7a3c', tone('긍정') ? "openAIModal('긍정')" : ''),
+    statCard('우리병원 중립', tone('중립'), '#888', tone('중립') ? "openAIModal('중립')" : ''),
+    statCard('우리병원 부정', tone('부정'), tone('부정') ? '#c0392b' : '#888', tone('부정') ? "openAIModal('부정')" : ''),
+    statCard('대응 검토 이슈', crisis, crisis ? '#c0392b' : '#888', crisis ? "openAIModal('대응')" : ''),
+    statCard('정책 관심 기사', S.policy.length, '#6a3fb5', S.policy.length ? "openAIModal('정책')" : ''),
   ].join('');
 
   const links = aiLinkMap();
@@ -1642,9 +1716,16 @@ function renderAI() {
   const section = (title, desc, inner) =>
     `<div class="ai-section"><h2>${title}</h2><div class="ai-desc">${desc}</div>${inner}</div>`;
 
+  // 첫 렌더에서 가장 최근 날짜만 펼쳐 둔다. 그 뒤로는 사용자가 연 것을 그대로 둔다
+  if (!aiDayInit && S.issueDays.length) { aiDayOpen.add(S.issueDays[0]); aiDayInit = true; }
   const issues = S.issueDays.length ? S.issueDays.map(day => {
     const it = aiData['이슈'][day];
-    return `<div class="ai-day">${day} (${pressWeekday(day)}) · 기사 ${it['기사수']}건</div>` +
+    const open = aiDayOpen.has(day);
+    const head = `<div class="ai-day" onclick="toggleAIDay('${day}')">
+      <span class="caret">${open ? '▾' : '▸'}</span>${day} (${pressWeekday(day)}) · 기사 ${it['기사수']}건
+      ${open ? '' : `<span style="color:var(--muted)">· 이슈 ${(it['이슈'] || []).length}개</span>`}</div>`;
+    if (!open) return head;
+    return head +
       (it['이슈'] || []).map(iss => {
         const arts = iss['기사'].map(l => links.get(l)).filter(Boolean);
         return `<div class="ai-issue"><h3>${aiEsc(iss['제목'])}</h3><p>${aiEsc(iss['요약'])}</p>
@@ -1674,8 +1755,9 @@ function renderAI() {
     </tr>`).join('')}</tbody></table></div>`;
 
   const benchTable = !S.bench.length ? empty('이 기간에 참고할 점이 있는 타병원 기사가 없습니다.') : `<div class="table-wrap"><table>
-    <thead><tr><th class="nosort" style="width:56px">날짜</th><th class="nosort">병원</th><th class="nosort">참고점</th><th class="nosort">제목</th></tr></thead>
-    <tbody>${S.bench.slice(0, 100).map(({r, a}) => {
+    <thead><tr>${aiTh('날짜', '날짜', 'style="width:70px"')}${aiTh('병원', '병원', 'style="width:104px"')}
+      <th class="nosort">참고점</th><th class="nosort">제목</th></tr></thead>
+    <tbody>${sortBench(S.bench).slice(0, 100).map(({r, a}) => {
       const hKey = Object.keys(HOSPITALS).find(k => HOSPITALS[k].group === r['병원그룹']);
       const c = HOSPITALS[hKey]?.color || '#444';
       return `<tr><td class="td-date">${mdOf(r)}</td>
@@ -1889,8 +1971,10 @@ function renderCompare() {
 }
 
 // ── 유틸 ─────────────────────────────────────────────────────────────────────
-function statCard(label, value, color) {
-  return `<div class="stat-card"><div class="label">${label}</div><div class="value" style="color:${color}">${typeof value==='number'?value.toLocaleString():value}</div></div>`;
+function statCard(label, value, color, onclick = '') {
+  const v = typeof value === 'number' ? value.toLocaleString() : value;
+  return `<div class="stat-card${onclick ? ' clickable' : ''}"${onclick ? ` onclick="${onclick}" title="눌러서 기사 목록 보기"` : ''}>
+    <div class="label">${label}</div><div class="value" style="color:${color}">${v}</div></div>`;
 }
 
 function sortRows(rows, state) {

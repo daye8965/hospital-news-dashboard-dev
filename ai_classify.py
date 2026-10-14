@@ -220,11 +220,12 @@ class Runner:
         self.tokens_in = 0
         self.tokens_out = 0
         self.errors = 0
+        self.fatal = None   # 키·권한 문제처럼 다시 시도해도 똑같이 막히는 오류
         self.deadline = time.monotonic() + MINUTES * 60
 
     def can_call(self):
         with self.lock:
-            if self.calls >= MAX_CALLS or time.monotonic() > self.deadline:
+            if self.fatal or self.calls >= MAX_CALLS or time.monotonic() > self.deadline:
                 return False
             self.calls += 1
             return True
@@ -241,8 +242,21 @@ class Runner:
                 messages=[{"role": "user", "content": user}],
             )
         except self.anthropic.APIError as e:
+            # 키가 틀렸거나 권한이 없으면 남은 호출을 다 시도해 봐야 똑같이 막힌다.
+            # 한 번만 알리고 바로 멈춘다 — 잘못된 키로 611번을 헛돌린 적이 있다
+            fatal = isinstance(e, (self.anthropic.AuthenticationError,
+                                   self.anthropic.PermissionDeniedError))
             with self.lock:
                 self.errors += 1
+                first = fatal and not self.fatal
+                if first:
+                    self.fatal = f"{type(e).__name__}: {str(e)[:200]}"
+            if fatal:
+                if first:
+                    print(f"  [중단] {self.fatal}")
+                    print("  인증·권한 문제라 남은 호출을 모두 건너뜁니다. "
+                          "ANTHROPIC_API_KEY를 확인하세요.")
+                return None
             print(f"  API 오류: {type(e).__name__}: {str(e)[:200]}")
             return None
         with self.lock:
@@ -396,8 +410,14 @@ def main():
         "입력토큰": runner.tokens_in, "출력토큰": runner.tokens_out,
         "추정비용달러": round(runner.cost(), 4),
     }
+    if runner.fatal:
+        data["실행"]["중단"] = runner.fatal
     save_labels(data)
     print(json.dumps(data["실행"], ensure_ascii=False))
+    if runner.fatal:
+        # 조용히 성공으로 끝나면 빈 결과를 한참 뒤에야 알아챈다
+        print(f"인증·권한 문제로 중단했습니다: {runner.fatal}", file=sys.stderr)
+        return 1
     if finished < len(jobs):
         print(f"남은 작업 {len(jobs) - finished}개 — 다음 실행에서 이어서 처리합니다")
     return 0
