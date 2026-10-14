@@ -75,7 +75,9 @@ jobs:
           git commit -m "자동 수집 $(date +'%Y-%m-%d')"
           # 다른 실행이 먼저 같은 CSV를 올려 충돌하면 이번 결과를 버리고 정상 종료한다.
           # 빠진 날짜는 다음 실행의 백필이 다시 수집한다
-          if ! git pull --rebase origin main; then
+          # --autostash: 스테이징 안 된 변경이 남아 있어도 rebase가 거부되지 않게 한다.
+          # 2026-10-14에 이것 때문에 판정 결과를 통째로 버린 실행이 있었다
+          if ! git pull --rebase --autostash origin main; then
             git rebase --abort || true
             git fetch origin main
             git reset --hard origin/main

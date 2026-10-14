@@ -50,7 +50,9 @@ jobs:
           git commit -m "AI 판정 $(date +'%Y-%m-%d %H:%M')"
           # 이 커밋은 ai_labels.json만 담고, 이 파일을 고치는 수집 워크플로우와는 동시에 돌지 않아
           # 보통 충돌하지 않는다. 그래도 충돌하면 이번 결과를 버린다 — 다음 실행이 이어서 채운다
-          if ! git pull --rebase origin main; then
+          # --autostash: 스테이징 안 된 변경이 남아 있어도 rebase가 거부되지 않게 한다.
+          # 2026-10-14에 이것 때문에 판정 결과를 통째로 버린 실행이 있었다
+          if ! git pull --rebase --autostash origin main; then
             git rebase --abort || true
             echo "원격과 충돌해 이번 판정 결과는 버렸습니다 (다음 실행에서 다시 채움)"
             exit 0
