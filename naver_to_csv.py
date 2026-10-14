@@ -340,6 +340,10 @@ OTHER_ASAN_RE = re.compile(r"강릉아산병원|정선아산병원|보성아산�
 PHARMA_RE = re.compile(r"유한양행|대웅제약|한미약품|종근당|녹십자|제일약품|동아에스티|JW중외제약|셀트리온"
                        r"|HK이노엔|일동제약|삼일제약|보령제약|광동제약|휴젤|메디톡스|온코닉|시지바이오"
                        r"|아스트라제네카|로슈|화이자|MSD|노바티스|길리어드|애브비|베링거|암젠|사노피|얀센")
+# 의료 AI·진단 기업이 주체인 기사 — 제약사와 달리 '교수 코멘트' 예외를 두지 않는다.
+# 에이아이트릭스 대표가 세브란스병원 교수라, 예외를 두면 회사 경영 기사까지 남는다.
+# 화면 쪽 VENDOR_RE에도 같은 목록이 있다
+VENDOR_RE = re.compile(r"에이아이트릭스")
 HOSP_NAME_RE = re.compile(r"아산병원|삼성서울병원|세브란스|서울대병원|서울대학교병원|서울성모병원|연세암병원")
 HOSP_PROF_RE = re.compile(r"(아산병원|삼성서울병원|세브란스|서울대병원|서울대학교병원|서울성모병원|연세암병원)[^.]{0,40}교수")
 # 분원 기사 — 본원 이름이 함께 나오지 않으면 그 분원 기사로 본다
@@ -415,6 +419,9 @@ def is_excluded(title: str, summary: str = "", group: str = "") -> bool:
     # 병원이 스쳐 지나갈 뿐이다. 교수가 나오는 기사는 실적에 잡히므로 남긴다
     if (PHARMA_RE.search(combined) and not HOSP_NAME_RE.search(title)
             and not HOSP_PROF_RE.search(combined)):
+        return True
+    # 의료 AI·진단 기업 — 교수 코멘트 예외 없이, 제목에 병원 이름이 없으면 뺀다
+    if VENDOR_RE.search(combined) and not HOSP_NAME_RE.search(title):
         return True
     if is_branch_article(title, combined):
         return True

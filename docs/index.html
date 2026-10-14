@@ -847,6 +847,12 @@ const ADMISSION_RE = /지역선발|지역인재|수시|정시|합격선|등급�
 // 제약사가 주체인 기사 — 병원 이름이 제목에 없고 '○○병원 … 교수' 코멘트도 없으면
 // 병원이 스쳐 지나갈 뿐이다. 교수가 나오는 기사는 실적에 잡히므로 남긴다
 const PHARMA_RE = /유한양행|대웅제약|한미약품|종근당|녹십자|제일약품|동아에스티|JW중외제약|셀트리온|HK이노엔|일동제약|삼일제약|보령제약|광동제약|휴젤|메디톡스|온코닉|시지바이오|아스트라제네카|로슈|화이자|MSD|노바티스|길리어드|애브비|베링거|암젠|사노피|얀센/;
+// 의료 AI·진단 기업이 주체인 기사 — 제약사와 달리 '교수 코멘트' 예외를 두지 않는다.
+// 에이아이트릭스 대표가 세브란스병원 교수라, 코멘트 예외를 두면 코스닥 상장·이사회 재편 같은
+// 회사 경영 기사까지 남는다. 2026-10 기준 에이아이트릭스 26건 중 제목에 우리 병원 이름이
+// 들어간 기사는 0건이었다 — 제목에 병원이 나오면(공동연구 발표 등) 그때는 남는다.
+// '노을'처럼 흔한 낱말인 회사 이름은 넣으면 안 된다 — 중증천식 기사가 함께 걸린다
+const VENDOR_RE = /에이아이트릭스/;
 const HOSP_NAME_RE = /아산병원|삼성서울병원|세브란스|서울대병원|서울대학교병원|서울성모병원|연세암병원/;
 const HOSP_PROF_RE = /(아산병원|삼성서울병원|세브란스|서울대병원|서울대학교병원|서울성모병원|연세암병원)[^.]{0,40}교수/;
 
@@ -893,6 +899,7 @@ function isNoise(r) {
   // 강릉·정읍아산병원, 충남 아산시 등 — 서울아산병원이 함께 나오면 우리 기사일 수 있어 남긴다
   if (OTHER_ASAN_RE.test(headSumm) && !headSumm.includes('서울아산병원')) return true;
   if (PHARMA_RE.test(headSumm) && !HOSP_NAME_RE.test(r['제목'] || '') && !HOSP_PROF_RE.test(headSumm)) return true;
+  if (VENDOR_RE.test(headSumm) && !HOSP_NAME_RE.test(r['제목'] || '')) return true;
   if (isBranchArticle(r['제목'] || '', headSumm)) return true;
   if (isOtherHospitalStory(r['병원그룹'], r['제목'] || '', headSumm)) return true;
   if (FE_EXCLUDE_KW.some(kw => combined.includes(kw))) return true;
