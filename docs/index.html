@@ -40,7 +40,11 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:1
 .tab-btn.active[data-tab="ai"]{color:#6a3fb5;border-bottom-color:#6a3fb5}
 /* AI 분석 탭 */
 .ai-section{margin-bottom:26px}
-.ai-section h2{font-size:14px;font-weight:600;margin:0 0 4px}
+.ai-section h2{font-size:14px;font-weight:600;margin:0 0 4px;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:4px 0;border-radius:var(--radius)}
+.ai-section h2:hover{color:var(--accent)}
+.ai-section h2 .caret{font-size:17px;line-height:1;width:16px;text-align:center;transition:transform .12s}
+.ai-section h2:hover .caret{transform:scale(1.15)}
+.ai-section h2 .cnt{font-family:var(--mono);font-size:12px;font-weight:400;color:var(--muted)}
 .ai-section .ai-desc{font-size:12px;color:var(--muted);margin:0 0 10px}
 .ai-issue{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px}
 .ai-issue h3{font-size:13px;font-weight:600;margin:0 0 3px}
@@ -1631,6 +1635,13 @@ function aiTitleCell(r) {
 // 오늘의 이슈 — 날짜별로 접었다 펼 수 있다. 기본은 가장 최근 날짜만 펼침.
 // 7일치를 다 펼치면 화면이 길어져 그날 무슨 일이 있었는지 한눈에 안 들어온다
 const aiDayOpen = new Set();
+// 섹션은 기본으로 접어 둔다. 다 펼치면 한 화면에 안 들어와 무엇이 있는지조차 안 보인다.
+// 오늘의 이슈만 펼침 — 이 탭에서 가장 먼저 보는 것
+const aiSectionOpen = {issues: true};
+function toggleAISection(key) {
+  aiSectionOpen[key] = !aiSectionOpen[key];
+  renderAI();
+}
 let aiDayInit = false;
 function toggleAIDay(day) {
   if (aiDayOpen.has(day)) aiDayOpen.delete(day); else aiDayOpen.add(day);
@@ -1703,15 +1714,29 @@ const AI_TRIVIAL_RE = /건강\s*(강좌|강연|교실)|공개\s*강좌|시민\s*
 function aiTrivial(phrase, r) {
   return AI_TRIVIAL_RE.test(phrase || '') || AI_TRIVIAL_RE.test(r['제목'] || '');
 }
-// 같은 사건을 여러 매체가 쓰면 한 줄로 묶고 +N으로 센다 (띄어쓰기·기호는 무시)
-function aiGroup(list, keyOf) {
-  const m = new Map();
+// 같은 사건을 여러 매체가 쓰면 한 줄로 묶는다. 문구를 그대로 비교하면
+// '소아청소년과 전공의 충원 감소'와 '소아청소년과 전공의 쏠림'이 따로 남아서,
+// 두 낱말 이상 겹치는 비율(자카드)로 묶는다. 0.5면 위 둘은 묶이고
+// '국립대병원 비급여'와 '국립대병원 연구역량'은 따로 남는다
+const AI_SIMILAR = 0.5;
+function aiWords(text) {
+  return [...new Set((text || '').split(/\s+/).filter(w => w.length >= 2))];
+}
+function aiOverlap(a, b) {
+  const B = new Set(b);
+  const hit = a.filter(w => B.has(w)).length;
+  return hit / Math.max(new Set([...a, ...b]).size, 1);
+}
+// scopeOf로 먼저 가른 뒤(병원 등) 그 안에서만 묶는다
+function aiCluster(list, phraseOf, scopeOf = () => '') {
+  const out = [];
   for (const x of list) {
-    const k = keyOf(x);
-    if (m.has(k)) m.get(k).all.push(x);
-    else m.set(k, {r: x.r, a: x.a, all: [x]});
+    const w = aiWords(phraseOf(x)), sc = scopeOf(x);
+    const hit = out.find(g => g.scope === sc && aiOverlap(w, g.words) >= AI_SIMILAR);
+    if (hit) hit.all.push(x);
+    else out.push({r: x.r, a: x.a, all: [x], words: w, scope: sc});
   }
-  return [...m.values()];
+  return out;
 }
 function aiMoreBadge(g) {
   if (g.all.length < 2) return '';
@@ -1729,9 +1754,8 @@ function aiSections() {
   const policy = labeled.filter(x => x.a.p).sort(byDate);
   const bench = labeled.filter(x => x.a.b && x.r['병원그룹'] !== '아산').sort(byDate);
   // 화면용 — 단순 공지를 빼고 같은 사건끼리 묶는다. 엑셀은 위 raw를 그대로 쓴다
-  const norm = t => (t || '').replace(/[^0-9A-Za-z가-힣]/g, '');
-  const policyG = aiGroup(policy.filter(x => !aiTrivial(x.a.p, x.r)), x => norm(x.a.p));
-  const benchG  = aiGroup(bench.filter(x => !aiTrivial(x.a.b, x.r)), x => x.r['병원그룹'] + '|' + norm(x.a.b));
+  const policyG = aiCluster(policy.filter(x => !aiTrivial(x.a.p, x.r)), x => x.a.p);
+  const benchG  = aiCluster(bench.filter(x => !aiTrivial(x.a.b, x.r)), x => x.a.b, x => x.r['병원그룹']);
 
   // 진료과별 노출 — 한 기사에 같은 진료과 의료진이 둘이어도 기사는 1건으로 센다
   const depts = new Map();
@@ -1787,8 +1811,14 @@ function renderAI() {
 
   const links = aiLinkMap();
   const empty = msg => `<div style="padding:16px;color:var(--muted);font-size:12px">${msg}</div>`;
-  const section = (title, desc, inner) =>
-    `<div class="ai-section"><h2>${title}</h2><div class="ai-desc">${desc}</div>${inner}</div>`;
+  const section = (key, title, count, desc, inner) => {
+    const open = !!aiSectionOpen[key];
+    return `<div class="ai-section">
+      <h2 onclick="toggleAISection('${key}')" title="${open ? '접기' : '펼치기'}">
+        <span class="caret">${open ? '▼' : '▶'}</span>${title}<span class="cnt">${count}</span></h2>
+      ${open ? `<div class="ai-desc">${desc}</div>${inner}` : ''}
+    </div>`;
+  };
 
   // 첫 렌더에서 가장 최근 날짜만 펼쳐 둔다. 그 뒤로는 사용자가 연 것을 그대로 둔다
   if (!aiDayInit && S.issueDays.length) { aiDayOpen.add(S.issueDays[0]); aiDayInit = true; }
@@ -1854,11 +1884,11 @@ function renderAI() {
 
   body.innerHTML =
     `<div style="font-size:12px;color:var(--muted);margin:0 0 14px;font-family:var(--mono)">기간: ${S.range.label}${S.range.isDefault ? ' (기간 미설정 시 최근 7일)' : ''}</div>` +
-    section('📰 오늘의 이슈', '그날 나온 서울아산병원 기사를 같은 사건끼리 묶어 AI가 고른 주요 이슈입니다.', issues) +
-    section('🏛️ 정책 관심 기사', '수가·의대 정원·전공의·상급종합병원 구조전환처럼 병원 운영에 영향을 줄 정책 기사입니다 (모든 병원 기사 대상). 같은 주제는 한 줄로 묶고 <b>+N</b>으로 셉니다. 주제를 누르면 기사로 갑니다.', policyTable) +
-    section('🩺 진료과별 언론 노출', '서울아산병원 기사에 이름이 나온 의료진을 진료과별로 모았습니다.', deptTable) +
-    section('🔭 타병원 참고점', '타병원 기사 중 신기술 도입·신규 센터·국내 최초 등 눈여겨볼 점입니다. 같은 사건은 한 줄로 묶고 <b>+N</b>으로 셉니다. 강좌·행사 안내처럼 단순 공지는 뺐습니다.', benchTable) +
-    section('📑 실적 판정 비교', '보고용 탭의 제외 추정 규칙과 AI 판정을 견줘 봅니다. 기사별 판정은 보고용 탭에 ‘AI 포함/제외’로 붙어 있고, 마우스를 올리면 근거가 보입니다. 보도자료 메시지 반영도는 보도자료 게재율 탭에서 기사 목록을 펼치면 보입니다.', recordTable) +
+    section('issues', '📰 오늘의 이슈', `${S.issueDays.length}일`, '그날 나온 서울아산병원 기사를 같은 사건끼리 묶어 AI가 고른 주요 이슈입니다.', issues) +
+    section('policy', '🏛️ 정책 관심 기사', `주제 ${S.policyG.length}개 · 기사 ${S.policy.length}건`, '수가·의대 정원·전공의·상급종합병원 구조전환처럼 병원 운영에 영향을 줄 정책 기사입니다 (모든 병원 기사 대상). 비슷한 주제는 한 줄로 묶고 <b>+N</b>으로 셉니다. 주제를 누르면 기사로 갑니다.', policyTable) +
+    section('dept', '🩺 진료과별 언론 노출', `${S.deptRows.length}개 진료과`, '서울아산병원 기사에 이름이 나온 의료진을 진료과별로 모았습니다.', deptTable) +
+    section('bench', '🔭 타병원 참고점', `${S.benchG.length}건`, '타병원 기사 중 신기술 도입·신규 센터·국내 최초 등 눈여겨볼 점입니다. 같은 사건은 한 줄로 묶고 <b>+N</b>으로 셉니다. 강좌·행사 안내처럼 단순 공지는 뺐습니다.', benchTable) +
+    section('record', '📑 실적 판정 비교', `${R.aiIn + R.aiOut}건`, '보고용 탭의 제외 추정 규칙과 AI 판정을 견줘 봅니다. 기사별 판정은 보고용 탭에 ‘AI 포함/제외’로 붙어 있고, 마우스를 올리면 근거가 보입니다. 보도자료 메시지 반영도는 보도자료 게재율 탭에서 기사 목록을 펼치면 보입니다.', recordTable) +
     (aiData['실행'] ? `<div style="font-size:11px;color:var(--muted);font-family:var(--mono)">마지막 AI 판정: ${aiData['실행']['시각']} · ${aiData['실행']['모델']}</div>` : '');
 }
 
