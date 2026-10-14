@@ -12,6 +12,7 @@
 2026-10-13에 운영본으로 전부 옮겼습니다. 아래 파일은 바이트까지 같아야 합니다.
 
 `naver_to_csv.py` · `clean_csv.py` · `generate_weekly_report.py` · `enrich_articles.py` · `paper_manual.csv`
+(`ai_classify.py`는 2026-10-14 개발본에 추가 — 아직 운영본에 없음. 운영본엔 API 키가 없어 옮겨도 바로 끝납니다)
 
 `docs/index.html`도 같은 파일이고, **딱 한 줄만 다릅니다.**
 
@@ -25,9 +26,9 @@ const IS_DEV = true;   // 운영 저장소에서는 false
 |---|---|
 | 문서 제목 | `[개발]` 접두사 (`document.title`에 붙임) |
 | 헤더 | `개발 버전` 배지(`#dev-badge`), "개발중인 버전" 안내 문구(`#dev-notice`) |
-| 탭 | `📣 보도자료 게재율`(`#tab-btn-press`) |
+| 탭 | `📣 보도자료 게재율`(`#tab-btn-press`), `🤖 AI 분석`(`#tab-btn-ai`) |
 | 딱지 | `🔓 대외 공개 가능`(`#open-badge`) — 이것만 **반대로**, `IS_DEV`일 때 가려집니다 |
-| 데이터 | `docs/press_releases.json` fetch — 운영본엔 파일이 없어 읽지 않습니다 |
+| 데이터 | `docs/press_releases.json`·`docs/ai_labels.json` fetch — 운영본엔 파일이 없어 읽지 않습니다. AI 배지(논조·위기·`AI 포함/제외`)도 `aiData`가 없으면 안 붙습니다 |
 
 **보도자료 게재율은 개발 버전 전용입니다.** 보도자료 목록에 담당자 이름이 들어 있어
 공개 페이지에 올리지 않습니다. 운영 워크플로는 `SKIP_PRESS_RELEASES=1`을 주어
@@ -49,6 +50,8 @@ const IS_DEV = true;   // 운영 저장소에서는 false
 | `docs/enrich_status.json` | 보강 진행 상태 |
 | `docs/press_releases.json` | 구글 시트 `언론 업무` 탭에서 뽑은 보도자료 목록. 보강이 매번 다시 씀 |
 | `paper_manual.csv` | 지면을 손으로 지정하는 목록. 여기는 **사람이 직접 적는 파일** |
+| `ai_classify.py` | Claude 경량 모델로 기사 판정 → `docs/ai_labels.json` (아래 'AI 판정' 참조) |
+| `docs/ai_labels.json` | AI 판정 결과. `ai_classify.py`만 씀 |
 
 ### 수집 검색어 (`HOSPITAL_QUERIES`)
 
@@ -91,7 +94,7 @@ const IS_DEV = true;   // 운영 저장소에서는 false
   딱지가 없다고 공개 저장소인 사실이 달라지지는 않습니다).
 - 헤더 우측 `총 N건` 배지 = 중복 제거 후 전체 행 수, 좌측 `마지막 수집:` = `수집일시` 최댓값.
 
-### 탭 6개 (처음 열리는 탭은 `paper`, 운영본은 `press`가 빠져 5개)
+### 탭 7개 (처음 열리는 탭은 `paper`, 운영본은 `press`·`ai`가 빠져 5개)
 
 | 탭 | 내용 |
 |---|---|
@@ -100,6 +103,7 @@ const IS_DEV = true;   // 운영 저장소에서는 false
 | 🔍 타병원 `others` | 삼성·세브란스·서울대·성모. 병원 버튼으로 하나만 보기 |
 | 📑 서울아산병원-보고용 `report` | 연간 언론실적 양식에 맞춘 3개 섹션 (아래 참조) |
 | 📣 보도자료 게재율 `press` | 우리가 배포한 보도자료별로 기사가 몇 건 나왔는지. 배포일·담당·게재·매체로 정렬되고, 줄을 누르면 기사 목록이 펼쳐집니다 |
+| 🤖 AI 분석 `ai` | 오늘의 이슈·정책 관심 기사·진료과별 노출·타병원 참고점·실적 판정 비교. 기간 미지정 시 최근 7일 |
 | 📊 병원 비교 `compare` | 병원별 건수 막대·도넛 차트와 순위표. **자체 기간 필터**를 쓰므로 상단 필터바는 숨겨집니다 |
 
 ### 공통 필터바 (`compare` 탭 제외)
@@ -227,6 +231,22 @@ const IS_DEV = true;   // 운영 저장소에서는 false
 
 2026-06~10 보도자료 51건으로 맞춰 본 결과 사람이 고른 것과 거의 일치했습니다(평균 13.8건 게재).
 
+## AI 판정 (`ai_classify.py`, 개발본 전용)
+
+2026-10-14 추가. 기사 제목·요약을 **`claude-haiku-5-5`** 에게 보내 판정을 받아 `docs/ai_labels.json`에
+기사 링크별로 쌓습니다. **아직 사람이 만든 실적 엑셀·게시글과 대조하지 않은 시험 단계**입니다.
+
+- 기사마다: 논조·위기 유형·정책 주제(모든 병원) / 실적 포함·제외와 근거, 의료진·진료과,
+  어느 보도자료 기사인지와 메시지 반영도(아산) / 참고점(타병원). 하루마다: 아산 '오늘의 이슈' 최대 5개.
+- 저장 키는 짧게 둡니다(`t c p pa s sr d pr pm b`). **화면의 `aiOf()` 주석과 맞춰야 합니다.**
+  보도자료 키는 `배포일|제목` — 화면 `pressKeyOf()`와 같은 형식입니다. **담당자 이름은 보내지도 저장하지도 않습니다.**
+- 대상은 화면과 같은 기준: 링크·제목 앞 30자 중복 제거 후 `is_excluded()`와 `서울중앙병원`·`서울의대` 검색어 제외.
+- **이미 판정한 기사는 다시 묻지 않습니다.** 프롬프트를 바꿔 다시 판정하려면 `ai_labels.json`의 `기사`를 비우고 돌리세요.
+- 매일 수집 워크플로에 `AI_DAYS=7`로 붙어 있고(`continue-on-error`), 과거분은 `AI 판정 (수동)` 워크플로로 채웁니다.
+  키(`ANTHROPIC_API_KEY`)가 없으면 아무것도 안 하고 끝납니다.
+- 비용: 2026-10 기준 60일치(약 9,200건) 처음 채우기 약 560회 호출. 실행마다 `ai_labels.json`의 `실행`에 토큰·추정 비용이 남습니다.
+- 위기·부정 기사는 **기사 옆 배지와 건수로만** 보여 줍니다. 개발본도 공개 주소라 '위기 기사 모음' 같은 목록은 만들지 않았습니다.
+
 ## 데이터
 
 `docs/news.csv` 헤더 (순서 고정):
@@ -276,7 +296,8 @@ https://www.k-health.com/news/articleView.html?idxno=101201,H4면,경향신문 2
 ## Secrets
 
 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`,
-`GOOGLE_SERVICE_ACCOUNT_JSON`, `REPORTER_SHEET_ID`, `REPORTER_SHEET_RANGE`, `REPORTER_SHEET_CSV_URL`
+`GOOGLE_SERVICE_ACCOUNT_JSON`, `REPORTER_SHEET_ID`, `REPORTER_SHEET_RANGE`, `REPORTER_SHEET_CSV_URL`,
+`ANTHROPIC_API_KEY`(개발본만)
 
 ## 작업 규칙
 

@@ -37,6 +37,17 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:1
 .tab-btn.active[data-tab="paper"]{color:#8a5a00;border-bottom-color:#8a5a00}
 .tab-btn.active[data-tab="report"]{color:var(--c-asan);border-bottom-color:var(--c-asan)}
 .tab-btn.active[data-tab="press"]{color:#1a7a3c;border-bottom-color:#1a7a3c}
+.tab-btn.active[data-tab="ai"]{color:#6a3fb5;border-bottom-color:#6a3fb5}
+/* AI 분석 탭 */
+.ai-section{margin-bottom:26px}
+.ai-section h2{font-size:14px;font-weight:600;margin:0 0 4px}
+.ai-section .ai-desc{font-size:12px;color:var(--muted);margin:0 0 10px}
+.ai-issue{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px}
+.ai-issue h3{font-size:13px;font-weight:600;margin:0 0 3px}
+.ai-issue p{font-size:12px;color:var(--text);margin:0 0 6px}
+.ai-issue details summary{font-size:11px;color:var(--accent);cursor:pointer}
+.ai-issue ul{margin:6px 0 0 16px;font-size:12px}
+.ai-day{font-family:var(--mono);font-size:12px;color:var(--muted);margin:12px 0 6px}
 .press-row{cursor:pointer}
 .press-row:hover{background:var(--accent-bg)}
 .press-sub td{background:#fafaf8;padding:0}
@@ -50,6 +61,13 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:1
 .badge-paper{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:500;color:#8a5a00;background:#fdf3e1;border:1px solid #f0d9a8;padding:0 5px;border-radius:3px;margin-left:4px;white-space:nowrap}
 .badge-susp{display:inline-block;font-size:10px;color:#a33;background:#fbeaea;padding:0 5px;border-radius:3px;margin-left:6px;white-space:nowrap;vertical-align:1px}
 .td-reporter{font-size:12px;color:var(--text);white-space:nowrap}
+.badge-tone{display:inline-block;font-size:10px;font-weight:600;padding:0 5px;border-radius:3px;margin-left:6px;white-space:nowrap;vertical-align:1px}
+.badge-tone.pos{color:#1a7a3c;background:#e6f4ea}
+.badge-tone.neg{color:#c0392b;background:#fdecec}
+.badge-crisis{display:inline-block;font-size:10px;font-weight:600;color:#fff;background:#c0392b;padding:0 5px;border-radius:3px;margin-left:4px;white-space:nowrap;vertical-align:1px}
+.badge-ai{display:inline-block;font-size:10px;padding:0 5px;border-radius:3px;margin-left:6px;white-space:nowrap;vertical-align:1px;cursor:help}
+.badge-ai.out{color:#7a4a00;background:#fdf3e1}
+.badge-ai.in{color:#1a5fa8;background:#eef4fb}
 .check-label{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap}
 
 /* 보고용 탭 */
@@ -193,6 +211,7 @@ td{padding:10px 12px;vertical-align:top}
   <button class="tab-btn"        data-tab="others" onclick="switchTab('others')">🔍 타병원</button>
   <button class="tab-btn"        data-tab="report" onclick="switchTab('report')">📑 서울아산병원-보고용</button>
   <button class="tab-btn" id="tab-btn-press" hidden data-tab="press"  onclick="switchTab('press')">📣 보도자료 게재율</button>
+  <button class="tab-btn" id="tab-btn-ai" hidden data-tab="ai" onclick="switchTab('ai')">🤖 AI 분석</button>
   <button class="tab-btn"        data-tab="compare"onclick="switchTab('compare')">📊 병원 비교</button>
 </nav>
 
@@ -292,18 +311,25 @@ td{padding:10px 12px;vertical-align:top}
     <div class="stats-row" id="stats-press"></div>
     <div class="table-wrap" id="table-press"></div>
   </div>
+
+  <!-- ⑦ AI 분석 탭 (개발 버전 전용) -->
+  <div id="panel-ai" class="tab-panel">
+    <div class="notice notice-keep">🤖 수집한 기사 제목·요약을 Claude 경량 모델(Haiku)에게 보여 주고 판정을 받은 결과입니다. <b>아직 사람이 만든 실적·게시글과 대조하지 않은 시험 단계</b>라 참고용으로만 보세요. 날짜를 지정하지 않으면 최근 7일을 보여 줍니다.</div>
+    <div class="stats-row" id="stats-ai"></div>
+    <div id="ai-body"></div>
+  </div>
 </main>
 
 <script>
 // ── 개발 버전 전용 ───────────────────────────────────────────────────────────
 // 운영 저장소(hospital-news-dashboard)에서는 이 값만 false로 두고, 나머지는 이 파일과
 // 똑같이 유지합니다. 그래야 다음 반영 때 index.html을 그대로 복사하면 됩니다.
-// false일 때 가려지는 것: 제목의 [개발], 헤더 배지·안내 문구, 보도자료 게재율 탭.
+// false일 때 가려지는 것: 제목의 [개발], 헤더 배지·안내 문구, 보도자료 게재율·AI 분석 탭, AI 판정 배지.
 const IS_DEV = true;
 
 if (IS_DEV) {
   document.title = '[개발] ' + document.title;
-  for (const id of ['dev-badge', 'dev-notice', 'tab-btn-press']) {
+  for (const id of ['dev-badge', 'dev-notice', 'tab-btn-press', 'tab-btn-ai']) {
     const el = document.getElementById(id);
     if (el) el.hidden = false;
   }
@@ -587,6 +613,7 @@ const sorts = {
 // 보고용 탭은 실적 양식대로 날짜 오름차순이 기본. 화면에서만 바꿀 수 있고 엑셀은 늘 날짜순으로 받는다
 const reportSort = {col:'날짜', asc:true};
 let pressData = [];   // docs/press_releases.json 의 보도자료 목록
+let aiData = null;    // docs/ai_labels.json — ai_classify.py가 남긴 AI 판정 (개발 버전 전용)
 let selectedHosp = null; // null = 전체 타병원
 let paperHosp = null;    // null = 지면모음 전체 병원
 let barChart = null, pieChart = null;
@@ -621,6 +648,13 @@ async function init() {
     if (res.ok) pressData = (await res.json())['목록'] || [];
   } catch(e) {
     console.log('보도자료 목록 로드 실패:', e);
+  }
+  // AI 판정 (없으면 배지와 AI 분석 탭만 비고 나머지는 그대로 동작한다)
+  if (IS_DEV) try {
+    const res = await fetch('./ai_labels.json?t=' + Date.now());
+    if (res.ok) aiData = await res.json();
+  } catch(e) {
+    console.log('AI 판정 로드 실패:', e);
   }
 
   document.getElementById('total-badge').textContent = `총 ${allData.length.toLocaleString()}건`;
@@ -695,7 +729,7 @@ function switchTab(tab) {
   document.getElementById('filter-bar').style.display = tab === 'compare' ? 'none' : 'flex';
   document.getElementById('excel-label').textContent =
     tab === 'paper' ? '지면모음 엑셀 다운로드' : tab === 'report' ? '보고용 엑셀 다운로드'
-    : tab === 'press' ? '게재율 엑셀 다운로드' : '주간 엑셀 다운로드';
+    : tab === 'press' ? '게재율 엑셀 다운로드' : tab === 'ai' ? 'AI 분석 엑셀 다운로드' : '주간 엑셀 다운로드';
   if (tab === 'compare') { renderCompare(); return; }
   updateKeywordOptions(tab);
   renderCurrent();
@@ -707,6 +741,7 @@ function renderCurrent() {
   else if (currentTab === 'paper')  renderPaper();
   else if (currentTab === 'report') renderReport();
   else if (currentTab === 'press')  renderPress();
+  else if (currentTab === 'ai')     renderAI();
 }
 
 function updateKeywordOptions(tab) {
@@ -1134,7 +1169,7 @@ function renderReport() {
             <td class="td-date">${mdOf(r)}</td>
             <td class="td-media">${mediaOf(r)}${hasPaper(r) ? `<span class="badge-paper">${r['지면']}</span>` : ''}</td>
             ${withHosp ? `<td class="td-tag"><span class="tag" style="background:${hColor}22;color:${hColor};font-weight:600">${hospLabel(r)}</span></td>` : ''}
-            <td class="td-title">${link ? `<a href="${link}" target="_blank" rel="noopener">${r['제목']}</a>` : r['제목']}${tag ? `<span class="badge-susp" title="과거 실적 대조 시 이 유형의 ${SUSPECT_RATE[tag]}%가 실적에서 제외됨">제외 추정: ${tag}</span>` : ''}</td>
+            <td class="td-title">${link ? `<a href="${link}" target="_blank" rel="noopener">${r['제목']}</a>` : r['제목']}${tag ? `<span class="badge-susp" title="과거 실적 대조 시 이 유형의 ${SUSPECT_RATE[tag]}%가 실적에서 제외됨">제외 추정: ${tag}</span>` : ''}${aiRecordBadge(r)}${aiBadges(r)}</td>
             <td class="td-reporter">${reporterCell(r)}</td>
             <td style="font-size:12px;color:#1a5fa8;white-space:nowrap;font-weight:${prof?'600':'400'}">${prof || '—'}</td>
             <td style="font-size:12px;color:var(--muted);white-space:nowrap">${reportKind(r)}</td>
@@ -1421,6 +1456,7 @@ function renderPress() {
       ${pressTh('매체', '매체', 'style="width:66px"')}
       <th class="nosort" style="width:54px">지면</th>
       <th class="nosort" style="width:66px">출입기자</th>
+      ${aiData ? '<th class="nosort" style="white-space:nowrap" title="AI가 이 보도자료 기사로 확인한 것 중 핵심 메시지가 담긴 정도">AI 메시지 반영</th>' : ''}
     </tr></thead>
     <tbody>${rows.map((x, i) => {
       const key = x.it['날짜'] + '|' + i;
@@ -1438,12 +1474,14 @@ function renderPress() {
         <td style="font-family:var(--mono);font-size:13px;color:var(--muted)">${x.media.size || '—'}</td>
         <td style="font-family:var(--mono);font-size:13px;color:var(--muted)">${x.paper || '—'}</td>
         <td style="font-family:var(--mono);font-size:13px;color:var(--muted)">${x.beat || '—'}</td>
+        ${aiData ? `<td style="font-size:12px;white-space:nowrap">${pressReflectSummary(x)}</td>` : ''}
       </tr>`;
       if (!open) return main;
       const sub = !x.hits.length
         ? `<div style="padding:14px 18px;color:var(--muted);font-size:12px">맞는 기사를 찾지 못했습니다.</div>`
         : `<table><thead><tr><th class="nosort" style="width:96px">날짜</th><th class="nosort" style="width:110px">매체</th>
-             <th class="nosort">제목</th><th class="nosort" style="width:96px">기자</th></tr></thead>
+             <th class="nosort">제목</th><th class="nosort" style="width:96px">기자</th>
+             ${aiData ? '<th class="nosort" style="width:110px">AI 판정</th>' : ''}</tr></thead>
            <tbody>${x.hits.map(h => {
              const link = h.r['언론사원문'] || h.r['네이버링크'] || '';
              return `<tr>
@@ -1451,9 +1489,10 @@ function renderPress() {
                <td class="td-media">${mediaOf(h.r)}${hasPaper(h.r) ? `<span class="badge-paper">${h.r['지면']}</span>` : ''}</td>
                <td class="td-title">${link ? `<a href="${link}" target="_blank" rel="noopener">${h.r['제목']}</a>` : h.r['제목']}</td>
                <td class="td-reporter">${reporterCell(h.r)}</td>
+               ${aiData ? `<td style="font-size:12px;white-space:nowrap">${pressReflectCell(x.it, h.r)}</td>` : ''}
              </tr>`;
            }).join('')}</tbody></table>`;
-      return main + `<tr class="press-sub"><td colspan="8">${sub}</td></tr>`;
+      return main + `<tr class="press-sub"><td colspan="${aiData ? 9 : 8}">${sub}</td></tr>`;
     }).join('')}</tbody></table>`;
 }
 
@@ -1472,6 +1511,228 @@ function downloadPressExcel() {
   XLSX.utils.book_append_sheet(wb, ws, '보도자료 게재율');
   const {dateFrom, dateTo} = getFilters();
   XLSX.writeFile(wb, `보도자료_게재율_${dateFrom || '처음'}_${dateTo || '오늘'}.xlsx`);
+}
+
+// ── AI 판정 (개발 버전 전용) ──────────────────────────────────────────────────
+// ai_classify.py가 기사 링크마다 짧은 키로 남긴다:
+//   t 논조 · c 위기 · p 정책 주제 · pa 정책 분야 · s 실적(포함/제외) · sr 실적 사유
+//   d 의료진 [[이름, 진료과]] · pr 보도자료('배포일|제목') · pm 메시지 반영 · b 타병원 참고점
+// 아직 사람이 만든 실적·게시글과 대조하지 않은 시험 단계라 화면에는 참고 표시로만 붙인다.
+function aiOf(r) {
+  if (!aiData) return null;
+  return aiData['기사']?.[r['언론사원문'] || r['네이버링크'] || ''] || null;
+}
+// 모델이 쓴 문장은 HTML로 넣기 전에 꺾쇠·따옴표를 풀어 둔다
+function aiEsc(text) {
+  return String(text || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+// 중립은 표시하지 않는다 — 대부분이 중립이라 다 붙이면 눈에 안 들어온다
+function aiBadges(r) {
+  const a = aiOf(r);
+  if (!a) return '';
+  let html = '';
+  if (a.t === '긍정') html += '<span class="badge-tone pos" title="AI 판정 논조">긍정</span>';
+  if (a.t === '부정') html += '<span class="badge-tone neg" title="AI 판정 논조">부정</span>';
+  if (a.c && a.c !== '없음') html += `<span class="badge-crisis" title="AI가 대응이 필요할 수 있다고 본 이슈">${aiEsc(a.c)}</span>`;
+  return html;
+}
+function aiRecordBadge(r) {
+  const a = aiOf(r);
+  if (!a || !a.s) return '';
+  return `<span class="badge-ai ${a.s === '제외' ? 'out' : 'in'}" title="AI 판단 근거: ${aiEsc(a.sr)}">AI ${a.s}</span>`;
+}
+function pressKeyOf(it) { return `${it['날짜']}|${it['제목']}`; }
+// 보도자료 게재율 탭 — 규칙으로 묶은 기사를 AI가 같은 보도자료로 봤는지, 메시지가 얼마나 담겼는지
+const REFLECT_COLOR = {'높음': '#1a7a3c', '보통': '#d4780a', '낮음': '#c0392b'};
+function pressReflectCell(it, r) {
+  const a = aiOf(r);
+  if (!a) return '<span style="color:var(--muted)">미판정</span>';
+  if (a.pr === pressKeyOf(it)) return `<b style="color:${REFLECT_COLOR[a.pm] || '#444'}">반영 ${a.pm}</b>`;
+  if (a.pr) return `<span style="color:var(--muted)" title="${aiEsc(a.pr.split('|')[1])}">다른 보도자료</span>`;
+  return '<span style="color:var(--muted)">관련 없음</span>';
+}
+function pressReflectSummary(x) {
+  const key = pressKeyOf(x.it), cnt = {'높음': 0, '보통': 0, '낮음': 0};
+  for (const h of x.hits) {
+    const a = aiOf(h.r);
+    if (a && a.pr === key && cnt[a.pm] !== undefined) cnt[a.pm]++;
+  }
+  const parts = Object.entries(cnt).filter(([, n]) => n).map(([k, n]) => `<span style="color:${REFLECT_COLOR[k]}">${k} ${n}</span>`);
+  return parts.length ? parts.join(' · ') : '<span style="color:var(--muted)">—</span>';
+}
+
+function aiLinkMap() {
+  const m = new Map();
+  for (const r of allData) {
+    const link = r['언론사원문'] || r['네이버링크'] || '';
+    if (link && !m.has(link)) m.set(link, r);
+  }
+  return m;
+}
+
+function aiTitleCell(r) {
+  const link = r['언론사원문'] || r['네이버링크'] || '';
+  return link ? `<a href="${link}" target="_blank" rel="noopener">${r['제목']}</a>` : r['제목'];
+}
+
+function aiSections() {
+  const range = reportRange();
+  const rows = applyFilters(allData.filter(r => r['날짜'] >= range.from && r['날짜'] <= range.to));
+  const labeled = rows.map(r => ({r, a: aiOf(r)})).filter(x => x.a);
+  const asan = labeled.filter(x => x.r['병원그룹'] === '아산');
+  const byDate = (x, y) => (y.r['발행일시'] || '').localeCompare(x.r['발행일시'] || '');
+
+  const policy = labeled.filter(x => x.a.p).sort(byDate);
+  const bench = labeled.filter(x => x.a.b && x.r['병원그룹'] !== '아산').sort(byDate);
+
+  // 진료과별 노출 — 한 기사에 같은 진료과 의료진이 둘이어도 기사는 1건으로 센다
+  const depts = new Map();
+  for (const {r, a} of asan) {
+    const seen = new Set();
+    for (const [name, dept] of a.d || []) {
+      const key = dept || '진료과 미상';
+      if (!depts.has(key)) depts.set(key, {dept: key, articles: 0, people: new Map()});
+      const d = depts.get(key);
+      if (!seen.has(key)) { d.articles++; seen.add(key); }
+      d.people.set(name, (d.people.get(name) || 0) + 1);
+    }
+  }
+  const deptRows = [...depts.values()].sort((x, y) => y.articles - x.articles);
+
+  // 실적 판정 — 규칙(제외 추정 태그)과 AI가 같은 결론인지
+  const record = {aiIn: 0, aiOut: 0, bothOut: 0, ruleOnly: 0, aiOnly: 0};
+  for (const {r, a} of asan) {
+    if (!a.s) continue;
+    const ruleOut = !!suspectTag(r), aiOut = a.s === '제외';
+    if (aiOut) record.aiOut++; else record.aiIn++;
+    if (ruleOut && aiOut) record.bothOut++;
+    else if (ruleOut) record.ruleOnly++;
+    else if (aiOut) record.aiOnly++;
+  }
+
+  const issueDays = Object.keys(aiData?.['이슈'] || {})
+    .filter(d => d >= range.from && d <= range.to).sort().reverse();
+  return {range, rows, labeled, asan, policy, bench, deptRows, record, issueDays};
+}
+
+function renderAI() {
+  const body = document.getElementById('ai-body');
+  if (!aiData) {
+    document.getElementById('stats-ai').innerHTML = '';
+    document.getElementById('result-count').textContent = '';
+    body.innerHTML = `<div style="text-align:center;padding:50px 20px;color:var(--muted);font-size:13px">
+      아직 AI 판정 결과가 없습니다. GitHub Actions의 'AI 판정 (수동)'을 한 번 돌리면 채워집니다.</div>`;
+    return;
+  }
+  const S = aiSections();
+  const tone = t => S.asan.filter(x => x.a.t === t).length;
+  const crisis = S.asan.filter(x => x.a.c && x.a.c !== '없음').length;
+  document.getElementById('result-count').textContent = `${S.labeled.length}건 판정`;
+  document.getElementById('stats-ai').innerHTML = [
+    statCard('AI 판정 기사', `${S.labeled.length}/${S.rows.length}`, '#6a3fb5'),
+    statCard('우리병원 긍정', tone('긍정'), '#1a7a3c'),
+    statCard('우리병원 중립', tone('중립'), '#888'),
+    statCard('우리병원 부정', tone('부정'), tone('부정') ? '#c0392b' : '#888'),
+    statCard('대응 검토 이슈', crisis, crisis ? '#c0392b' : '#888'),
+    statCard('정책 관심 기사', S.policy.length, '#6a3fb5'),
+  ].join('');
+
+  const links = aiLinkMap();
+  const empty = msg => `<div style="padding:16px;color:var(--muted);font-size:12px">${msg}</div>`;
+  const section = (title, desc, inner) =>
+    `<div class="ai-section"><h2>${title}</h2><div class="ai-desc">${desc}</div>${inner}</div>`;
+
+  const issues = S.issueDays.length ? S.issueDays.map(day => {
+    const it = aiData['이슈'][day];
+    return `<div class="ai-day">${day} (${pressWeekday(day)}) · 기사 ${it['기사수']}건</div>` +
+      (it['이슈'] || []).map(iss => {
+        const arts = iss['기사'].map(l => links.get(l)).filter(Boolean);
+        return `<div class="ai-issue"><h3>${aiEsc(iss['제목'])}</h3><p>${aiEsc(iss['요약'])}</p>
+          <details><summary>기사 ${arts.length}건 보기</summary><ul>${arts.map(r =>
+            `<li>${aiTitleCell(r)} <span style="color:var(--muted);font-size:11px">${mediaOf(r)}</span></li>`).join('')}</ul></details></div>`;
+      }).join('');
+  }).join('') : empty('이 기간에 만든 이슈 요약이 없습니다.');
+
+  const policyTable = !S.policy.length ? empty('이 기간에 정책 관심 기사로 분류된 기사가 없습니다.') : `<div class="table-wrap"><table>
+    <thead><tr><th class="nosort" style="width:56px">날짜</th><th class="nosort">분야</th><th class="nosort">주제</th>
+      <th class="nosort">병원</th><th class="nosort">매체</th><th class="nosort">제목</th></tr></thead>
+    <tbody>${S.policy.slice(0, 100).map(({r, a}) => `<tr>
+      <td class="td-date">${mdOf(r)}</td>
+      <td style="font-size:12px;white-space:nowrap">${aiEsc(a.pa) || '—'}</td>
+      <td style="font-size:12px;font-weight:600;color:#6a3fb5;white-space:nowrap">${aiEsc(a.p)}</td>
+      <td style="font-size:12px;white-space:nowrap">${hospLabel(r)}</td>
+      <td class="td-media">${mediaOf(r)}</td>
+      <td class="td-title">${aiTitleCell(r)}</td></tr>`).join('')}</tbody></table></div>`
+    + (S.policy.length > 100 ? empty(`최근 100건만 표시했습니다 (전체 ${S.policy.length}건은 엑셀로 받으세요).`) : '');
+
+  const deptTable = !S.deptRows.length ? empty('이 기간에 의료진이 나온 기사가 없습니다.') : `<div class="table-wrap"><table>
+    <thead><tr><th class="nosort">진료과</th><th class="nosort" style="width:80px">기사 수</th><th class="nosort">의료진 (기사 수)</th></tr></thead>
+    <tbody>${S.deptRows.map(d => `<tr>
+      <td style="font-weight:600;white-space:nowrap">${aiEsc(d.dept)}</td>
+      <td style="font-family:var(--mono)">${d.articles}</td>
+      <td style="font-size:12px;color:#1a5fa8">${[...d.people].sort((x, y) => y[1] - x[1]).map(([n, c]) => `${aiEsc(n)}(${c})`).join(', ')}</td>
+    </tr>`).join('')}</tbody></table></div>`;
+
+  const benchTable = !S.bench.length ? empty('이 기간에 참고할 점이 있는 타병원 기사가 없습니다.') : `<div class="table-wrap"><table>
+    <thead><tr><th class="nosort" style="width:56px">날짜</th><th class="nosort">병원</th><th class="nosort">참고점</th><th class="nosort">제목</th></tr></thead>
+    <tbody>${S.bench.slice(0, 100).map(({r, a}) => {
+      const hKey = Object.keys(HOSPITALS).find(k => HOSPITALS[k].group === r['병원그룹']);
+      const c = HOSPITALS[hKey]?.color || '#444';
+      return `<tr><td class="td-date">${mdOf(r)}</td>
+        <td class="td-tag"><span class="tag" style="background:${c}22;color:${c};font-weight:600">${hospLabel(r)}</span></td>
+        <td style="font-size:12px;font-weight:600">${aiEsc(a.b)}</td>
+        <td class="td-title">${aiTitleCell(r)} <span style="color:var(--muted);font-size:11px">${mediaOf(r)}</span></td></tr>`;
+    }).join('')}</tbody></table></div>`;
+
+  const R = S.record;
+  const recordTable = !(R.aiIn + R.aiOut) ? empty('이 기간에 실적 판정을 받은 기사가 없습니다.') : `<div class="table-wrap"><table>
+    <thead><tr><th class="nosort">구분</th><th class="nosort" style="width:90px">기사 수</th><th class="nosort">뜻</th></tr></thead>
+    <tbody>
+      <tr><td>AI 포함</td><td style="font-family:var(--mono)">${R.aiIn}</td><td style="font-size:12px;color:var(--muted)">AI가 실적에 넣을 기사로 본 것</td></tr>
+      <tr><td>AI 제외</td><td style="font-family:var(--mono)">${R.aiOut}</td><td style="font-size:12px;color:var(--muted)">AI가 실적에서 뺄 기사로 본 것</td></tr>
+      <tr><td>규칙·AI 모두 제외</td><td style="font-family:var(--mono)">${R.bothOut}</td><td style="font-size:12px;color:var(--muted)">기존 '제외 추정' 규칙과 AI가 같은 결론</td></tr>
+      <tr><td>규칙만 제외</td><td style="font-family:var(--mono)">${R.ruleOnly}</td><td style="font-size:12px;color:var(--muted)">규칙은 제외로 봤지만 AI는 포함으로 본 것</td></tr>
+      <tr><td>AI만 제외</td><td style="font-family:var(--mono)">${R.aiOnly}</td><td style="font-size:12px;color:var(--muted)">규칙에 안 걸렸지만 AI가 제외로 본 것 — 규칙이 놓친 유형일 수 있음</td></tr>
+    </tbody></table></div>`;
+
+  body.innerHTML =
+    `<div style="font-size:12px;color:var(--muted);margin:0 0 14px;font-family:var(--mono)">기간: ${S.range.label}${S.range.isDefault ? ' (기간 미설정 시 최근 7일)' : ''}</div>` +
+    section('📰 오늘의 이슈', '그날 나온 서울아산병원 기사를 같은 사건끼리 묶어 AI가 고른 주요 이슈입니다.', issues) +
+    section('🏛️ 정책 관심 기사', '수가·의대 정원·전공의·상급종합병원 구조전환처럼 병원 운영에 영향을 줄 정책 기사입니다 (모든 병원 기사 대상).', policyTable) +
+    section('🩺 진료과별 언론 노출', '서울아산병원 기사에 이름이 나온 의료진을 진료과별로 모았습니다.', deptTable) +
+    section('🔭 타병원 참고점', '타병원 기사 중 신기술 도입·신규 센터·국내 최초 등 눈여겨볼 점입니다.', benchTable) +
+    section('📑 실적 판정 비교', '보고용 탭의 제외 추정 규칙과 AI 판정을 견줘 봅니다. 기사별 판정은 보고용 탭에 ‘AI 포함/제외’로 붙어 있고, 마우스를 올리면 근거가 보입니다. 보도자료 메시지 반영도는 보도자료 게재율 탭에서 기사 목록을 펼치면 보입니다.', recordTable) +
+    (aiData['실행'] ? `<div style="font-size:11px;color:var(--muted);font-family:var(--mono)">마지막 AI 판정: ${aiData['실행']['시각']} · ${aiData['실행']['모델']}</div>` : '');
+}
+
+function downloadAIExcel() {
+  const S = aiSections();
+  const wb = XLSX.utils.book_new();
+  const sheet = (name, rows, cols) => {
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = cols.map(wch => ({wch}));
+    XLSX.utils.book_append_sheet(wb, ws, name);
+  };
+  const link = r => r['언론사원문'] || r['네이버링크'] || '';
+  sheet('전체 판정', [['날짜', '병원', '매체', '제목', '논조', '위기', '정책 주제', '정책 분야', 'AI 실적', '실적 근거', '의료진', '타병원 참고점', '링크'],
+    ...S.labeled.map(({r, a}) => [r['날짜'], hospLabel(r), mediaOf(r), r['제목'], a.t || '', a.c || '', a.p || '', a.pa || '',
+      a.s || '', a.sr || '', (a.d || []).map(([n, d]) => d ? `${n}(${d})` : n).join(', '), a.b || '', link(r)])],
+    [11, 12, 12, 60, 6, 12, 18, 12, 8, 30, 30, 30, 50]);
+  sheet('정책 관심', [['날짜', '분야', '주제', '병원', '매체', '제목', '링크'],
+    ...S.policy.map(({r, a}) => [r['날짜'], a.pa || '', a.p, hospLabel(r), mediaOf(r), r['제목'], link(r)])],
+    [11, 12, 18, 12, 12, 60, 50]);
+  sheet('진료과별 노출', [['진료과', '기사 수', '의료진'],
+    ...S.deptRows.map(d => [d.dept, d.articles, [...d.people].map(([n, c]) => `${n}(${c})`).join(', ')])],
+    [18, 8, 80]);
+  sheet('타병원 참고점', [['날짜', '병원', '참고점', '제목', '링크'],
+    ...S.bench.map(({r, a}) => [r['날짜'], hospLabel(r), a.b, r['제목'], link(r)])],
+    [11, 12, 36, 60, 50]);
+  const links = aiLinkMap();
+  sheet('오늘의 이슈', [['날짜', '이슈', '요약', '기사 수', '기사'],
+    ...S.issueDays.flatMap(day => (aiData['이슈'][day]['이슈'] || []).map(iss => [day, iss['제목'], iss['요약'], iss['기사'].length,
+      iss['기사'].map(l => links.get(l)?.['제목'] || l).join(' / ')]))],
+    [11, 24, 60, 8, 80]);
+  XLSX.writeFile(wb, `AI_분석_${S.range.from}_${S.range.to}.xlsx`);
 }
 
 // ── 공통 테이블 렌더 ──────────────────────────────────────────────────────────
@@ -1521,7 +1782,7 @@ function renderTable(id, rows, page, panelKey, defaultColor) {
         ${paperView?'':`<td class="td-tag"><span style="font-size:12px;color:var(--muted)">${r['검색어']||''}</span></td>`}
         <td class="td-media">${media}${!paperView&&hasPaper(r)?`<span class="badge-paper">${r['지면']}</span>`:''}</td>
         ${paperView?`<td class="td-media"><span class="badge-paper" style="margin-left:0">${r['지면']}</span></td>`:''}
-        <td class="td-title">${link?`<a href="${link}" target="_blank" rel="noopener">${r['제목']}</a>`:r['제목']}</td>
+        <td class="td-title">${link?`<a href="${link}" target="_blank" rel="noopener">${r['제목']}</a>`:r['제목']}${aiBadges(r)}</td>
         <td class="td-reporter">${reporterCell(r)}</td>
         <td style="font-size:12px;color:#1a5fa8;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;font-weight:${prof?'600':'400'}">${prof||'—'}</td>
         ${paperView?'':`<td class="td-summary">${snippetAround(r['요약']||'', r['병원그룹'])}</td>`}
@@ -1770,6 +2031,7 @@ function downloadCurrent() {
   if (currentTab === 'paper')  return downloadPaperExcel();
   if (currentTab === 'report') return downloadReportExcel();
   if (currentTab === 'press')  return downloadPressExcel();
+  if (currentTab === 'ai')     return downloadAIExcel();
   downloadExcel();
 }
 

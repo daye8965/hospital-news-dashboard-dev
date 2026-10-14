@@ -26,7 +26,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - run: pip install requests openpyxl google-auth
+      - run: pip install requests openpyxl google-auth anthropic
 
       - name: CSV 오염 데이터 정리
         run: python clean_csv.py
@@ -54,6 +54,17 @@ jobs:
           REPORTER_SHEET_RANGE:        ${{ secrets.REPORTER_SHEET_RANGE }}
           REPORTER_SHEET_CSV_URL:      ${{ secrets.REPORTER_SHEET_CSV_URL }}
         run: python enrich_articles.py
+
+      # AI 판정 — 새로 들어온 기사만 묻는다. 키가 없으면(운영 저장소) 바로 끝난다.
+      # 실패해도 수집·보강 결과는 커밋되도록 continue-on-error
+      - name: AI 판정 (논조·실적·정책·이슈)
+        continue-on-error: true
+        timeout-minutes: 15
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AI_DAYS: "7"
+          AI_MINUTES: "10"
+        run: python ai_classify.py
 
       - name: 변경사항 커밋 & 푸시
         run: |
