@@ -1723,21 +1723,30 @@ function aiTrivial(phrase, r) {
 const AI_STOP = new Set(`연구 성과 사례 도입 개최 참여 발표 분석 확인 추진 기반 활용 공동 국내 최초 세계 대규모
 다기관 다학제 환자 치료 진단 수술 질환 센터 병원 의료 체계 구축 확대 강화 개선 지원 운영 협력
 제시 보고 규명 가능성 방안 필요 문제 대책 현황 통계 관리 전략 모델 기술 시스템 플랫폼 국가
-신규 기존 관련 위한 통해 대한 따른 위해 경우 일부 전체 주요 신청 개시 공개 발굴`.split(/\s+/));
+신규 기존 관련 위한 통해 대한 따른 위해 경우 일부 전체 주요 신청 개시 공개 발굴 대응 종합`.split(/\s+/));
 
+// '자살률'과 '자살'은 글자가 달라 안 겹친다. 뒤에 붙은 말을 떼어 같은 낱말로 만든다
+const AI_SUFFIX = /(률|율|화|제도|법안|대책|방안|문제|강화|확대|감축|지원|관리|개선|추진|확보|도입|제고|해소)$/;
+function aiStem(word) {
+  let w = word, m;
+  while ((m = AI_SUFFIX.exec(w)) && w.length - m[0].length >= 2) w = w.slice(0, w.length - m[0].length);
+  return w;
+}
 // 쉼표가 붙은 채로 비교하면 '데모데이,'와 '데모데이'가 다른 말이 된다
 function aiKeys(text) {
   const out = new Set();
   for (const w of String(text || '').split(/\s+/)) {
-    const k = w.replace(/[^0-9A-Za-z가-힣]/g, '');
+    const k = aiStem(w.replace(/[^0-9A-Za-z가-힣]/g, ''));
     if (k.length >= 2 && !AI_STOP.has(k)) out.add(k);
   }
   return out;
 }
-// 희귀어 하나만 겹쳐도 같은 사건으로 본다 — '겨자씨키움센터'(5건)·'SFTS'(3건)처럼
+// 희귀어 하나만 겹쳐도 같은 사건으로 본다 — '겨자씨키움센터'·'SFTS'·'자살'처럼
 // 그 자체가 사건을 가리키는 말. 흔한 말은 안 된다 — '국립대병원'은 49건에 나와서
-// 비급여 가격과 연구역량 격차가 한 묶음이 돼 버린다
-const AI_RARE_DF = 4;
+// 비급여 가격과 연구역량 격차가 한 묶음이 돼 버린다.
+// 글자 수는 보지 않는다 — '자살'(2글자)을 살리려면 필요하다. 대신 문턱을 2로 좁혔다.
+// 3으로 두면 '개편'(빈말)이 걸려 응급의료센터 지정과 전공의 수련이 한 줄이 된다
+const AI_RARE_DF = 2;
 function aiCluster(list, phraseOf, scopeOf = () => '') {
   const df = new Map();
   for (const x of list) for (const w of aiKeys(phraseOf(x))) df.set(w, (df.get(w) || 0) + 1);
@@ -1747,7 +1756,7 @@ function aiCluster(list, phraseOf, scopeOf = () => '') {
     const hit = out.find(g => {
       if (g.scope !== sc) return false;
       const shared = [...k].filter(w => g.keys.has(w));
-      return shared.length >= 2 || shared.some(w => w.length >= 3 && df.get(w) <= AI_RARE_DF);
+      return shared.length >= 2 || shared.some(w => df.get(w) <= AI_RARE_DF);
     });
     if (hit) hit.all.push(x);
     else out.push({r: x.r, a: x.a, all: [x], keys: k, scope: sc});
