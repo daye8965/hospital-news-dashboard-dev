@@ -44,6 +44,7 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          [ -f docs/ai_labels.json ] || { echo "판정 결과 파일 없음"; exit 0; }
           git add docs/ai_labels.json
           git diff --staged --quiet && { echo "변경 없음"; exit 0; }
           git commit -m "AI 판정 $(date +'%Y-%m-%d %H:%M')"
