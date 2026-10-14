@@ -182,6 +182,11 @@ td{padding:10px 12px;vertical-align:top}
 .modal-table tbody tr:last-child{border-bottom:none}
 .modal-table tbody tr:hover{background:var(--accent-bg)}
 .modal-table td{padding:9px 10px;vertical-align:top;font-size:13px}
+/* 요약 보드 기간 전환 */
+.period-bar{grid-column:1/-1;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);margin-bottom:2px}
+.period-btn{font-family:var(--font);font-size:11px;padding:3px 10px;border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:20px;cursor:pointer}
+.period-btn:hover{color:var(--text)}
+.period-btn.on{background:var(--accent-bg);border-color:var(--accent);color:var(--accent);font-weight:600}
 .cat-btn{cursor:pointer;transition:opacity .15s}
 .cat-btn:hover{opacity:.75}
 
@@ -886,6 +891,35 @@ function applyFilters(rows) {
   });
 }
 
+// ── 요약 보드 기간 ───────────────────────────────────────────────────────────
+// 카드·매체 집계는 기본으로 최근 30일만 센다. 수집이 125일치라 전체를 세면
+// 지금 무슨 일이 벌어지는지가 묻힌다. 아래 기사 목록은 그대로 전체를 보여 준다.
+const SUMMARY_DAYS = 30;
+let summaryAll = false;
+function setSummaryPeriod(all) { summaryAll = all; renderCurrent(); }
+
+function summaryScope(filtered) {
+  const {dateFrom, dateTo} = getFilters();
+  // 필터바에서 날짜를 정했으면 보드도 그 기간을 따른다 — 안 그러면 숫자가 서로 어긋난다
+  if (dateFrom || dateTo) {
+    return {rows: filtered, label: `지정 기간 ${dateFrom || '처음'} ~ ${dateTo || '마지막'}`, locked: true};
+  }
+  if (summaryAll) return {rows: filtered, label: '전체 기간', locked: false};
+  const d = new Date();
+  d.setDate(d.getDate() - (SUMMARY_DAYS - 1));
+  const from = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return {rows: filtered.filter(r => r['날짜'] >= from), label: `최근 ${SUMMARY_DAYS}일`, locked: false};
+}
+
+function periodBar(scope) {
+  if (scope.locked) return `<div class="period-bar">기간: <b style="color:var(--text)">${scope.label}</b>
+    <span>— 위 날짜 필터를 따릅니다. 비우면 최근 ${SUMMARY_DAYS}일로 돌아갑니다.</span></div>`;
+  return `<div class="period-bar">기간:
+    <button class="period-btn${summaryAll ? '' : ' on'}" onclick="setSummaryPeriod(false)">최근 ${SUMMARY_DAYS}일</button>
+    <button class="period-btn${summaryAll ? ' on' : ''}" onclick="setSummaryPeriod(true)">전체 기간</button>
+    <span>아래 기사 목록은 기간과 상관없이 모두 보여 줍니다.</span></div>`;
+}
+
 // ── 우리병원 렌더 ─────────────────────────────────────────────────────────────
 function renderOurs() {
   const h = HOSPITALS.asan;
@@ -894,14 +928,18 @@ function renderOurs() {
   const rows = sortRows(filtered, sorts.ours);
   document.getElementById('result-count').textContent = `${rows.length}건`;
 
-  // 키워드별 집계 (필터 적용)
+  // 요약 보드는 기본으로 최근 30일만 센다 (기사 목록은 위 filtered 그대로)
+  const scope = summaryScope(filtered);
+  const sr = scope.rows;
+
+  // 키워드별 집계
   const kwCounts = {};
-  filtered.forEach(r => { kwCounts[r['검색어']] = (kwCounts[r['검색어']]||0)+1; });
-  const days = [...new Set(filtered.map(r=>r['날짜']))].length;
+  sr.forEach(r => { kwCounts[r['검색어']] = (kwCounts[r['검색어']]||0)+1; });
+  const days = [...new Set(sr.map(r=>r['날짜']))].length;
 
   // 매체 분류별 집계
   const catCounts = {};
-  filtered.forEach(r => {
+  sr.forEach(r => {
     const cat = classifyMedia(r['매체']);
     catCounts[cat] = (catCounts[cat]||0)+1;
   });
@@ -913,15 +951,15 @@ function renderOurs() {
 
   // 매체별 Top5
   const mediaCounts = {};
-  filtered.forEach(r => { if(r['매체']) mediaCounts[r['매체']] = (mediaCounts[r['매체']]||0)+1; });
+  sr.forEach(r => { if(r['매체']) mediaCounts[r['매체']] = (mediaCounts[r['매체']]||0)+1; });
   const top5 = Object.entries(mediaCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const maxCount = top5[0]?.[1] || 1;
 
-  document.getElementById('stats-ours').innerHTML = `
+  document.getElementById('stats-ours').innerHTML = periodBar(scope) + `
     <!-- 요약 카드 -->
     <div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:4px">
       ${[
-        statCard('전체 기사', filtered.length, h.color),
+        statCard('기사', sr.length, h.color),
         statCard('수집 일수', days, h.color),
         ...Object.entries(kwCounts).map(([k,v]) => statCard(k, v, h.color))
       ].join('')}
@@ -929,7 +967,7 @@ function renderOurs() {
     <!-- 매체 분류 집계 -->
     <div style="grid-column:1/-1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div>
-        <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">매체 유형별 집계</div>
+        <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">매체 유형별 집계 <span style="text-transform:none;font-weight:400">(${scope.label})</span></div>
         <div style="display:flex;flex-wrap:wrap;gap:8px">
           ${CAT_ORDER.filter(c=>catCounts[c]).map(c => `
             <div class="cat-btn" onclick="openMediaModal('${c}')" style="display:flex;align-items:center;gap:6px;min-width:100px;padding:4px 6px;border-radius:6px">
@@ -941,7 +979,7 @@ function renderOurs() {
         </div>
       </div>
       <div>
-        <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">매체별 Top 5</div>
+        <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">매체별 Top 5 <span style="text-transform:none;font-weight:400">(${scope.label})</span></div>
         <div style="display:flex;flex-direction:column;gap:7px">
           ${top5.map(([media, cnt]) => {
             const cat = classifyMedia(media);
@@ -972,16 +1010,18 @@ function renderOthers() {
   const rows = sortRows(filtered, sorts.others);
   document.getElementById('result-count').textContent = `${rows.length}건`;
 
-  // 통계
+  // 통계 — 보드는 기본으로 최근 30일
+  const scope = summaryScope(filtered);
+  const sr = scope.rows;
   const hospCounts = {};
-  filtered.forEach(r => {
+  sr.forEach(r => {
     const lbl = Object.values(HOSPITALS).find(h=>h.group===r['병원그룹'])?.label || r['병원그룹'];
     hospCounts[lbl] = (hospCounts[lbl]||0)+1;
   });
-  const days = [...new Set(filtered.map(r=>r['날짜']))].length;
+  const days = [...new Set(sr.map(r=>r['날짜']))].length;
   const accentColor = selectedHosp ? HOSPITALS[selectedHosp].color : '#444';
-  document.getElementById('stats-others').innerHTML = [
-    statCard('전체 기사', filtered.length, accentColor),
+  document.getElementById('stats-others').innerHTML = periodBar(scope) + [
+    statCard('기사', sr.length, accentColor),
     statCard('수집 일수', days, accentColor),
     ...Object.entries(hospCounts).map(([k,v]) => {
       const color = Object.values(HOSPITALS).find(h=>h.label===k)?.color || accentColor;
