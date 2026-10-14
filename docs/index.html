@@ -852,6 +852,26 @@ const BRANCH_RULES = [
   // 원주세브란스기독병원 — 연세대 원주캠퍼스 소속 별개 병원. 원주 지역 기사가 대량으로 딸려 온다
   {re: /원주세브란스|세브란스기독병원/, main: '세브란스병원'},
 ];
+// 다른 병원이 제목의 주인공인 기사 — 네이버가 '서울대학교병원'을 '서울대학교'+'병원'으로
+// 쪼개 찾는 탓에 서울성모병원·순천향대 기사가 서울대 기사로 딸려 온다 (30일 기준 61건).
+// 우리 이름이 제목·요약 어디에도 없고, 제목에 다른 병원이 박혀 있을 때만 뺀다
+const OTHER_HOSP_RE = /순천향|고려대학교병원|고대안암|고대구로|한양대병원|중앙대병원|건국대병원|경희대병원|이대목동|이대서울|가천대길병원|아주대병원|인하대병원|단국대병원|원광대병원|조선대병원|전남대병원|전북대병원|충남대병원|충북대병원|경북대병원|부산대병원|강원대병원|제주대병원|차병원|국립암센터|국립중앙의료원|백병원|강북삼성병원|한림대성심|명지병원|제생병원|양지병원|을지대병원|동아대병원/;
+// loose는 공동연구로 이름만 올린 경우를 살리기 위한 것 —
+// '아주대병원·서울대, 체내 분해형 무선 전자약 개발'처럼 제목에 우리 약칭이 있으면 남긴다
+const GROUP_NAME = {
+  '아산':   {full: /서울아산병원|아산병원|아산사회복지재단/, loose: /아산|울산대/},
+  '삼성':   {full: /삼성서울병원/,                      loose: /삼성|성균관/},
+  '세브란스': {full: /세브란스|연세암병원/,                 loose: /세브란스|연세/},
+  '서울대':  {full: /서울대병원|서울대학교병원/,             loose: /서울대|서울의대/},
+  '성모':   {full: /서울성모병원/,                      loose: /성모|가톨릭/},
+};
+function isOtherHospitalStory(group, title, headSumm) {
+  const g = GROUP_NAME[group];
+  if (!g || g.full.test(headSumm) || g.loose.test(title)) return false;
+  return OTHER_HOSP_RE.test(title)
+    || Object.entries(GROUP_NAME).some(([k, v]) => k !== group && v.full.test(title));
+}
+
 function isBranchArticle(title, headSumm) {
   return BRANCH_RULES.some(({re, main}) =>
     (re.test(headSumm) && !headSumm.includes(main)) || (re.test(title) && !title.includes(main)));
@@ -868,6 +888,7 @@ function isNoise(r) {
   if (OTHER_ASAN_RE.test(headSumm) && !headSumm.includes('서울아산병원')) return true;
   if (PHARMA_RE.test(headSumm) && !HOSP_NAME_RE.test(r['제목'] || '') && !HOSP_PROF_RE.test(headSumm)) return true;
   if (isBranchArticle(r['제목'] || '', headSumm)) return true;
+  if (isOtherHospitalStory(r['병원그룹'], r['제목'] || '', headSumm)) return true;
   if (FE_EXCLUDE_KW.some(kw => combined.includes(kw))) return true;
   const url = (r['언론사원문']||r['네이버링크']||'').toLowerCase();
   return FE_EXCLUDE_MEDIA.some(m => url.includes(m));
