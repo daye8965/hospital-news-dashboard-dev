@@ -123,6 +123,13 @@ td{padding:10px 12px;vertical-align:top}
 .td-title a{color:var(--text);text-decoration:none;font-weight:500;font-size:13px;line-height:1.5;display:block}
 .td-title a:hover{color:var(--accent)}
 .td-summary{font-size:12px;color:var(--muted);max-width:500px;line-height:1.5}
+/* 키워드 열을 뺀 만큼 제목에 폭을 몰아 준다.
+   좁은 화면에서는 걸지 않는다 — .table-wrap이 overflow:hidden이라
+   표가 넓어지면 뒤쪽 열(기자·교수명·링크)이 잘려 보이지 않는다 */
+@media(min-width:1000px){
+  #table-ours .td-title,#table-others .td-title{min-width:340px}
+  #table-ours .td-summary,#table-others .td-summary{max-width:360px}
+}
 .td-media{font-size:11px;color:var(--muted);font-family:var(--mono);white-space:nowrap}
 .td-link a{font-size:11px;color:var(--accent);text-decoration:none;font-family:var(--mono);white-space:nowrap}
 .td-link{white-space:nowrap}
@@ -1837,7 +1844,6 @@ function renderTable(id, rows, page, panelKey, defaultColor) {
     <thead><tr>
       ${sortTh(panelKey,'날짜','발행일시')}
       ${panelKey!=='ours'?'<th class="nosort">병원</th>':''}
-      ${panelKey==='paper'?'':'<th class="nosort">키워드</th>'}
       ${sortTh(panelKey,'매체','매체')}
       ${panelKey==='paper'?sortTh('paper','면','지면'):''}
       <th class="nosort">제목</th>
@@ -1861,7 +1867,6 @@ function renderTable(id, rows, page, panelKey, defaultColor) {
       return `<tr>
         <td class="td-date">${displayDate}</td>
         ${panelKey!=='ours'?`<td class="td-tag"><span class="tag" style="background:${color}22;color:${color};font-weight:600">${HOSPITALS[hKey]?.label||r['병원그룹']}</span></td>`:''}
-        ${paperView?'':`<td class="td-tag"><span style="font-size:12px;color:var(--muted)">${r['검색어']||''}</span></td>`}
         <td class="td-media">${media}${!paperView&&hasPaper(r)?`<span class="badge-paper">${r['지면']}</span>`:''}</td>
         ${paperView?`<td class="td-media"><span class="badge-paper" style="margin-left:0">${r['지면']}</span></td>`:''}
         <td class="td-title">${link?`<a href="${link}" target="_blank" rel="noopener">${r['제목']}</a>`:r['제목']}${aiBadges(r)}</td>
