@@ -1672,6 +1672,35 @@ function toggleAIDay(day) {
   renderAI();
 }
 
+// 보도자료 묶음 목록 — 머리글을 눌러 날짜·병원·기사 수로 정렬한다
+const aiPrSort = {col: '기사', asc: false};
+function doAIPrSort(col) {
+  if (aiPrSort.col === col) aiPrSort.asc = !aiPrSort.asc;
+  else { aiPrSort.col = col; aiPrSort.asc = col === '병원'; }
+  renderAI();
+}
+function aiPrTh(label, col, style = '') {
+  const on = aiPrSort.col === col;
+  const arrow = on ? (aiPrSort.asc ? '↑' : '↓') : '↕';
+  return `<th ${style} class="${on ? 'sorted' : ''}" onclick="doAIPrSort('${col}')"
+    title="${label} 기준 정렬">${label} <span class="si">${arrow}</span></th>`;
+}
+function sortPrClusters(list) {
+  const dir = aiPrSort.asc ? 1 : -1;
+  return [...list].sort((a, b) => {
+    if (aiPrSort.col === '병원') {
+      const c = a.label.localeCompare(b.label, 'ko') * dir;
+      // 같은 병원 안에서는 늘 기사가 많은 순 — 정렬을 바꿔도 중요한 게 위에 온다
+      return c || b.all.length - a.all.length;
+    }
+    if (aiPrSort.col === '날짜') {
+      const c = (a.all[0]['날짜'] || '').localeCompare(b.all[0]['날짜'] || '') * dir;
+      return c || b.all.length - a.all.length;
+    }
+    return (a.all.length - b.all.length) * dir;
+  });
+}
+
 // 타병원 참고점 — 머리글을 눌러 날짜·병원으로 정렬한다 (화면에서만 바뀐다)
 const aiBenchSort = {col: '날짜', asc: false};
 function doAIBenchSort(col) {
@@ -2014,11 +2043,11 @@ function renderAI() {
       <td style="font-family:var(--mono);font-size:13px">${h.articles}</td>
       <td style="font-family:var(--mono);font-size:13px;color:var(--muted)">${h.releases ? (h.articles / h.releases).toFixed(1) : '—'}</td>
     </tr>`).join('')}</tbody></table></div>` + (() => {
-      const all = S.prByHosp.flatMap(h => h.clusters.map(c => ({...c, color: h.color, label: h.label})))
-        .sort((a, b) => b.all.length - a.all.length).slice(0, 30);
+      const all = sortPrClusters(S.prByHosp.flatMap(h =>
+        h.clusters.map(c => ({...c, color: h.color, label: h.label})))).slice(0, 30);
       return `<div class="table-wrap" style="margin-top:10px"><table>
-        <thead><tr><th class="nosort" style="width:62px">날짜</th><th class="nosort" style="width:104px">병원</th>
-          <th class="nosort">보도자료로 보이는 기사</th><th class="nosort" style="width:66px">기사</th></tr></thead>
+        <thead><tr>${aiPrTh('날짜', '날짜', 'style="width:70px"')}${aiPrTh('병원', '병원', 'style="width:110px"')}
+          <th class="nosort">보도자료로 보이는 기사</th>${aiPrTh('기사', '기사', 'style="width:72px"')}</tr></thead>
         <tbody>${all.map(c => `<tr>
           <td class="td-date">${mdOf(c.all[0])}</td>
           <td class="td-tag"><span class="tag" style="background:${c.color}22;color:${c.color};font-weight:600">${c.label}</span></td>
