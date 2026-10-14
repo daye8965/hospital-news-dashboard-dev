@@ -1714,30 +1714,47 @@ const AI_TRIVIAL_RE = /건강\s*(강좌|강연|교실)|공개\s*강좌|시민\s*
 function aiTrivial(phrase, r) {
   return AI_TRIVIAL_RE.test(phrase || '') || AI_TRIVIAL_RE.test(r['제목'] || '');
 }
-// 같은 사건을 여러 매체가 쓰면 한 줄로 묶는다. 문구를 그대로 비교하면
-// '소아청소년과 전공의 충원 감소'와 '소아청소년과 전공의 쏠림'이 따로 남아서,
-// 두 낱말 이상 겹치는 비율(자카드)로 묶는다. 0.5면 위 둘은 묶이고
-// '국립대병원 비급여'와 '국립대병원 연구역량'은 따로 남는다
-const AI_SIMILAR = 0.5;
-function aiWords(text) {
-  return [...new Set((text || '').split(/\s+/).filter(w => w.length >= 2))];
-}
-function aiOverlap(a, b) {
-  const B = new Set(b);
-  const hit = a.filter(w => B.has(w)).length;
-  return hit / Math.max(new Set([...a, ...b]).size, 1);
-}
-// scopeOf로 먼저 가른 뒤(병원 등) 그 안에서만 묶는다
-function aiCluster(list, phraseOf, scopeOf = () => '') {
-  const out = [];
-  for (const x of list) {
-    const w = aiWords(phraseOf(x)), sc = scopeOf(x);
-    const hit = out.find(g => g.scope === sc && aiOverlap(w, g.words) >= AI_SIMILAR);
-    if (hit) hit.all.push(x);
-    else out.push({r: x.r, a: x.a, all: [x], words: w, scope: sc});
+// 같은 사건을 여러 매체가 쓰면 한 줄로 묶는다.
+// 겹치는 낱말 비율(자카드)로 재 봤더니 '폐암 유전자 변이 다기관 연구 성과'와
+// '폐암 관련 유전자 변이 28건 종합 연구'가 0.44로 문턱을 못 넘어 따로 남았다.
+// 드문 정도(IDF) 합으로 바꿔 봤더니 이번엔 '성과'·'다기관' 같은 빈말이 어쩌다
+// 드물게 집계돼 'SGLT2 우울증' 기사까지 폐암 묶음에 끌려왔다.
+// 그래서 빈말을 아예 빼고 남은 핵심어로만 판단한다.
+const AI_STOP = new Set(`연구 성과 사례 도입 개최 참여 발표 분석 확인 추진 기반 활용 공동 국내 최초 세계 대규모
+다기관 다학제 환자 치료 진단 수술 질환 센터 병원 의료 체계 구축 확대 강화 개선 지원 운영 협력
+제시 보고 규명 가능성 방안 필요 문제 대책 현황 통계 관리 전략 모델 기술 시스템 플랫폼 국가
+신규 기존 관련 위한 통해 대한 따른 위해 경우 일부 전체 주요 신청 개시 공개 발굴`.split(/\s+/));
+
+// 쉼표가 붙은 채로 비교하면 '데모데이,'와 '데모데이'가 다른 말이 된다
+function aiKeys(text) {
+  const out = new Set();
+  for (const w of String(text || '').split(/\s+/)) {
+    const k = w.replace(/[^0-9A-Za-z가-힣]/g, '');
+    if (k.length >= 2 && !AI_STOP.has(k)) out.add(k);
   }
   return out;
 }
+// 희귀어 하나만 겹쳐도 같은 사건으로 본다 — '겨자씨키움센터'(5건)·'SFTS'(3건)처럼
+// 그 자체가 사건을 가리키는 말. 흔한 말은 안 된다 — '국립대병원'은 49건에 나와서
+// 비급여 가격과 연구역량 격차가 한 묶음이 돼 버린다
+const AI_RARE_DF = 4;
+function aiCluster(list, phraseOf, scopeOf = () => '') {
+  const df = new Map();
+  for (const x of list) for (const w of aiKeys(phraseOf(x))) df.set(w, (df.get(w) || 0) + 1);
+  const out = [];
+  for (const x of list) {
+    const k = aiKeys(phraseOf(x)), sc = scopeOf(x);
+    const hit = out.find(g => {
+      if (g.scope !== sc) return false;
+      const shared = [...k].filter(w => g.keys.has(w));
+      return shared.length >= 2 || shared.some(w => w.length >= 3 && df.get(w) <= AI_RARE_DF);
+    });
+    if (hit) hit.all.push(x);
+    else out.push({r: x.r, a: x.a, all: [x], keys: k, scope: sc});
+  }
+  return out;
+}
+
 function aiMoreBadge(g) {
   if (g.all.length < 2) return '';
   const rest = g.all.slice(1).map(x => `${mediaOf(x.r)} · ${x.r['제목']}`).join('\n');
