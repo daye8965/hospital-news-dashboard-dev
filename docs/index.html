@@ -277,6 +277,9 @@ td{padding:10px 12px;vertical-align:top}
     <div class="notice">📋 샘플 데이터 기준 비교입니다. 실제 배포 후 자동 반영됩니다.</div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 16px;margin-bottom:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <span style="font-size:12px;font-weight:600;color:var(--muted)">기간 설정</span>
+      <button class="period-btn" id="cmp-30" onclick="setComparePeriod(false)">최근 30일</button>
+      <button class="period-btn" id="cmp-all" onclick="setComparePeriod(true)">전체 기간</button>
+      <span style="color:var(--border)">|</span>
       <input type="date" id="compare-date-from" style="font-family:var(--font);font-size:13px;padding:5px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none">
       <span style="color:var(--muted);font-size:12px">~</span>
       <input type="date" id="compare-date-to" style="font-family:var(--font);font-size:13px;padding:5px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none">
@@ -2035,17 +2038,37 @@ function renderTable(id, rows, page, panelKey, defaultColor) {
 }
 
 // ── 비교 탭 렌더 ──────────────────────────────────────────────────────────────
+// 비교 탭도 기본은 최근 30일. 수집이 125일치라 전체를 세면 지금 누가 앞서는지 묻힌다
+let compareAll = false;
+function setComparePeriod(all) { compareAll = all; renderCompare(); }
+
 function getCompareData() {
-  const from = document.getElementById('compare-date-from').value;
-  const to = document.getElementById('compare-date-to').value;
-  let data = allData.filter(r => {
+  let from = document.getElementById('compare-date-from').value;
+  let to = document.getElementById('compare-date-to').value;
+  const picked = !!(from || to);
+  let label;
+  if (picked) {                      // 날짜를 직접 정했으면 그것을 따른다
+    label = `${from || '처음'} ~ ${to || '마지막'}`;
+  } else if (compareAll) {
+    label = '전체 기간';
+  } else {
+    const d = new Date();
+    d.setDate(d.getDate() - (SUMMARY_DAYS - 1));
+    from = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    label = `최근 ${SUMMARY_DAYS}일`;
+  }
+  const data = allData.filter(r => {
     if (isNoise(r)) return false;
     if (from && r['날짜'] < from) return false;
     if (to && r['날짜'] > to) return false;
     return true;
   });
-  const label = document.getElementById('compare-period-label');
-  label.textContent = (from || to) ? `${from || '~'} ~ ${to || '~'} (${data.length}건)` : '';
+  // 날짜를 직접 정하면 버튼은 꺼 둔다 — 눌러도 그 날짜가 이기므로 오해를 부른다
+  for (const [id, on] of [['cmp-30', !picked && !compareAll], ['cmp-all', !picked && compareAll]]) {
+    const el = document.getElementById(id);
+    if (el) { el.classList.toggle('on', on); el.disabled = picked; el.style.opacity = picked ? .45 : 1; }
+  }
+  document.getElementById('compare-period-label').textContent = `${label} · ${data.length.toLocaleString()}건`;
   return data;
 }
 
