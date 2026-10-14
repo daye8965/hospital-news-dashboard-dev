@@ -1,10 +1,10 @@
 {
-  "실행시각": "2026-10-14 08:15",
-  "전체기사": 22442,
+  "실행시각": "2026-10-14 10:55",
+  "전체기사": 22445,
   "지면": {
-    "대상": 67,
-    "요청": 65,
-    "게재확인": 1,
+    "대상": 66,
+    "요청": 64,
+    "게재확인": 0,
     "미게재": 66,
     "오류": 0
   },
@@ -14,28 +14,29 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 774,
-    "요청": 621,
-    "채움": 147,
-    "이름없음": 9,
-    "오류": 14,
-    "차단호스트": 6,
-    "네이버바이라인없음": 444,
+    "대상": 621,
+    "요청": 351,
+    "채움": 5,
+    "이름없음": 0,
+    "오류": 87,
+    "차단호스트": 5,
+    "네이버바이라인없음": 254,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/421/0009225615",
-      "길이": 252216,
-      "title": "\"작은 아이디어가 의료 현장 바꾼다…미충족 수요 해결 기대\"",
+      "url": "https://n.news.naver.com/mnews/article/648/0000051540",
+      "길이": 251763,
+      "title": "아델, 5400억 몸값 도전…기술수출에 걸린 기업가치",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
-    "남은대상": 618
+    "시간초과": true,
+    "남은대상": 616
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 535,
-    "표시기사": 3995
+    "표시기사": 3996
   },
   "보도자료": {
     "목록": 610,
