@@ -1723,15 +1723,22 @@ function aiTrivial(phrase, r) {
 const AI_STOP = new Set(`연구 성과 사례 도입 개최 참여 발표 분석 확인 추진 기반 활용 공동 국내 최초 세계 대규모
 다기관 다학제 환자 치료 진단 수술 질환 센터 병원 의료 체계 구축 확대 강화 개선 지원 운영 협력
 제시 보고 규명 가능성 방안 필요 문제 대책 현황 통계 관리 전략 모델 기술 시스템 플랫폼 국가
-신규 기존 관련 위한 통해 대한 따른 위해 경우 일부 전체 주요 신청 개시 공개 발굴 대응 종합`.split(/\s+/));
+신규 기존 관련 위한 통해 대한 따른 위해 경우 일부 전체 주요 신청 개시 공개 발굴 대응 종합 논의 개편`.split(/\s+/));
 
-// '자살률'과 '자살'은 글자가 달라 안 겹친다. 뒤에 붙은 말을 떼어 같은 낱말로 만든다
+// '자살률'과 '자살'은 글자가 달라 안 겹친다. 뒤에 붙은 말을 떼어 같은 낱말로 만든다.
+// 조사를 먼저 뗀다 — '확대와'가 그대로 남으면 빈말 '확대'로 안 걸러져서,
+// '의대 정원 확대와 임상실습'과 '진료지원간호사 확대와 병동 인력 공백'이 한 줄이 됐다
+const AI_JOSA = /(으로서|으로|에서|에게|부터|까지|라는|와|과|의|를|을|이|가|은|는|에|로)$/;
 const AI_SUFFIX = /(률|율|화|제도|법안|대책|방안|문제|강화|확대|감축|지원|관리|개선|추진|확보|도입|제고|해소)$/;
-function aiStem(word) {
+function aiStrip(word, re) {
   let w = word, m;
-  while ((m = AI_SUFFIX.exec(w)) && w.length - m[0].length >= 2) w = w.slice(0, w.length - m[0].length);
+  while ((m = re.exec(w)) && w.length - m[0].length >= 2) w = w.slice(0, w.length - m[0].length);
   return w;
 }
+function aiStem(word) {
+  return aiStrip(aiStrip(word, AI_JOSA), AI_SUFFIX);
+}
+const AI_STOP_LONG = [...AI_STOP].sort((a, b) => b.length - a.length);
 // 쉼표가 붙은 채로 비교하면 '데모데이,'와 '데모데이'가 다른 말이 된다
 function aiKeys(text) {
   const out = new Set();
@@ -1741,6 +1748,30 @@ function aiKeys(text) {
   }
   return out;
 }
+// 낱말 단위로는 '장애인 의무고용 미달'과 '장애인 고용 의무 이행'이 안 겹친다 —
+// 붙여 쓴 '의무고용'과 띄어 쓴 '의무 고용', 뒤바뀐 말 순서 때문이다.
+// 빈말을 지우고 남은 글자를 두 자씩 끊어 겹치는 비율로 본다 (짧은 쪽 기준).
+// 0.5면 위 둘은 묶이고, '간호 인력 근무 현실 개선'과 '간호·간병통합서비스 정보 공개'는
+// 0.14로 따로 남는다 — 글자 '간호'만 같을 뿐 서로 다른 사건이다
+const AI_CHAR_SIM = 0.5;
+function aiFlat(text) {
+  let t = String(text || '').replace(/[^0-9A-Za-z가-힣]/g, '');
+  for (const w of AI_STOP_LONG) t = t.split(w).join('');
+  return t;
+}
+function aiGrams(text) {
+  const t = aiFlat(text), out = new Set();
+  for (let i = 0; i + 2 <= t.length; i++) out.add(t.slice(i, i + 2));
+  return out;
+}
+function aiCharSim(a, b) {
+  const A = aiGrams(a), B = aiGrams(b);
+  if (!A.size || !B.size) return 0;
+  let hit = 0;
+  for (const g of A) if (B.has(g)) hit++;
+  return hit / Math.min(A.size, B.size);
+}
+
 // 희귀어 하나만 겹쳐도 같은 사건으로 본다 — '겨자씨키움센터'·'SFTS'·'자살'처럼
 // 그 자체가 사건을 가리키는 말. 흔한 말은 안 된다 — '국립대병원'은 49건에 나와서
 // 비급여 가격과 연구역량 격차가 한 묶음이 돼 버린다.
@@ -1755,11 +1786,12 @@ function aiCluster(list, phraseOf, scopeOf = () => '') {
     const k = aiKeys(phraseOf(x)), sc = scopeOf(x);
     const hit = out.find(g => {
       if (g.scope !== sc) return false;
+      if (aiCharSim(phraseOf(x), g.phrase) >= AI_CHAR_SIM) return true;
       const shared = [...k].filter(w => g.keys.has(w));
       return shared.length >= 2 || shared.some(w => df.get(w) <= AI_RARE_DF);
     });
     if (hit) hit.all.push(x);
-    else out.push({r: x.r, a: x.a, all: [x], keys: k, scope: sc});
+    else out.push({r: x.r, a: x.a, all: [x], keys: k, scope: sc, phrase: phraseOf(x)});
   }
   return out;
 }
