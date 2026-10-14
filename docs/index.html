@@ -1826,6 +1826,42 @@ function aiMoreBadge(g) {
   return ` <span style="font-family:var(--mono);font-size:10px;color:var(--muted)" title="${aiEsc(rest)}">+${g.all.length - 1}</span>`;
 }
 
+// ── 보도자료로 나온 기사 (추정) ────────────────────────────────────────────
+// 보도자료 목록은 우리 것밖에 없어서 타병원은 기사 모양으로 추정한다.
+// 같은 날 · 비슷한 제목 · 5건 이상 + 그중 제목에 그 병원 이름이 있는 기사가 1건 이상.
+// 마지막 조건이 없으면 대웅제약·뷰노·길리어드 같은 '기업 보도자료' 묶음이 절반을 차지한다.
+// 아산 보도자료 정답지(보도자료 게재율 탭)와 맞춰 보니 정밀도 86%,
+// 5건 이상 묶음만 놓고 본 재현율 76%였다 (2026-09-15~10-14, 정답 166건 중 126건)
+const PR_SIM = 0.35;   // 제목 글자쌍 겹침. 매체가 제목을 고쳐 써서 느슨하게 잡는다
+const PR_MIN = 5;      // 같은 날 이만큼 퍼지면 보도자료로 본다
+
+function prClusters(rows, group) {
+  const name = GROUP_NAME[group];
+  if (!name) return [];
+  const byDate = {};
+  for (const r of rows) (byDate[r['날짜']] ||= []).push(r);
+  const out = [];
+  for (const day of Object.values(byDate)) {
+    const gs = [];
+    for (const r of day) {
+      const t = r['제목'] || '';
+      const hit = gs.find(g => aiCharSim(g.title, t) >= PR_SIM);
+      if (hit) hit.all.push(r); else gs.push({title: t, all: [r], r});
+    }
+    for (const g of gs) {
+      if (g.all.length < PR_MIN) continue;
+      // 병원이 주체인지 — 묶음 안에 제목으로 병원을 밝힌 기사가 하나라도 있어야 한다
+      const owned = g.all.filter(x => name.full.test(x['제목'] || ''));
+      if (!owned.length) continue;
+      g.group = group;
+      g.title = (owned[0]['제목'] || g.title);   // 병원 이름이 들어간 제목을 대표로
+      g.date = g.all[0]['날짜'];
+      out.push(g);
+    }
+  }
+  return out;
+}
+
 function aiSections() {
   const range = reportRange();
   const rows = applyFilters(allData.filter(r => r['날짜'] >= range.from && r['날짜'] <= range.to));
@@ -1864,9 +1900,19 @@ function aiSections() {
     else if (aiOut) record.aiOnly++;
   }
 
+  // 병원별 보도자료 추정 — 화면 필터(기간)만 반영하고 병원 필터는 쓰지 않는다
+  const prByHosp = Object.keys(GROUP_NAME).map(g => {
+    const sub = allData.filter(r => r['병원그룹'] === g && r['날짜'] >= range.from
+                                 && r['날짜'] <= range.to && !isNoise(r));
+    const cl = prClusters(sub, g);
+    return {group: g, label: HOSPITALS[Object.keys(HOSPITALS).find(k => HOSPITALS[k].group === g)]?.label || g,
+            color: HOSPITALS[Object.keys(HOSPITALS).find(k => HOSPITALS[k].group === g)]?.color || '#444',
+            releases: cl.length, articles: cl.reduce((n, g2) => n + g2.all.length, 0), clusters: cl};
+  }).sort((a, b) => b.releases - a.releases);
+
   const issueDays = Object.keys(aiData?.['이슈'] || {})
     .filter(d => d >= range.from && d <= range.to).sort().reverse();
-  return {range, rows, labeled, asan, policy, bench, policyG, benchG, deptRows, record, issueDays};
+  return {range, rows, labeled, asan, policy, bench, policyG, benchG, deptRows, record, issueDays, prByHosp};
 }
 
 function renderAI() {
@@ -1953,6 +1999,33 @@ function renderAI() {
     }).join('')}</tbody></table></div>`
     + (S.benchG.length > 60 ? empty(`${S.benchG.length}개 중 60개만 표시했습니다 (전체 ${S.bench.length}건은 엑셀로 받으세요).`) : '');
 
+  // 병원별 보도자료 기사 (추정)
+  const prTotal = S.prByHosp.reduce((n, h) => n + h.articles, 0);
+  const prMax = Math.max(...S.prByHosp.map(h => h.releases), 1);
+  const prTable = !prTotal ? empty('이 기간에 보도자료로 보이는 기사 묶음이 없습니다.') : `<div class="table-wrap"><table>
+    <thead><tr><th class="nosort">병원</th><th class="nosort" style="width:86px">보도자료</th>
+      <th class="nosort" style="width:160px">많이 낸 순서</th>
+      <th class="nosort" style="width:78px">기사</th><th class="nosort" style="width:96px">건당 기사</th></tr></thead>
+    <tbody>${S.prByHosp.map(h => `<tr>
+      <td class="td-tag"><span class="tag" style="background:${h.color}22;color:${h.color};font-weight:600">${h.label}</span></td>
+      <td style="font-family:var(--mono);font-size:15px;font-weight:600;color:${h.color}">${h.releases}</td>
+      <td><div class="rank-bar-wrap"><div class="rank-bar-bg"><div class="rank-bar-fill"
+        style="width:${Math.round(h.releases / prMax * 100)}%;background:${h.color}"></div></div></div></td>
+      <td style="font-family:var(--mono);font-size:13px">${h.articles}</td>
+      <td style="font-family:var(--mono);font-size:13px;color:var(--muted)">${h.releases ? (h.articles / h.releases).toFixed(1) : '—'}</td>
+    </tr>`).join('')}</tbody></table></div>` + (() => {
+      const all = S.prByHosp.flatMap(h => h.clusters.map(c => ({...c, color: h.color, label: h.label})))
+        .sort((a, b) => b.all.length - a.all.length).slice(0, 30);
+      return `<div class="table-wrap" style="margin-top:10px"><table>
+        <thead><tr><th class="nosort" style="width:62px">날짜</th><th class="nosort" style="width:104px">병원</th>
+          <th class="nosort">보도자료로 보이는 기사</th><th class="nosort" style="width:66px">기사</th></tr></thead>
+        <tbody>${all.map(c => `<tr>
+          <td class="td-date">${mdOf(c.all[0])}</td>
+          <td class="td-tag"><span class="tag" style="background:${c.color}22;color:${c.color};font-weight:600">${c.label}</span></td>
+          <td style="font-size:12px;font-weight:600">${aiTitleCell(c.all.find(x => (x['제목'] || '').length) || c.all[0])}</td>
+          <td style="font-family:var(--mono);font-size:13px">${c.all.length}</td></tr>`).join('')}</tbody></table></div>`;
+    })();
+
   const R = S.record;
   const recordTable = !(R.aiIn + R.aiOut) ? empty('이 기간에 실적 판정을 받은 기사가 없습니다.') : `<div class="table-wrap"><table>
     <thead><tr><th class="nosort">구분</th><th class="nosort" style="width:90px">기사 수</th><th class="nosort">뜻</th></tr></thead>
@@ -1968,6 +2041,8 @@ function renderAI() {
     `<div style="font-size:12px;color:var(--muted);margin:0 0 14px;font-family:var(--mono)">기간: ${S.range.label}${S.range.isDefault ? ' (기간 미설정 시 최근 7일)' : ''}</div>` +
     section('issues', '📰 오늘의 이슈', `${S.issueDays.length}일`, '그날 나온 서울아산병원 기사를 같은 사건끼리 묶어 AI가 고른 주요 이슈입니다.', issues) +
     section('policy', '🏛️ 정책 관심 기사', `주제 ${S.policyG.length}개 · 기사 ${S.policy.length}건`, '수가·의대 정원·전공의·상급종합병원 구조전환처럼 병원 운영에 영향을 줄 정책 기사입니다 (모든 병원 기사 대상). 비슷한 주제는 한 줄로 묶고 <b>+N</b>으로 셉니다. 주제를 누르면 기사로 갑니다.', policyTable) +
+    section('pr', '📣 보도자료로 나온 기사 (추정)', `${S.prByHosp.reduce((n, h) => n + h.releases, 0)}건 · 기사 ${prTotal}건`,
+      '보도자료 목록은 우리 것밖에 없어서, <b>같은 날 비슷한 제목 기사가 5건 이상</b> 나왔고 그중 하나라도 제목에 그 병원 이름이 있으면 보도자료로 봤습니다. 아산 보도자료 정답지와 맞춰 보니 <b>정밀도 86%</b>였습니다. 게재가 적었던 보도자료는 빠지므로 실제보다 적게 잡힙니다.', prTable) +
     section('dept', '🩺 진료과별 언론 노출', `${S.deptRows.length}개 진료과`, '서울아산병원 기사에 이름이 나온 의료진을 진료과별로 모았습니다.', deptTable) +
     section('bench', '🔭 타병원 참고점', `${S.benchG.length}건`, '타병원 기사 중 신기술 도입·신규 센터·국내 최초 등 눈여겨볼 점입니다. 같은 사건은 한 줄로 묶고 <b>+N</b>으로 셉니다. 강좌·행사 안내처럼 단순 공지는 뺐습니다.', benchTable) +
     section('record', '📑 실적 판정 비교', `${R.aiIn + R.aiOut}건`, '보고용 탭의 제외 추정 규칙과 AI 판정을 견줘 봅니다. 기사별 판정은 보고용 탭에 ‘AI 포함/제외’로 붙어 있고, 마우스를 올리면 근거가 보입니다. 보도자료 메시지 반영도는 보도자료 게재율 탭에서 기사 목록을 펼치면 보입니다.', recordTable) +
