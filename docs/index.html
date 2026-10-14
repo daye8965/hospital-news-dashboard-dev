@@ -1701,32 +1701,6 @@ function sortPrClusters(list) {
   });
 }
 
-// 타병원 참고점 — 머리글을 눌러 날짜·병원으로 정렬한다 (화면에서만 바뀐다)
-const aiBenchSort = {col: '날짜', asc: false};
-function doAIBenchSort(col) {
-  if (aiBenchSort.col === col) aiBenchSort.asc = !aiBenchSort.asc;
-  else { aiBenchSort.col = col; aiBenchSort.asc = col === '병원'; }
-  renderAI();
-}
-function aiTh(label, col, style = '') {
-  const on = aiBenchSort.col === col;
-  const arrow = on ? (aiBenchSort.asc ? '↑' : '↓') : '↕';
-  return `<th ${style} class="${on ? 'sorted' : ''}" onclick="doAIBenchSort('${col}')"
-    title="${label} 기준 정렬">${label} <span class="si">${arrow}</span></th>`;
-}
-function sortBench(list) {
-  const dir = aiBenchSort.asc ? 1 : -1;
-  return [...list].sort((x, y) => {
-    if (aiBenchSort.col === '병원') {
-      const c = hospLabel(x.r).localeCompare(hospLabel(y.r), 'ko') * dir;
-      // 같은 병원이면 늘 최신 기사부터 — 정렬을 바꿔도 읽는 순서가 유지된다
-      if (c) return c;
-      return (y.r['발행일시'] || '').localeCompare(x.r['발행일시'] || '');
-    }
-    return (x.r['발행일시'] || '').localeCompare(y.r['발행일시'] || '') * dir;
-  });
-}
-
 // 통계 카드에서 연 기사 목록 — 카드마다 거르는 기준이 다르다
 const AI_CARD = {
   '긍정': {label: '우리병원 긍정 기사', color: '#1a7a3c', pick: S => S.asan.filter(x => x.a.t === '긍정')},
@@ -1899,10 +1873,8 @@ function aiSections() {
   const byDate = (x, y) => (y.r['발행일시'] || '').localeCompare(x.r['발행일시'] || '');
 
   const policy = labeled.filter(x => x.a.p).sort(byDate);
-  const bench = labeled.filter(x => x.a.b && x.r['병원그룹'] !== '아산').sort(byDate);
   // 화면용 — 단순 공지를 빼고 같은 사건끼리 묶는다. 엑셀은 위 raw를 그대로 쓴다
   const policyG = aiCluster(policy.filter(x => !aiTrivial(x.a.p, x.r)), x => x.a.p);
-  const benchG  = aiCluster(bench.filter(x => !aiTrivial(x.a.b, x.r)), x => x.a.b, x => x.r['병원그룹']);
 
   // 진료과별 노출 — 한 기사에 같은 진료과 의료진이 둘이어도 기사는 1건으로 센다
   const depts = new Map();
@@ -1918,17 +1890,6 @@ function aiSections() {
   }
   const deptRows = [...depts.values()].sort((x, y) => y.articles - x.articles);
 
-  // 실적 판정 — 규칙(제외 추정 태그)과 AI가 같은 결론인지
-  const record = {aiIn: 0, aiOut: 0, bothOut: 0, ruleOnly: 0, aiOnly: 0};
-  for (const {r, a} of asan) {
-    if (!a.s) continue;
-    const ruleOut = !!suspectTag(r), aiOut = a.s === '제외';
-    if (aiOut) record.aiOut++; else record.aiIn++;
-    if (ruleOut && aiOut) record.bothOut++;
-    else if (ruleOut) record.ruleOnly++;
-    else if (aiOut) record.aiOnly++;
-  }
-
   // 병원별 보도자료 추정 — 화면 필터(기간)만 반영하고 병원 필터는 쓰지 않는다
   const prByHosp = Object.keys(GROUP_NAME).map(g => {
     const sub = allData.filter(r => r['병원그룹'] === g && r['날짜'] >= range.from
@@ -1941,7 +1902,7 @@ function aiSections() {
 
   const issueDays = Object.keys(aiData?.['이슈'] || {})
     .filter(d => d >= range.from && d <= range.to).sort().reverse();
-  return {range, rows, labeled, asan, policy, bench, policyG, benchG, deptRows, record, issueDays, prByHosp};
+  return {range, rows, labeled, asan, policy, policyG, deptRows, issueDays, prByHosp};
 }
 
 function renderAI() {
@@ -2015,19 +1976,6 @@ function renderAI() {
       <td style="font-size:12px;color:#1a5fa8">${[...d.people].sort((x, y) => y[1] - x[1]).map(([n, c]) => `${aiEsc(n)}(${c})`).join(', ')}</td>
     </tr>`).join('')}</tbody></table></div>`;
 
-  const benchTable = !S.benchG.length ? empty('이 기간에 참고할 점이 있는 타병원 기사가 없습니다.') : `<div class="table-wrap"><table>
-    <thead><tr>${aiTh('날짜', '날짜', 'style="width:62px"')}${aiTh('병원', '병원', 'style="width:104px"')}
-      <th class="nosort">참고점</th></tr></thead>
-    <tbody>${sortBench(S.benchG).slice(0, 60).map(g => {
-      const hKey = Object.keys(HOSPITALS).find(k => HOSPITALS[k].group === g.r['병원그룹']);
-      const c = HOSPITALS[hKey]?.color || '#444';
-      return `<tr><td class="td-date">${mdOf(g.r)}</td>
-        <td class="td-tag"><span class="tag" style="background:${c}22;color:${c};font-weight:600">${hospLabel(g.r)}</span></td>
-        <td style="font-size:12px;font-weight:600"><a href="${g.r['언론사원문'] || g.r['네이버링크'] || '#'}" target="_blank" rel="noopener"
-          style="color:var(--text)" title="${aiEsc(g.r['제목'])}">${aiEsc(g.a.b)}</a>${aiMoreBadge(g)}</td></tr>`;
-    }).join('')}</tbody></table></div>`
-    + (S.benchG.length > 60 ? empty(`${S.benchG.length}개 중 60개만 표시했습니다 (전체 ${S.bench.length}건은 엑셀로 받으세요).`) : '');
-
   // 병원별 보도자료 기사 (추정)
   const prTotal = S.prByHosp.reduce((n, h) => n + h.articles, 0);
   const prMax = Math.max(...S.prByHosp.map(h => h.releases), 1);
@@ -2055,17 +2003,6 @@ function renderAI() {
           <td style="font-family:var(--mono);font-size:13px">${c.all.length}</td></tr>`).join('')}</tbody></table></div>`;
     })();
 
-  const R = S.record;
-  const recordTable = !(R.aiIn + R.aiOut) ? empty('이 기간에 실적 판정을 받은 기사가 없습니다.') : `<div class="table-wrap"><table>
-    <thead><tr><th class="nosort">구분</th><th class="nosort" style="width:90px">기사 수</th><th class="nosort">뜻</th></tr></thead>
-    <tbody>
-      <tr><td>AI 포함</td><td style="font-family:var(--mono)">${R.aiIn}</td><td style="font-size:12px;color:var(--muted)">AI가 실적에 넣을 기사로 본 것</td></tr>
-      <tr><td>AI 제외</td><td style="font-family:var(--mono)">${R.aiOut}</td><td style="font-size:12px;color:var(--muted)">AI가 실적에서 뺄 기사로 본 것</td></tr>
-      <tr><td>규칙·AI 모두 제외</td><td style="font-family:var(--mono)">${R.bothOut}</td><td style="font-size:12px;color:var(--muted)">기존 '제외 추정' 규칙과 AI가 같은 결론</td></tr>
-      <tr><td>규칙만 제외</td><td style="font-family:var(--mono)">${R.ruleOnly}</td><td style="font-size:12px;color:var(--muted)">규칙은 제외로 봤지만 AI는 포함으로 본 것</td></tr>
-      <tr><td>AI만 제외</td><td style="font-family:var(--mono)">${R.aiOnly}</td><td style="font-size:12px;color:var(--muted)">규칙에 안 걸렸지만 AI가 제외로 본 것 — 규칙이 놓친 유형일 수 있음</td></tr>
-    </tbody></table></div>`;
-
   body.innerHTML =
     `<div style="font-size:12px;color:var(--muted);margin:0 0 14px;font-family:var(--mono)">기간: ${S.range.label}${S.range.isDefault ? ' (기간 미설정 시 최근 7일)' : ''}</div>` +
     section('issues', '📰 오늘의 이슈', `${S.issueDays.length}일`, '그날 나온 서울아산병원 기사를 같은 사건끼리 묶어 AI가 고른 주요 이슈입니다.', issues) +
@@ -2073,8 +2010,6 @@ function renderAI() {
     section('pr', '📣 보도자료로 나온 기사 (추정)', `${S.prByHosp.reduce((n, h) => n + h.releases, 0)}건 · 기사 ${prTotal}건`,
       '보도자료 목록은 우리 것밖에 없어서, <b>같은 날 비슷한 제목 기사가 5건 이상</b> 나왔고 그중 하나라도 제목에 그 병원 이름이 있으면 보도자료로 봤습니다. 아산 보도자료 정답지와 맞춰 보니 <b>정밀도 86%</b>였습니다. 게재가 적었던 보도자료는 빠지므로 실제보다 적게 잡힙니다.', prTable) +
     section('dept', '🩺 진료과별 언론 노출', `${S.deptRows.length}개 진료과`, '서울아산병원 기사에 이름이 나온 의료진을 진료과별로 모았습니다.', deptTable) +
-    section('bench', '🔭 타병원 참고점', `${S.benchG.length}건`, '타병원 기사 중 신기술 도입·신규 센터·국내 최초 등 눈여겨볼 점입니다. 같은 사건은 한 줄로 묶고 <b>+N</b>으로 셉니다. 강좌·행사 안내처럼 단순 공지는 뺐습니다.', benchTable) +
-    section('record', '📑 실적 판정 비교', `${R.aiIn + R.aiOut}건`, '보고용 탭의 제외 추정 규칙과 AI 판정을 견줘 봅니다. 기사별 판정은 보고용 탭에 ‘AI 포함/제외’로 붙어 있고, 마우스를 올리면 근거가 보입니다. 보도자료 메시지 반영도는 보도자료 게재율 탭에서 기사 목록을 펼치면 보입니다.', recordTable) +
     (aiData['실행'] ? `<div style="font-size:11px;color:var(--muted);font-family:var(--mono)">마지막 AI 판정: ${aiData['실행']['시각']} · ${aiData['실행']['모델']}</div>` : '');
 }
 
@@ -2097,9 +2032,6 @@ function downloadAIExcel() {
   sheet('진료과별 노출', [['진료과', '기사 수', '의료진'],
     ...S.deptRows.map(d => [d.dept, d.articles, [...d.people].map(([n, c]) => `${n}(${c})`).join(', ')])],
     [18, 8, 80]);
-  sheet('타병원 참고점', [['날짜', '병원', '참고점', '제목', '링크'],
-    ...S.bench.map(({r, a}) => [r['날짜'], hospLabel(r), a.b, r['제목'], link(r)])],
-    [11, 12, 36, 60, 50]);
   const links = aiLinkMap();
   sheet('오늘의 이슈', [['날짜', '이슈', '요약', '기사 수', '기사'],
     ...S.issueDays.flatMap(day => (aiData['이슈'][day]['이슈'] || []).map(iss => [day, iss['제목'], iss['요약'], iss['기사'].length,
