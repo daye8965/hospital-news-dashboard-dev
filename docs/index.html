@@ -196,6 +196,7 @@ td{padding:10px 12px;vertical-align:top}
 .modal-table tbody tr:hover{background:var(--accent-bg)}
 .modal-table td{padding:9px 10px;vertical-align:top;font-size:13px}
 /* 요약 보드 기간 전환 */
+.stats-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
 .period-bar{grid-column:1/-1;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);margin-bottom:2px}
 .period-btn{font-family:var(--font);font-size:11px;padding:3px 10px;border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:20px;cursor:pointer}
 .period-btn:hover{color:var(--text)}
@@ -1080,14 +1081,17 @@ function renderOthers() {
   });
   const days = [...new Set(sr.map(r=>r['날짜']))].length;
   const accentColor = selectedHosp ? HOSPITALS[selectedHosp].color : '#444';
-  document.getElementById('stats-others').innerHTML = periodBar(scope) + [
-    statCard('기사', sr.length, accentColor),
-    statCard('수집 일수', days, accentColor),
-    ...Object.entries(hospCounts).map(([k,v]) => {
-      const color = Object.values(HOSPITALS).find(h=>h.label===k)?.color || accentColor;
-      return statCard(k, v, color);
-    })
-  ].join('');
+  // 카드를 안쪽 그리드로 한 번 더 감싼다 — 기간 바가 바깥 그리드에 직접 들어가면
+  // 열이 8개로 고정돼, 병원 하나만 고른 경우 카드 3장이 143px로 쪼그라들고 오른쪽이 빈다
+  document.getElementById('stats-others').innerHTML = periodBar(scope) +
+    `<div class="stats-grid">${[
+      statCard('기사', sr.length, accentColor),
+      statCard('수집 일수', days, accentColor),
+      ...Object.entries(hospCounts).map(([k,v]) => {
+        const color = Object.values(HOSPITALS).find(h=>h.label===k)?.color || accentColor;
+        return statCard(k, v, color);
+      })
+    ].join('')}</div>`;
 
   renderTable('table-others', rows, pages.others, 'others', accentColor);
   renderPag('pag-others', rows.length, pages.others, 'others');
