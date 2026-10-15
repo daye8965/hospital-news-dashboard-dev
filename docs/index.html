@@ -365,9 +365,16 @@ td{padding:10px 12px;vertical-align:top}
 // false일 때 가려지는 것: 제목의 [개발], 헤더 배지·안내 문구, 보도자료 게재율·AI 분석 탭, AI 판정 배지.
 const IS_DEV = true;
 
+// AI 분석 탭은 양쪽 모두에 보입니다 (2026-10-15). 판정 결과가 없으면
+// '아직 AI 판정 결과가 없습니다' 안내만 뜨므로 키가 없는 곳에서도 안전합니다
+{
+  const ai = document.getElementById('tab-btn-ai');
+  if (ai) ai.hidden = false;
+}
+
 if (IS_DEV) {
   document.title = '[개발] ' + document.title;
-  for (const id of ['dev-badge', 'dev-notice', 'tab-btn-press', 'tab-btn-ai']) {
+  for (const id of ['dev-badge', 'dev-notice', 'tab-btn-press']) {
     const el = document.getElementById(id);
     if (el) el.hidden = false;
   }
@@ -651,7 +658,7 @@ const sorts = {
 // 보고용 탭은 실적 양식대로 날짜 오름차순이 기본. 화면에서만 바꿀 수 있고 엑셀은 늘 날짜순으로 받는다
 const reportSort = {col:'날짜', asc:true};
 let pressData = [];   // docs/press_releases.json 의 보도자료 목록
-let aiData = null;    // docs/ai_labels.json — ai_classify.py가 남긴 AI 판정 (개발 버전 전용)
+let aiData = null;    // docs/ai_labels.json — ai_classify.py가 남긴 AI 판정 (없으면 배지·탭만 빈다)
 let selectedHosp = null; // null = 전체 타병원
 let paperHosp = null;    // null = 지면모음 전체 병원
 let barChart = null, pieChart = null;
@@ -688,7 +695,7 @@ async function init() {
     console.log('보도자료 목록 로드 실패:', e);
   }
   // AI 판정 (없으면 배지와 AI 분석 탭만 비고 나머지는 그대로 동작한다)
-  if (IS_DEV) try {
+  try {
     const res = await fetch('./ai_labels.json?t=' + Date.now());
     if (res.ok) aiData = await res.json();
   } catch(e) {
