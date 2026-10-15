@@ -33,7 +33,6 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:1
 .tab-btn:hover{color:var(--text)}
 .tab-btn.active[data-tab="ours"]{color:var(--c-asan);border-bottom-color:var(--c-asan)}
 .tab-btn.active[data-tab="others"]{color:var(--c-samsung);border-bottom-color:var(--c-samsung)}
-.tab-btn.active[data-tab="compare"]{color:var(--text);border-bottom-color:var(--text)}
 .tab-btn.active[data-tab="paper"]{color:#8a5a00;border-bottom-color:#8a5a00}
 .tab-btn.active[data-tab="report"]{color:var(--c-asan);border-bottom-color:var(--c-asan)}
 .tab-btn.active[data-tab="press"]{color:#1a7a3c;border-bottom-color:#1a7a3c}
@@ -239,12 +238,11 @@ td{padding:10px 12px;vertical-align:top}
 
 <nav class="tab-nav">
   <button class="tab-btn active" data-tab="paper"  onclick="switchTab('paper')">🗞️ 지면모음</button>
+  <button class="tab-btn"        data-tab="report" onclick="switchTab('report')">📑 서울아산병원-보고용</button>
   <button class="tab-btn"        data-tab="ours"   onclick="switchTab('ours')">🏥 우리병원</button>
   <button class="tab-btn"        data-tab="others" onclick="switchTab('others')">🔍 타병원</button>
-  <button class="tab-btn"        data-tab="report" onclick="switchTab('report')">📑 서울아산병원-보고용</button>
-  <button class="tab-btn" id="tab-btn-press" hidden data-tab="press"  onclick="switchTab('press')">📣 보도자료 게재율</button>
   <button class="tab-btn" id="tab-btn-ai" hidden data-tab="ai" onclick="switchTab('ai')">🤖 AI 분석</button>
-  <button class="tab-btn"        data-tab="compare"onclick="switchTab('compare')">📊 병원 비교</button>
+  <button class="tab-btn" id="tab-btn-press" hidden data-tab="press"  onclick="switchTab('press')">📣 보도자료 게재율</button>
 </nav>
 
 <div class="filter-bar" id="filter-bar">
@@ -282,8 +280,45 @@ td{padding:10px 12px;vertical-align:top}
     <div class="pagination" id="pag-others"></div>
   </div>
 
-  <!-- ③ 비교 탭 -->
-  <div id="panel-compare" class="tab-panel">
+  <!-- ④ 지면모음 탭 -->
+  <div id="panel-paper" class="tab-panel active">
+    <div class="notice notice-keep">🗞️ 네이버 '신문 지면 보기'에 등록된 주요 신문 19곳의 지면 게재 기사를 모았습니다. 방송·전문지·지면 미제공 매체는 포함되지 않으며, 최근 기사의 면 정보는 신문 발행 후 1~2일 안에 채워집니다. 한가위 특집 별지 같은 <b>H면·별지는 네이버가 지면 보기로 제공하지 않아</b>, 직접 추가한 기사만 나옵니다.</div>
+    <div class="hospital-filter" id="paper-hosp-filter"></div>
+    <div class="stats-row" id="stats-paper"></div>
+    <div class="table-wrap" id="table-paper"></div>
+    <div class="pagination" id="pag-paper"></div>
+  </div>
+
+  <!-- ⑤ 서울아산병원-보고용 탭 -->
+  <div id="panel-report" class="tab-panel">
+    <div class="notice notice-keep">📑 2026 연간 언론실적 엑셀 기준으로 모았습니다. 온라인은 <b>실적에 집계된 적 있는 매체</b>만, '제외 추정'은 6/11~9/10 대시보드 기사를 실적과 대조해 <b>제외율 85% 이상이었던 유형</b>만 표시합니다(서울아산병원 기사에만 적용, 태그에 마우스를 올리면 제외율 표시). 신문은 네이버 지면 정보로 게재가 확인된 기사만 담고, 방송 프로그램 실적은 기사로 구분되지 않아 방송사 웹기사는 온라인에 포함됩니다.
+      <label class="check-label" style="margin-left:8px"><input type="checkbox" id="hide-suspect"> 제외 추정 기사 숨기기</label>
+      <label class="check-label" id="hide-ai-wrap" hidden style="margin-left:8px"><input type="checkbox" id="hide-ai-out"> AI 제외 기사 숨기기</label>
+    </div>
+    <div id="report-body"></div>
+  </div>
+
+  <!-- ⑥ 보도자료 게재율 탭 -->
+  <div id="panel-press" class="tab-panel">
+    <div class="notice notice-keep">📣 구글 시트 <b>'언론 업무'</b> 탭에서 구분이 <b>보도자료</b>이고 게재일이 적힌 건을 가져와, 배포일 전후에 수집된 서울아산병원 기사와 맞춰 봤습니다. <b>의료진 이름과 제목 키워드가 겹치는 기사</b>를 그 보도자료에서 나온 것으로 셉니다. 줄을 누르면 실제 기사 목록이 펼쳐집니다.
+      <label class="check-label" style="margin-left:8px"><input type="checkbox" id="press-zero-only"> 게재 0건만 보기</label>
+    </div>
+    <div class="stats-row" id="stats-press"></div>
+    <div class="table-wrap" id="table-press"></div>
+  </div>
+
+  <!-- ⑦ AI 분석 탭 (개발 버전 전용) -->
+  <div id="panel-ai" class="tab-panel">
+    <div class="notice notice-keep">🤖 수집한 기사 제목·요약을 Claude 경량 모델(Haiku)에게 보여 주고 판정을 받은 결과입니다. <b>아직 사람이 만든 실적·게시글과 대조하지 않은 시험 단계</b>라 참고용으로만 보세요. 날짜를 지정하지 않으면 최근 7일을 보여 줍니다.</div>
+    <div class="stats-row" id="stats-ai"></div>
+    <div id="ai-body"></div>
+    <!-- 병원 비교 — 2026-10-15에 별도 탭에서 AI 분석 안으로 옮김.
+         자체 기간 필터를 쓰므로 renderAI()가 다시 그리는 #ai-body 바깥에 둔다 -->
+    <div class="ai-section" id="compare-section">
+      <h2 onclick="toggleCompare()" title="펼치기"><span class="caret">▶</span>📊 병원 비교<span class="cnt">5개 병원</span></h2>
+      <div id="compare-block" hidden>
+        <div class="ai-desc">병원별 기사 건수와 점유율입니다. 위 날짜 필터와 별개로 <b>자체 기간</b>을 씁니다.</div>
+
     <div class="notice">📋 샘플 데이터 기준 비교입니다. 실제 배포 후 자동 반영됩니다.</div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 16px;margin-bottom:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <span style="font-size:12px;font-weight:600;color:var(--muted)">기간 설정</span>
@@ -318,41 +353,8 @@ td{padding:10px 12px;vertical-align:top}
         </tr></thead>
         <tbody id="compare-tbody"></tbody>
       </table>
+      </div>
     </div>
-  </div>
-
-  <!-- ④ 지면모음 탭 -->
-  <div id="panel-paper" class="tab-panel active">
-    <div class="notice notice-keep">🗞️ 네이버 '신문 지면 보기'에 등록된 주요 신문 19곳의 지면 게재 기사를 모았습니다. 방송·전문지·지면 미제공 매체는 포함되지 않으며, 최근 기사의 면 정보는 신문 발행 후 1~2일 안에 채워집니다. 한가위 특집 별지 같은 <b>H면·별지는 네이버가 지면 보기로 제공하지 않아</b>, 직접 추가한 기사만 나옵니다.</div>
-    <div class="hospital-filter" id="paper-hosp-filter"></div>
-    <div class="stats-row" id="stats-paper"></div>
-    <div class="table-wrap" id="table-paper"></div>
-    <div class="pagination" id="pag-paper"></div>
-  </div>
-
-  <!-- ⑤ 서울아산병원-보고용 탭 -->
-  <div id="panel-report" class="tab-panel">
-    <div class="notice notice-keep">📑 2026 연간 언론실적 엑셀 기준으로 모았습니다. 온라인은 <b>실적에 집계된 적 있는 매체</b>만, '제외 추정'은 6/11~9/10 대시보드 기사를 실적과 대조해 <b>제외율 85% 이상이었던 유형</b>만 표시합니다(서울아산병원 기사에만 적용, 태그에 마우스를 올리면 제외율 표시). 신문은 네이버 지면 정보로 게재가 확인된 기사만 담고, 방송 프로그램 실적은 기사로 구분되지 않아 방송사 웹기사는 온라인에 포함됩니다.
-      <label class="check-label" style="margin-left:8px"><input type="checkbox" id="hide-suspect"> 제외 추정 기사 숨기기</label>
-      <label class="check-label" id="hide-ai-wrap" hidden style="margin-left:8px"><input type="checkbox" id="hide-ai-out"> AI 제외 기사 숨기기</label>
-    </div>
-    <div id="report-body"></div>
-  </div>
-
-  <!-- ⑥ 보도자료 게재율 탭 -->
-  <div id="panel-press" class="tab-panel">
-    <div class="notice notice-keep">📣 구글 시트 <b>'언론 업무'</b> 탭에서 구분이 <b>보도자료</b>이고 게재일이 적힌 건을 가져와, 배포일 전후에 수집된 서울아산병원 기사와 맞춰 봤습니다. <b>의료진 이름과 제목 키워드가 겹치는 기사</b>를 그 보도자료에서 나온 것으로 셉니다. 줄을 누르면 실제 기사 목록이 펼쳐집니다.
-      <label class="check-label" style="margin-left:8px"><input type="checkbox" id="press-zero-only"> 게재 0건만 보기</label>
-    </div>
-    <div class="stats-row" id="stats-press"></div>
-    <div class="table-wrap" id="table-press"></div>
-  </div>
-
-  <!-- ⑦ AI 분석 탭 (개발 버전 전용) -->
-  <div id="panel-ai" class="tab-panel">
-    <div class="notice notice-keep">🤖 수집한 기사 제목·요약을 Claude 경량 모델(Haiku)에게 보여 주고 판정을 받은 결과입니다. <b>아직 사람이 만든 실적·게시글과 대조하지 않은 시험 단계</b>라 참고용으로만 보세요. 날짜를 지정하지 않으면 최근 7일을 보여 줍니다.</div>
-    <div class="stats-row" id="stats-ai"></div>
-    <div id="ai-body"></div>
   </div>
 </main>
 
@@ -700,7 +702,8 @@ async function init() {
 
   document.getElementById('total-badge').textContent = `총 ${allData.length.toLocaleString()}건`;
   switchTab(currentTab);   // 탭 강조·필터·엑셀 버튼 문구까지 한 번에 맞춘다
-  renderCompare();
+  // 병원 비교는 접혀 있을 때 그리면 캔버스 크기가 0이라 차트가 찌그러진다.
+  // 펼칠 때 toggleCompare()가 그린다
 }
 
 function parseCSV(text) {
@@ -767,11 +770,10 @@ function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-'+tab));
-  document.getElementById('filter-bar').style.display = tab === 'compare' ? 'none' : 'flex';
+  document.getElementById('filter-bar').style.display = 'flex';
   document.getElementById('excel-label').textContent =
     tab === 'paper' ? '지면모음 엑셀 다운로드' : tab === 'report' ? '보고용 엑셀 다운로드'
     : tab === 'press' ? '게재율 엑셀 다운로드' : tab === 'ai' ? 'AI 분석 엑셀 다운로드' : '주간 엑셀 다운로드';
-  if (tab === 'compare') { renderCompare(); return; }
   updateKeywordOptions(tab);
   renderCurrent();
 }
@@ -1691,6 +1693,17 @@ const aiDayOpen = new Set();
 // 섹션은 기본으로 접어 둔다. 다 펼치면 한 화면에 안 들어와 무엇이 있는지조차 안 보인다.
 // 오늘의 이슈만 펼침 — 이 탭에서 가장 먼저 보는 것
 const aiSectionOpen = {issues: true};
+// 병원 비교는 정적 마크업이라 따로 접는다. 펼칠 때 그려야 캔버스가 제 크기를 잡는다
+function toggleCompare() {
+  const box = document.getElementById('compare-block');
+  const sec = document.getElementById('compare-section');
+  const open = box.hidden;
+  box.hidden = !open;
+  sec.querySelector('.caret').textContent = open ? '▼' : '▶';
+  sec.querySelector('h2').title = open ? '접기' : '펼치기';
+  if (open) renderCompare();
+}
+
 function toggleAISection(key) {
   aiSectionOpen[key] = !aiSectionOpen[key];
   renderAI();
