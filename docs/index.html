@@ -55,6 +55,11 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:1
 .ai-day:hover{color:var(--text)}
 .ai-day .caret{font-size:15px;line-height:1;width:14px;text-align:center}
 .press-row{cursor:pointer}
+/* 의료진이 다섯 명이면 한 줄로 늘어져 표가 넓어진다 — 칸 폭에 맞춰 줄바꿈 */
+.td-doctors{font-size:12px;color:#1a5fa8;display:flex;flex-wrap:wrap;gap:0 6px;line-height:1.5}
+.td-doctors>span::after{content:',';color:var(--muted)}
+.td-doctors>span:last-child::after{content:''}
+#table-press td{padding:10px 8px}
 .press-row:hover{background:var(--accent-bg)}
 .press-sub td{background:#fafaf8;padding:0}
 .press-sub table{margin:0}
@@ -1555,13 +1560,13 @@ function renderPress() {
     <thead><tr>
       ${pressTh('배포일', '배포일', 'style="width:84px"')}
       <th class="nosort">보도자료</th>
-      <th class="nosort" style="white-space:nowrap">의료진</th>
-      ${pressTh('담당', '담당', 'style="width:84px"')}
-      ${pressTh('게재', '게재', 'style="width:78px;white-space:nowrap"')}
-      ${pressTh('매체', '매체', 'style="width:66px"')}
-      <th class="nosort" style="width:54px">지면</th>
-      <th class="nosort" style="width:66px">출입기자</th>
-      ${aiData ? '<th class="nosort" style="white-space:nowrap" title="AI가 이 보도자료 기사로 확인한 것 중 핵심 메시지가 담긴 정도">AI 메시지 반영</th>' : ''}
+      <th class="nosort" style="width:112px">의료진</th>
+      ${pressTh('담당', '담당', 'style="width:64px"')}
+      ${pressTh('게재', '게재', 'style="width:52px;white-space:nowrap"')}
+      ${pressTh('매체', '매체', 'style="width:48px"')}
+      <th class="nosort" style="width:42px">지면</th>
+      <th class="nosort" style="width:56px">출입기자</th>
+      ${aiData ? '<th class="nosort" style="width:96px" title="AI가 이 보도자료 기사로 확인한 것 중 핵심 메시지가 얼마나 담겼는지">일치율</th>' : ''}
     </tr></thead>
     <tbody>${rows.map((x, i) => {
       const key = x.it['날짜'] + '|' + i;
@@ -1573,13 +1578,13 @@ function renderPress() {
         <td class="td-date">${x.it['날짜'].slice(5).replace('-', '/')}<span style="margin-left:4px">(${pressWeekday(x.it['날짜'])})</span></td>
         <td class="td-title">${open ? '▾ ' : '▸ '}${x.it['제목']}
           ${x.it['배포범위'] ? `<span style="font-size:11px;color:var(--muted);margin-left:6px">${x.it['배포범위']}</span>` : ''}</td>
-        <td style="font-size:12px;color:#1a5fa8;white-space:nowrap">${(x.it['의료진'] || []).join(', ') || '—'}</td>
-        <td style="font-size:12px;color:var(--text);white-space:nowrap">${pressOwner(x.it) || '—'}</td>
+        <td class="td-doctors">${(x.it['의료진'] || []).map(n => `<span>${n}</span>`).join('') || '—'}</td>
+        <td style="font-size:12px;color:var(--text)">${pressOwner(x.it) || '—'}</td>
         <td style="font-family:var(--mono);font-size:14px;white-space:nowrap">${cnt}</td>
         <td style="font-family:var(--mono);font-size:13px;color:var(--muted)">${x.media.size || '—'}</td>
         <td style="font-family:var(--mono);font-size:13px;color:var(--muted)">${x.paper || '—'}</td>
         <td style="font-family:var(--mono);font-size:13px;color:var(--muted)">${x.beat || '—'}</td>
-        ${aiData ? `<td style="font-size:12px;white-space:nowrap">${pressReflectSummary(x)}</td>` : ''}
+        ${aiData ? `<td style="font-size:12px">${pressReflectSummary(x)}</td>` : ''}
       </tr>`;
       if (!open) return main;
       const sub = !x.hits.length
