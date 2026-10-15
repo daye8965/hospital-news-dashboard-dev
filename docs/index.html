@@ -1566,7 +1566,7 @@ function renderPress() {
       ${pressTh('매체', '매체', 'style="width:48px"')}
       <th class="nosort" style="width:42px">지면</th>
       <th class="nosort" style="width:56px">출입기자</th>
-      ${aiData ? '<th class="nosort" style="width:96px" title="AI가 이 보도자료 기사로 확인한 것 중 핵심 메시지가 얼마나 담겼는지">일치율</th>' : ''}
+      ${aiData ? '<th class="nosort" style="width:130px" title="AI가 이 보도자료 기사로 확인한 것 중 핵심 메시지가 얼마나 담겼는지">일치율</th>' : ''}
     </tr></thead>
     <tbody>${rows.map((x, i) => {
       const key = x.it['날짜'] + '|' + i;
@@ -1584,7 +1584,7 @@ function renderPress() {
         <td style="font-family:var(--mono);font-size:13px;color:var(--muted)">${x.media.size || '—'}</td>
         <td style="font-family:var(--mono);font-size:13px;color:var(--muted)">${x.paper || '—'}</td>
         <td style="font-family:var(--mono);font-size:13px;color:var(--muted)">${x.beat || '—'}</td>
-        ${aiData ? `<td style="font-size:12px">${pressReflectSummary(x)}</td>` : ''}
+        ${aiData ? `<td style="font-size:12px;white-space:nowrap">${pressReflectSummary(x)}</td>` : ''}
       </tr>`;
       if (!open) return main;
       const sub = !x.hits.length
