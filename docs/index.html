@@ -2057,10 +2057,10 @@ function renderAI() {
   body.innerHTML =
     `<div style="font-size:12px;color:var(--muted);font-family:var(--mono)">기간: ${S.range.label}${S.range.isDefault ? ' (기간 미설정 시 최근 7일)' : ''}</div>` +
     (aiData['실행'] ? `<div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:14px">마지막 AI 판정: ${aiData['실행']['시각']} · ${aiData['실행']['모델']}</div>` : '<div style="margin-bottom:14px"></div>') +
-    section('issues', '📰 오늘의 이슈', `${S.issueDays.length}일`, '그날 나온 서울아산병원 기사를 같은 사건끼리 묶어 AI가 고른 주요 이슈입니다.', issues) +
-    section('policy', '🏛️ 정책 관심 기사', `주제 ${S.policyG.length}개 · 기사 ${S.policy.length}건`, '수가·의대 정원·전공의·상급종합병원 구조전환처럼 병원 운영에 영향을 줄 정책 기사입니다 (모든 병원 기사 대상). 비슷한 주제는 한 줄로 묶고 <b>+N</b>으로 셉니다. 주제를 누르면 기사로 갑니다.', policyTable) +
     section('pr', '📣 보도자료로 나온 기사 (추정)', `${S.prByHosp.reduce((n, h) => n + h.releases, 0)}건 · 기사 ${prTotal}건`,
       '보도자료 목록은 우리 것밖에 없어서, <b>같은 날 비슷한 제목 기사가 5건 이상</b> 나왔고 그중 하나라도 제목에 그 병원 이름이 있으면 보도자료로 봤습니다. 아산 보도자료 정답지와 맞춰 보니 <b>정밀도 86%</b>였습니다. 게재가 적었던 보도자료는 빠지므로 실제보다 적게 잡힙니다.', prTable) +
+    section('issues', '📰 오늘의 이슈', `${S.issueDays.length}일`, '그날 나온 서울아산병원 기사를 같은 사건끼리 묶어 AI가 고른 주요 이슈입니다.', issues) +
+    section('policy', '🏛️ 정책 관심 기사', `주제 ${S.policyG.length}개 · 기사 ${S.policy.length}건`, '수가·의대 정원·전공의·상급종합병원 구조전환처럼 병원 운영에 영향을 줄 정책 기사입니다 (모든 병원 기사 대상). 비슷한 주제는 한 줄로 묶고 <b>+N</b>으로 셉니다. 주제를 누르면 기사로 갑니다.', policyTable) +
     section('dept', '🩺 진료과별 언론 노출', `${S.deptRows.length}개 진료과`, '서울아산병원 기사에 이름이 나온 의료진을 진료과별로 모았습니다.', deptTable) +
     '';
 }
