@@ -1,10 +1,10 @@
 {
-  "실행시각": "2026-10-15 07:18",
-  "전체기사": 22581,
+  "실행시각": "2026-10-15 10:30",
+  "전체기사": 22583,
   "지면": {
-    "대상": 79,
-    "요청": 73,
-    "게재확인": 7,
+    "대상": 72,
+    "요청": 69,
+    "게재확인": 0,
     "미게재": 72,
     "오류": 0
   },
@@ -14,29 +14,29 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 755,
-    "요청": 370,
-    "채움": 125,
-    "이름없음": 10,
-    "오류": 79,
-    "차단호스트": 6,
-    "네이버바이라인없음": 149,
+    "대상": 626,
+    "요청": 245,
+    "채움": 5,
+    "이름없음": 2,
+    "오류": 92,
+    "차단호스트": 5,
+    "네이버바이라인없음": 141,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/421/0009226456",
-      "길이": 252180,
-      "title": "서울레이스 20대女 사망 충격…'평소와 다른 숨참' 넘기지 마세요",
+      "url": "https://n.news.naver.com/mnews/article/015/0005342445",
+      "길이": 287644,
+      "title": "동의서 한 장으로 풀 수 없는 '모를 권리'…유전체 검사, 공론화가 먼저다",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "시간초과": true,
-    "남은대상": 620
+    "남은대상": 619
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 535,
-    "표시기사": 4034
+    "표시기사": 4033
   },
   "보도자료": {
     "목록": 610,
