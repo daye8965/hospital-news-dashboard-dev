@@ -74,6 +74,11 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:1
 .badge-ai{display:inline-block;font-size:10px;padding:0 5px;border-radius:3px;margin-left:6px;white-space:nowrap;vertical-align:1px;cursor:help}
 .badge-ai.out{color:#7a4a00;background:#fdf3e1}
 .badge-ai.in{color:#1a5fa8;background:#eef4fb}
+/* 보고용 탭 — 딱지를 제목에서 떼어 '판정' 열에 모은다. 제목 줄이 깨끗해진다 */
+.td-verdict{display:flex;flex-wrap:wrap;gap:3px;align-items:flex-start}
+.td-verdict>span{margin-left:0}
+#report-body td{padding:10px 8px}
+#report-body .td-reporter,#report-body .td-prof{max-width:92px;overflow:hidden;text-overflow:ellipsis}
 .check-label{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap}
 
 /* 보고용 탭 */
@@ -1253,8 +1258,10 @@ function renderReport() {
         <thead><tr>
           ${reportTh('날짜', '날짜', 'style="width:56px"')}${reportTh('매체', '매체')}${withHosp ? reportTh('병원', '병원') : ''}
           <th class="nosort">보도내용</th>
-          <th class="nosort">기자</th><th class="nosort">교수명</th><th class="nosort">구분</th>
-          <th class="nosort" style="min-width:50px">링크</th>
+          <th class="nosort" style="width:140px">판정</th>
+          <th class="nosort" style="width:84px">기자</th><th class="nosort" style="width:92px">교수명</th>
+          <th class="nosort" style="width:54px">구분</th>
+          <th class="nosort" style="width:46px">링크</th>
         </tr></thead>
         <tbody>${items.map(({r, tag}) => {
           const link = r['언론사원문']||r['네이버링크']||'';
@@ -1266,9 +1273,10 @@ function renderReport() {
             <td class="td-date">${mdOf(r)}</td>
             <td class="td-media">${mediaOf(r)}${hasPaper(r) ? `<span class="badge-paper">${r['지면']}</span>` : ''}</td>
             ${withHosp ? `<td class="td-tag"><span class="tag" style="background:${hColor}22;color:${hColor};font-weight:600">${hospLabel(r)}</span></td>` : ''}
-            <td class="td-title">${link ? `<a href="${link}" target="_blank" rel="noopener">${r['제목']}</a>` : r['제목']}${tag ? `<span class="badge-susp" title="과거 실적 대조 시 이 유형의 ${SUSPECT_RATE[tag]}%가 실적에서 제외됨">제외 추정: ${tag}</span>` : ''}${aiRecordBadge(r)}${aiBadges(r)}</td>
+            <td class="td-title">${link ? `<a href="${link}" target="_blank" rel="noopener">${r['제목']}</a>` : r['제목']}</td>
+            <td><div class="td-verdict">${aiRecordBadge(r)}${aiBadges(r)}${tag ? `<span class="badge-susp" title="과거 실적 대조 시 이 유형의 ${SUSPECT_RATE[tag]}%가 실적에서 제외됨">제외 추정: ${tag}</span>` : ''}</div></td>
             <td class="td-reporter">${reporterCell(r)}</td>
-            <td style="font-size:12px;color:#1a5fa8;white-space:nowrap;font-weight:${prof?'600':'400'}">${prof || '—'}</td>
+            <td class="td-prof" style="font-size:12px;color:#1a5fa8;white-space:nowrap;font-weight:${prof?'600':'400'}">${prof || '—'}</td>
             <td style="font-size:12px;color:var(--muted);white-space:nowrap">${reportKind(r)}</td>
             <td class="td-link">${naver ? `<a href="${naver}" target="_blank" rel="noopener">네이버</a>` : ''}</td>
           </tr>`;
