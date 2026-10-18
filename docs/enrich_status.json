@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-10-18 10:04",
-  "전체기사": 23006,
+  "실행시각": "2026-10-19 06:31",
+  "전체기사": 23047,
   "지면": {
-    "대상": 57,
-    "요청": 59,
-    "게재확인": 0,
-    "미게재": 57,
+    "대상": 55,
+    "요청": 56,
+    "게재확인": 2,
+    "미게재": 53,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,29 +14,28 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 647,
-    "요청": 385,
-    "채움": 7,
-    "이름없음": 2,
-    "오류": 87,
-    "차단호스트": 5,
-    "네이버바이라인없음": 284,
+    "대상": 680,
+    "요청": 527,
+    "채움": 31,
+    "이름없음": 8,
+    "오류": 78,
+    "차단호스트": 7,
+    "네이버바이라인없음": 402,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/022/0004167457",
-      "길이": 246511,
-      "title": "공짜로 지켜지는 골든타임은 없다 [김태정의 진료실은 오늘도 맑음]",
+      "url": "https://n.news.naver.com/mnews/article/421/0009234841",
+      "길이": 262925,
+      "title": "가을비에 서울 곳곳 침수, 교통통제…폭우 피해 129건(종합2보)",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
-    "시간초과": true,
-    "남은대상": 638
+    "남은대상": 641
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 535,
-    "표시기사": 4107
+    "표시기사": 4113
   },
   "보도자료": {
     "목록": 609,
