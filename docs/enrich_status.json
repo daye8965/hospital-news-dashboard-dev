@@ -1,10 +1,10 @@
 {
-  "실행시각": "2026-10-18 06:29",
-  "전체기사": 23005,
+  "실행시각": "2026-10-18 10:04",
+  "전체기사": 23006,
   "지면": {
-    "대상": 61,
-    "요청": 62,
-    "게재확인": 4,
+    "대상": 57,
+    "요청": 59,
+    "게재확인": 0,
     "미게재": 57,
     "오류": 0
   },
@@ -14,29 +14,29 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 695,
-    "요청": 417,
-    "채움": 45,
-    "이름없음": 4,
-    "오류": 83,
+    "대상": 647,
+    "요청": 385,
+    "채움": 7,
+    "이름없음": 2,
+    "오류": 87,
     "차단호스트": 5,
-    "네이버바이라인없음": 279,
+    "네이버바이라인없음": 284,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/421/0009232812",
-      "길이": 250357,
-      "title": "오가노이드사이언스·원광대, 산학 협력…동물·식품·신경과학 연구",
+      "url": "https://n.news.naver.com/mnews/article/022/0004167457",
+      "길이": 246511,
+      "title": "공짜로 지켜지는 골든타임은 없다 [김태정의 진료실은 오늘도 맑음]",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "시간초과": true,
-    "남은대상": 646
+    "남은대상": 638
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 535,
-    "표시기사": 4106
+    "표시기사": 4107
   },
   "보도자료": {
     "목록": 609,
