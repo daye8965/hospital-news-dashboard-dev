@@ -7,7 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- SheetJS 무료판은 글꼴·정렬을 저장하지 못해, 같은 API에 서식만 더한 갈래를 쓴다.
+     전역 이름(XLSX)과 사용법이 같아 호출부는 그대로다 -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -1634,7 +1636,7 @@ function downloadPressExcel() {
   const ws = XLSX.utils.aoa_to_sheet(data);
   ws['!cols'] = [{wch:11},{wch:50},{wch:14},{wch:12},{wch:12},{wch:14},{wch:9},{wch:8},{wch:6},{wch:9},{wch:60}];
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, '보도자료 게재율');
+  addSheet(wb, ws, '보도자료 게재율');
   const {dateFrom, dateTo} = getFilters();
   XLSX.writeFile(wb, `보도자료_게재율_${dateFrom || '처음'}_${dateTo || '오늘'}.xlsx`);
 }
@@ -2078,7 +2080,7 @@ function downloadAIExcel() {
   const sheet = (name, rows, cols) => {
     const ws = XLSX.utils.aoa_to_sheet(rows);
     ws['!cols'] = cols.map(wch => ({wch}));
-    XLSX.utils.book_append_sheet(wb, ws, name);
+    addSheet(wb, ws, name);
   };
   const link = r => r['언론사원문'] || r['네이버링크'] || '';
   sheet('전체 판정', [['날짜', '병원', '매체', '제목', '논조', '위기', '정책 주제', '정책 분야', 'AI 실적', '실적 근거', '의료진', '타병원 참고점', '링크'],
@@ -2335,6 +2337,40 @@ function onFilterChange() {
 document.getElementById('search-input').addEventListener('input', onFilterChange);
 
 // ── 엑셀 다운로드 ─────────────────────────────────────────────────────────────
+// 내려받는 엑셀의 기본 서식 — 나눔고딕 9pt, 가운데 정렬.
+// 머리글만 굵게 + 연한 바탕. 제목·링크처럼 긴 글은 왼쪽 정렬이 읽기 편하다
+const XL_FONT = '나눔고딕', XL_SIZE = 9;
+const XL_LEFT = new Set(['보도내용', '제목', '링크', '요약', '이슈', '주제', '참고점', '보도자료', '의료진', '게재 매체', '기사']);
+function styleSheet(ws) {
+  const ref = ws['!ref'];
+  if (!ref) return ws;
+  const range = XLSX.utils.decode_range(ref);
+  const heads = [];
+  for (let c = range.s.c; c <= range.e.c; c++) {
+    const h = ws[XLSX.utils.encode_cell({r: range.s.r, c})];
+    heads[c] = h ? String(h.v || '') : '';
+  }
+  for (let r = range.s.r; r <= range.e.r; r++) {
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      const addr = XLSX.utils.encode_cell({r, c});
+      const cell = ws[addr];
+      if (!cell) continue;
+      const head = r === range.s.r;
+      const left = !head && XL_LEFT.has(heads[c]);
+      cell.s = {
+        font: {name: XL_FONT, sz: XL_SIZE, bold: head},
+        alignment: {horizontal: left ? 'left' : 'center', vertical: 'center', wrapText: false},
+        ...(head ? {fill: {fgColor: {rgb: 'F2F2F0'}}} : {}),
+      };
+    }
+  }
+  return ws;
+}
+// 시트를 붙일 때 서식을 함께 입힌다 — 호출부가 이것만 쓰면 빠뜨릴 일이 없다
+function addSheet(wb, ws, name) {
+  XLSX.utils.book_append_sheet(wb, styleSheet(ws), name);
+}
+
 function downloadExcel() {
   const wb = XLSX.utils.book_new();
   const COLS = ['날짜','매체','지면','제목','요약','링크','기자','출입기자','교수 소속','이름'];
@@ -2404,7 +2440,7 @@ function downloadExcel() {
     }
 
     // 시트명: 병원 레이블 (Excel 시트명 31자 제한)
-    XLSX.utils.book_append_sheet(wb, ws, h.label.slice(0,31));
+    addSheet(wb, ws, h.label.slice(0,31));
   });
 
   const fileName = `빅5병원_뉴스_${weekLabel}.xlsx`;
@@ -2432,7 +2468,7 @@ function downloadPaperExcel() {
   const ws = XLSX.utils.aoa_to_sheet(data);
   ws['!cols'] = [{wch:11},{wch:12},{wch:12},{wch:6},{wch:60},{wch:16},{wch:8},{wch:14},{wch:50}];
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, '지면모음');
+  addSheet(wb, ws, '지면모음');
   const {dateFrom, dateTo} = getFilters();
   XLSX.writeFile(wb, `지면모음_${dateFrom||'처음'}_${dateTo||'오늘'}.xlsx`);
 }
@@ -2444,11 +2480,12 @@ function downloadReportExcel() {
   sections.forEach(sec => {
     const withHosp = sec.key === 'others-print';
     const online = sec.key === 'asan-online';
-    const head = ['날짜','매체', ...(withHosp?['병원']:[]), '보도내용','진료과','이름','중복','구분', ...(online?['링크']:[]), '제외 추정'];
+    // 타병원 시트는 병원을 맨 앞에 — 병원별로 훑어 내려가는 쓰임이라 첫 열이어야 눈에 든다
+    const head = [...(withHosp?['병원']:[]), '날짜','매체','보도내용','진료과','이름','중복','구분', ...(online?['링크']:[]), '제외 추정'];
     const body = sec.items.map(({r, tag}) => [
-      mdOf(r),
-      mediaOf(r) + (hasPaper(r) ? ` (${r['지면']})` : ''),
       ...(withHosp ? [hospLabel(r)] : []),
+      mdOf(r),
+      mediaOf(r),   // 면 번호는 붙이지 않는다 — 실적 양식의 매체명과 그대로 맞춰야 한다
       r['제목']||'', '', profOf(r), '',
       isBroadcast(r) ? '방송' : '',
       ...(online ? [r['언론사원문']||r['네이버링크']||''] : []),
@@ -2456,7 +2493,7 @@ function downloadReportExcel() {
     ]);
     const ws = XLSX.utils.aoa_to_sheet([head, ...body]);
     ws['!cols'] = head.map(h => ({wch: h==='보도내용' ? 60 : h==='링크' ? 50 : h==='매체' ? 18 : 10}));
-    XLSX.utils.book_append_sheet(wb, ws, sec.title.replace(/[\\\/?*\[\]:]/g, '').slice(0, 31));
+    addSheet(wb, ws, sec.title.replace(/[\\\/?*\[\]:]/g, '').slice(0, 31));
   });
   XLSX.writeFile(wb, `서울아산병원_보고용_${range.from.replace('0000-00-00','처음')}_${range.to.replace('9999-99-99','오늘')}.xlsx`);
 }
