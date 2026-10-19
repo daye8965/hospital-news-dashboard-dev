@@ -258,6 +258,7 @@ td{padding:10px 12px;vertical-align:top}
   <select id="keyword-filter"><option value="">전체 키워드</option></select>
   <input type="text" id="search-input" placeholder="검색... (-제외어)">
   <label class="check-label"><input type="checkbox" id="beat-only"> 출입기자 기사만</label>
+  <label class="check-label" title="연간 언론실적에 한 번이라도 집계된 매체만 봅니다. 매체명이 주소로 남아 있는 기사는 함께 가려집니다"><input type="checkbox" id="perf-only"> 실적 매체만</label>
   <button onclick="resetFilters()">초기화</button>
   <span id="result-count"></span>
   <button class="excel-btn" onclick="downloadCurrent()">
@@ -456,6 +457,18 @@ const MEDIA_MAP_FE = {
   "magazine.hankyung":"한경비즈니스","medicopharma":"메디코파마","welfarenews":"웰페어뉴스",
   "isplus":"일간스포츠","sports.khan":"스포츠경향","science.ytn":"YTN사이언스","biz.sbs":"SBS Biz",
   "apsk":"메디팜스투데이",
+  // 2026-10-19 추가 — 화면에 주소가 그대로 노출되던 매체들. 주소를 하나씩 열어 확인했습니다
+  "kbsm":"경북신문","usmbc":"울산MBC",   // 'kbs'·'mbc'보다 길어 먼저 맞는다. 이게 없으면 경북신문이 KBS로 둔갑한다
+  "aftertherain":"비온뒤","medisobizanews":"메디소비자뉴스","bbsi":"BBS불교방송",
+  "biotimes":"바이오타임즈","press9":"프레스나인","ibabynews":"베이비뉴스",
+  "vegannews":"비건뉴스","thebell":"더벨","dentalnews":"치의신보","shinailbo":"신아일보",
+  "weekly.hankooki":"주간한국","hemophilia":"헤모필리아라이프","m-i.kr":"매일일보",
+  "youthdaily":"청년일보","ohmynews":"오마이뉴스","dnews":"대한경제","safetimes":"세이프타임즈",
+  "newsworks":"뉴스웍스","cctimes":"충청타임즈","jnilbo":"전남일보","biospectator":"바이오스펙테이터",
+  "breaknews":"브레이크뉴스","incheonilbo":"인천일보","ddaily":"디지털데일리","akomnews":"한의신문",
+  "busan.com":"부산일보","incheontoday":"인천투데이","economist.co.kr":"이코노미스트",
+  "dailyvet":"데일리벳","cnbnews":"CNB뉴스","labortoday":"매일노동뉴스",
+  "venturesquare":"벤처스퀘어","namdonews":"남도일보",
 };
 
 // ── 보강 열(기자명·지면·출입기자) 헬퍼 ────────────────────────────────────────
@@ -823,8 +836,36 @@ function getFilters() {
     keyword:  document.getElementById('keyword-filter').value,
     search:   document.getElementById('search-input').value.toLowerCase(),
     beatOnly: document.getElementById('beat-only').checked,
+    perfOnly: document.getElementById('perf-only').checked,
   };
 }
+
+// 「주요병원 연간언론실적(2026년)」 엑셀 5개 시트에 한 번이라도 집계된 매체 (2026-10-19 기준 159개).
+// 화면의 '실적 매체만 보기' 체크박스에만 쓰고, 수집은 그대로 전부 받습니다 —
+// 수집에서 거르면 되돌릴 수 없고(백필 7일), 보도자료 게재율의 뜻도 바뀝니다.
+// 엑셀의 오타·잘린 셀(후생신부·파이낸셔포스트·'서울'·'코리아')은 빼고 정리했습니다.
+const PERF_MEDIA = new Set(`CTS EBN EBS IT조선 JTBC KBS MBC MBN SBS SBS비즈 TJB TV조선 YTN YTN사이언스 e의료정보
+건강다이제스트 경기메디뉴스 경기일보 경남도민일보 경남매일신문 경남일보 경상일보 경향신문 국민일보
+국제뉴스 글로벌경제 글로벌이코노믹 금강일보 내일신문 노컷뉴스 녹색경제신문 농민신문 뉴데일리 뉴스1
+뉴스엔 뉴스토마토 뉴스핌 뉴시스 더팩트 더퍼블릭 더퍼스트 데일리굿뉴스 데일리메디 데일리아 데일리안
+데일리팜 데일리포스트 데일리한국 동아사이언스 동아일보 디지털타임스 디지틀조선일보 라포르시안 로이슈
+마이데일리 매경헬스 매일경제 매일신문 매일일보 머니투데이 메가경제 메디게이트뉴스 메디칼업저버
+메디칼옵저버 메디칼타임즈 메디칼트리뷴 메디컬월드뉴스 메디컬타임즈 메디컬투데이 메디컬트리뷴
+메디케이트뉴스 메디코파마 메디파나뉴스 메디팜스투데이 문화일보 백세시대 베리타스알파 보건뉴스
+브릿지경제 비즈니스포스트 비즈월드 서울경제 서울경제TV 서울신문 세계일보 스타뉴스 스포츠경향
+스포츠서울 스포츠월드 시사저널 아시아경제 아시아타임즈 아시아투데이 아이뉴스24 아주경제 약사공론
+약업신문 에너지경제 에이블뉴스 여성경제신문 연합뉴스 연합뉴스TV 와이드경제 와이드데일리 울산매일신문
+울산신문 울산제일일보 웰페어뉴스 위키리크스한국 위키트리 의사신문 의약뉴스 의학신문 의협신문
+이뉴스투데이 이데일리 이코노믹리뷰 이투데이 인공지능신문 인사이트 일간스포츠 전자신문 조선비즈
+조선일보 조세일보 주간조선 중앙일보 중앙일보헬스미디어 중앙헬스 지디넷코리아 천지일보 청년의사
+컨슈머타임스 코리아타임즈 코리아헬스로그 코메디닷컴 쿠키뉴스 키즈맘 텐아시아 파이낸셜뉴스
+파이낸셜포스트 팍스경제TV 핀포인트뉴스 하이뉴스 하이닥 한겨레 한경TV 한경비즈니스 한국경제
+한국경제TV 한국일보 한스경제 헤럴드경제 헬스경향 헬스조선 헬스중앙 화이트페이퍼 후생신보 히트뉴스`.split(/\s+/).filter(Boolean).map(x => x.toLowerCase()));
+// 비교는 소문자·공백·붙임표를 지우고 합니다 — 'SBS Biz'와 'SBS비즈', 'e-의료정보'와 'e의료정보'가 같아야 합니다
+function perfMediaNorm(name) {
+  return String(name || '').toLowerCase().split(' ').join('').split('-').join('');
+}
+function isPerfMedia(r) { return PERF_MEDIA.has(perfMediaNorm(mediaOf(r))); }
 
 const FE_EXCLUDE_KW = [
   '부고','부음','별세','타계','빈소','발인','영결식','추도사','모친상','부친상','장례식장','셀럽포토','돌싱',
@@ -933,10 +974,11 @@ function isNoise(r) {
 }
 
 function applyFilters(rows) {
-  const {dateFrom,dateTo,keyword,search,beatOnly} = getFilters();
+  const {dateFrom,dateTo,keyword,search,beatOnly,perfOnly} = getFilters();
   return rows.filter(r => {
     if (isNoise(r)) return false;
     if (beatOnly && r['출입기자'] !== 'Y') return false;
+    if (perfOnly && !isPerfMedia(r)) return false;
     if (dateFrom && r['날짜'] < dateFrom) return false;
     if (dateTo   && r['날짜'] > dateTo)   return false;
     if (keyword  && r['검색어'] !== keyword) return false;
@@ -2324,6 +2366,7 @@ function resetFilters() {
   document.getElementById('keyword-filter').value='';
   document.getElementById('search-input').value='';
   document.getElementById('beat-only').checked=false;
+  document.getElementById('perf-only').checked=false;
   onFilterChange();
 }
 
@@ -2332,7 +2375,7 @@ function onFilterChange() {
   renderCurrent();
 }
 
-['date-from','date-to','keyword-filter','beat-only','hide-suspect','hide-ai-out','press-zero-only'].forEach(id =>
+['date-from','date-to','keyword-filter','beat-only','perf-only','hide-suspect','hide-ai-out','press-zero-only'].forEach(id =>
   document.getElementById(id).addEventListener('change', onFilterChange));
 document.getElementById('search-input').addEventListener('input', onFilterChange);
 
