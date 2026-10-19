@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-10-19 11:44",
-  "전체기사": 23167,
+  "실행시각": "2026-10-20 07:54",
+  "전체기사": 23324,
   "지면": {
-    "대상": 80,
-    "요청": 65,
-    "게재확인": 6,
-    "미게재": 74,
+    "대상": 57,
+    "요청": 59,
+    "게재확인": 5,
+    "미게재": 52,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,33 +14,33 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 759,
-    "요청": 473,
-    "채움": 96,
-    "이름없음": 16,
-    "오류": 79,
-    "차단호스트": 5,
-    "네이버바이라인없음": 292,
+    "대상": 894,
+    "요청": 563,
+    "채움": 218,
+    "이름없음": 17,
+    "오류": 70,
+    "차단호스트": 6,
+    "네이버바이라인없음": 252,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/421/0009234841",
-      "길이": 263264,
-      "title": "가을비에 서울 곳곳 침수, 교통통제…폭우 피해 129건(종합2보)",
+      "url": "https://n.news.naver.com/mnews/article/030/0003476442",
+      "길이": 275161,
+      "title": "[ET시론]거미에 물린 스파이더맨, AI가 풀어야 할 세 가지 질문",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "시간초과": true,
-    "남은대상": 647
+    "남은대상": 659
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 535,
-    "표시기사": 4117
+    "표시기사": 4148
   },
   "보도자료": {
     "목록": 610,
-    "배포일없음": 15,
+    "배포일없음": 17,
     "기간": "2021-01-05 ~ 2026-11-02"
   },
   "결과": "완료"
