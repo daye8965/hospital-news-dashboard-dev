@@ -1,10 +1,10 @@
 {
-  "실행시각": "2026-10-20 10:51",
-  "전체기사": 23333,
+  "실행시각": "2026-10-21 07:18",
+  "전체기사": 23560,
   "지면": {
-    "대상": 56,
-    "요청": 63,
-    "게재확인": 0,
+    "대상": 66,
+    "요청": 59,
+    "게재확인": 10,
     "미게재": 56,
     "오류": 0
   },
@@ -14,33 +14,33 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 671,
-    "요청": 354,
-    "채움": 20,
-    "이름없음": 4,
-    "오류": 87,
-    "차단호스트": 5,
-    "네이버바이라인없음": 238,
+    "대상": 885,
+    "요청": 538,
+    "채움": 218,
+    "이름없음": 12,
+    "오류": 68,
+    "차단호스트": 6,
+    "네이버바이라인없음": 234,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/030/0003476442",
-      "길이": 275045,
-      "title": "[ET시론]거미에 물린 스파이더맨, AI가 풀어야 할 세 가지 질문",
+      "url": "https://n.news.naver.com/mnews/article/009/0005751284",
+      "길이": 253748,
+      "title": "3~4일 과정을 '1시간'으로 … 디오, AI로 임플란트 진료 혁신",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "시간초과": true,
-    "남은대상": 647
+    "남은대상": 655
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 535,
-    "표시기사": 4157
+    "표시기사": 4201
   },
   "보도자료": {
     "목록": 610,
-    "배포일없음": 17,
+    "배포일없음": 19,
     "기간": "2021-01-05 ~ 2026-11-02"
   },
   "결과": "완료"
