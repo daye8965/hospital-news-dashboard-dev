@@ -1,10 +1,10 @@
 {
-  "실행시각": "2026-10-21 07:18",
-  "전체기사": 23560,
+  "실행시각": "2026-10-21 10:37",
+  "전체기사": 23565,
   "지면": {
-    "대상": 66,
-    "요청": 59,
-    "게재확인": 10,
+    "대상": 56,
+    "요청": 56,
+    "게재확인": 0,
     "미게재": 56,
     "오류": 0
   },
@@ -14,29 +14,29 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 885,
-    "요청": 538,
-    "채움": 218,
-    "이름없음": 12,
-    "오류": 68,
+    "대상": 662,
+    "요청": 364,
+    "채움": 10,
+    "이름없음": 2,
+    "오류": 89,
     "차단호스트": 6,
-    "네이버바이라인없음": 234,
+    "네이버바이라인없음": 257,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/009/0005751284",
-      "길이": 253748,
-      "title": "3~4일 과정을 '1시간'으로 … 디오, AI로 임플란트 진료 혁신",
+      "url": "https://n.news.naver.com/mnews/article/421/0009239651",
+      "길이": 251144,
+      "title": "\"죽음 앞에서도 외롭지 않게\"…호스피스·연명의료 제도 확산",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "시간초과": true,
-    "남은대상": 655
+    "남은대상": 650
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 535,
-    "표시기사": 4201
+    "표시기사": 4126
   },
   "보도자료": {
     "목록": 610,
