@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-10-22 10:32",
-  "전체기사": 23783,
+  "실행시각": "2026-10-23 07:21",
+  "전체기사": 24062,
   "지면": {
-    "대상": 81,
-    "요청": 66,
-    "게재확인": 0,
-    "미게재": 81,
+    "대상": 119,
+    "요청": 79,
+    "게재확인": 15,
+    "미게재": 104,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,34 +14,34 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 675,
-    "요청": 342,
-    "채움": 12,
-    "이름없음": 6,
-    "오류": 88,
+    "대상": 947,
+    "요청": 603,
+    "채움": 255,
+    "이름없음": 22,
+    "오류": 62,
     "차단호스트": 6,
-    "네이버바이라인없음": 229,
+    "네이버바이라인없음": 258,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/421/0009241931",
-      "길이": 250852,
-      "title": "스카이랩스, 보정 없는 혈압 반지 개발…4년 임상연구 추진",
+      "url": "https://n.news.naver.com/mnews/article/029/0003054766",
+      "길이": 246498,
+      "title": "포시에스, 베트남 타이탄테크놀로지와 의료 전자문서 사업 협력",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "시간초과": true,
-    "남은대상": 657
+    "남은대상": 670
   },
   "출입기자": {
     "결과": "대조 완료",
-    "명단인원": 534,
-    "표시기사": 4189
+    "명단인원": 535,
+    "표시기사": 4237
   },
   "보도자료": {
-    "목록": 610,
+    "목록": 611,
     "배포일없음": 20,
-    "기간": "2021-01-05 ~ 2026-11-02"
+    "기간": "2021-01-05 ~ 2026-11-09"
   },
   "결과": "완료"
 }
