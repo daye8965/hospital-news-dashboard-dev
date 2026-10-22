@@ -1407,6 +1407,28 @@ function pressVerbish(key) {
 // ('네이처인덱스'가 제목에 없고 요약에만 있는 기사를 살리기 위한 규칙)
 const PRESS_LONG_NOUN_LEN = 5;
 
+// 제목 신호로 단독으로는 못 쓰는 말 — 사건이 아니라 '무엇을 다쳤나/고쳤나'를 가리키는
+// 일반 임상어다. 점수에는 그대로 더하지만 이것만으로 보도자료에 묶지는 않는다.
+// '키르기스스탄 두개 골절 두피 손상 환아 초청진료'의 '골절'(5.30)이 제목에 박혔다는
+// 이유로 '골다공증 골절 여성, 41%는 2년 내 또 뼈 부러져'를 끌어왔다.
+const PRESS_SOLO_STOP = new Set('골절 두개 두피 손상 절제 이식 재건 염증 출혈 감염 통증 변형 봉합 내시경'.split(' '));
+
+// 두 글자 말은 띄어쓰기를 무시하는 대신 '경계'를 본다 — '생후 4주'의 '4주'가
+// 기사의 '故 박정운 4주기'와 맞아 연예인 기사 4건이 묶인 적이 있다.
+// pressNorm은 공백을 떼므로 경계를 볼 수 없어 원문에서 확인한다.
+// 뒤에 조사가 붙는 것은 같은 말로 본다 — '몽골서'·'몽골에'는 남아야 한다.
+const PRESS_WORD_RE = /[0-9A-Za-z가-힣]/;
+const PRESS_JOSA_RE = /^[은는이가을를와과도로만의에서부터까지나며]/;
+function pressBounded(raw, key) {
+  for (let i = raw.indexOf(key); i >= 0; i = raw.indexOf(key, i + 1)) {
+    const b = raw[i - 1], a = raw[i + key.length];
+    if (b && PRESS_WORD_RE.test(b)) continue;                              // 앞에 글자가 붙었다
+    if (a && PRESS_WORD_RE.test(a) && !PRESS_JOSA_RE.test(a)) continue;    // 뒤에 조사 아닌 글자가 붙었다
+    return true;
+  }
+  return false;
+}
+
 function pressKeys(title) {
   const words = (title || '').split(/[^0-9A-Za-z가-힣]+/).filter(Boolean);
   const singles = new Map(), phrases = new Map();
@@ -1493,7 +1515,8 @@ function pressMatches(item) {
       let titleRare = false;
       for (const [k, w] of [...phrases, ...singles]) {
         const kn = pressNorm(k);
-        if (a.titleN.includes(kn) && (w >= PRESS_RARE || (w >= PRESS_RARE_LONG && kn.length >= 3))) titleRare = true;
+        if (a.titleN.includes(kn) && (w >= PRESS_RARE || (w >= PRESS_RARE_LONG && kn.length >= 3))
+            && !PRESS_SOLO_STOP.has(kn) && (kn.length > 2 || pressBounded(a.title, k))) titleRare = true;
         // 긴 고유명사는 본문에만 있어도 인정 ('네이처인덱스'가 요약에만 나오는 기사)
         if (kn.length >= PRESS_LONG_NOUN_LEN && w >= PRESS_RARE_LONG && a.textN.includes(kn)) titleRare = true;
       }
