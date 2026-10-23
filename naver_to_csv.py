@@ -94,7 +94,9 @@ EXCLUDE_KEYWORDS = {
 }
 
 # ── 제외 매체 (이 매체의 기사는 수집 제외) ──────────────────────────────────
-EXCLUDE_MEDIA = {"celuvmedia"}
+# vegannews(비건뉴스) — 병원 홈페이지의 질환백과를 통째로 베껴 하루 20~25건씩 쏟아낸다
+# (2026-10-17 25건, 10-22 24건). 취재한 기사가 아니라 실적에도 들어가지 않는다.
+EXCLUDE_MEDIA = {"celuvmedia", "vegannews"}
 
 # ── 제외 패턴 (정규식 — 위 키워드로 못 잡는 케이스 보완) ─────────────────────
 EXCLUDE_PATTERN = re.compile(

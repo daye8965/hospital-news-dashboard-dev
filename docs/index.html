@@ -911,7 +911,9 @@ const FE_EXCLUDE_KW = [
   //    민윤기치료센터 기사가 함께 걸린다
 ];
 
-const FE_EXCLUDE_MEDIA = ['celuvmedia'];
+// naver_to_csv.py의 EXCLUDE_MEDIA와 같은 목록 — 한쪽만 고치지 말 것.
+// 수집 쪽은 앞으로 안 들어오게 하고, 여기는 이미 쌓인 기사를 가린다.
+const FE_EXCLUDE_MEDIA = ['celuvmedia', 'vegannews'];
 const FE_EXCLUDE_QUERY = ['서울의대'];
 
 // 노이즈 판정은 기사 본래 필드만 본다 — 기자명 같은 보강 열이 제외 키워드(인명)에 걸리지 않도록
