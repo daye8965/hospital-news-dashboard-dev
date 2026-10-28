@@ -1,10 +1,10 @@
 {
-  "실행시각": "2026-10-28 07:57",
-  "전체기사": 24996,
+  "실행시각": "2026-10-28 11:17",
+  "전체기사": 24998,
   "지면": {
-    "대상": 85,
-    "요청": 68,
-    "게재확인": 3,
+    "대상": 82,
+    "요청": 67,
+    "게재확인": 0,
     "미게재": 82,
     "오류": 0
   },
@@ -14,29 +14,29 @@
     "이번에바뀐행": 0
   },
   "기자명": {
-    "대상": 966,
-    "요청": 526,
-    "채움": 243,
-    "이름없음": 9,
-    "오류": 63,
+    "대상": 719,
+    "요청": 304,
+    "채움": 10,
+    "이름없음": 3,
+    "오류": 89,
     "차단호스트": 5,
-    "네이버바이라인없음": 204,
+    "네이버바이라인없음": 197,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/030/0003479369",
-      "길이": 271832,
-      "title": "서울대병원 노사 임단협 잠정 합의…28일 파업 철회",
+      "url": "https://n.news.naver.com/mnews/article/421/0009254001",
+      "길이": 252033,
+      "title": "서울대병원 파업 위기 넘겼다…노사, 하루 앞두고 손잡아",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "시간초과": true,
-    "남은대상": 714
+    "남은대상": 706
   },
   "출입기자": {
     "결과": "대조 완료",
-    "명단인원": 538,
-    "표시기사": 4418
+    "명단인원": 537,
+    "표시기사": 4421
   },
   "보도자료": {
     "목록": 619,
