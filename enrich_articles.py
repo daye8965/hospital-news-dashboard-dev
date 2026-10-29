@@ -685,13 +685,16 @@ VIDEO_URL_RULES = [
     (re.compile(r"enews\.imbc\.com", re.I), False),                # MBC 연예 — 웹 기사만 낸다
     (re.compile(r"ent\.sbs\.co\.kr|star\.ytn\.co\.kr|mbnmoney\.", re.I), False),
 ]
-# 매체별 기사 본문이 시작하는 자리. JTBC는 클래스 이름이 난독화돼 있어 넣지 않았다 —
-# 추측으로 넣어 틀린 값을 적느니 판정을 보류한다(그 기사는 방송으로 세지 않는다).
+# 매체별 기사 본문이 시작하는 자리. None이면 페이지 전체를 본다.
+# JTBC는 본문 컨테이너의 클래스 이름이 난독화돼 있어(`e1tbg8p00 MuiBox-root …`) 잡을 수 없는데,
+# 전체를 봐도 관련기사·스크립트에 표지가 새지 않아(표본 10건 중 5건만 걸림) 그대로 쓴다.
+# **다른 매체에 함부로 None을 주면 안 된다** — KBS는 전체로 보면 14건이 전부 걸린다.
 VIDEO_BODY_START = {
     "KBS": re.compile(r"""id=['"]cont_newstext['"][^>]*>"""),
     "SBS": re.compile(r"""class=['"][^'"]*\btext_area\b[^'"]*['"][^>]*>"""),
     "YTN": re.compile(r"""id=['"]CmAdContent['"][^>]*>"""),
     "MBN": re.compile(r"""id=['"]newsViewArea['"][^>]*>"""),
+    "JTBC": None,
 }
 SCRIPT_MARK = re.compile(r"\[앵커\]|<앵커>|◀\s?앵커|\[리포트\]|◀\s?리포트")
 
@@ -714,11 +717,12 @@ def enrich_video(rows, status, deadline):
             stats["영상" if verdict else "아님"] += 1
             continue
 
-        start = VIDEO_BODY_START.get(media_label(row))
+        media = media_label(row)
         host = re.sub(r"^https?://", "", url).split("/")[0].lower()
-        if not start or not url.startswith("http") or host in blocked_hosts:
+        if media not in VIDEO_BODY_START or not url.startswith("http") or host in blocked_hosts:
             stats["판정보류"] += 1
             continue
+        start = VIDEO_BODY_START[media]
         if stats["요청"] >= VIDEO_BUDGET:
             stats["예산소진"] = True
             break
@@ -733,11 +737,15 @@ def enrich_video(rows, status, deadline):
         except requests.RequestException:
             stats["오류"] += 1
             continue
-        match = start.search(page or "")
-        if not match:
-            stats["판정보류"] += 1       # 페이지 모양이 바뀌었다 — 함부로 '아님'으로 적지 않는다
-            continue
-        is_video = bool(SCRIPT_MARK.search(page[match.end(): match.end() + VIDEO_BODY_LEN]))
+        if start is None:
+            body = page or ""
+        else:
+            match = start.search(page or "")
+            if not match:
+                stats["판정보류"] += 1   # 페이지 모양이 바뀌었다 — 함부로 '아님'으로 적지 않는다
+                continue
+            body = page[match.end(): match.end() + VIDEO_BODY_LEN]
+        is_video = bool(SCRIPT_MARK.search(body))
         row["영상"] = "Y" if is_video else CHECKED_NONE
         stats["영상" if is_video else "아님"] += 1
 
