@@ -465,6 +465,41 @@ def _norm(text):
     return re.sub(r"[\s()·\-_.]", "", text or "").lower()
 
 
+# 기사의 '매체'는 수집 때 한글 이름을 못 찾으면 도메인 조각('newdaily')으로 남는다.
+# 출입기자 명단은 한글 이름('뉴데일리')으로 적혀 있어 그대로는 영영 맞지 않는다 —
+# 뉴데일리로 옮긴 기자의 기사가 출입으로 안 잡혀서 찾았다(2026-10-29).
+# 목록을 여기에 또 베껴 두면 반드시 어긋나므로 화면이 쓰는 MEDIA_MAP_FE를 그대로 읽어 쓴다.
+MEDIA_MAP_PATH = Path(__file__).resolve().parent / "docs" / "index.html"
+
+
+def load_media_map():
+    try:
+        body = re.search(r"MEDIA_MAP_FE\s*=\s*\{(.*?)\n\};",
+                         MEDIA_MAP_PATH.read_text(encoding="utf-8"), re.S).group(1)
+        return re.findall(r'"([^"]+)"\s*:\s*"([^"]+)"', body)
+    except Exception:   # 파일이 없거나 모양이 바뀌면 예전처럼 매체 표기 그대로 쓴다
+        return []
+
+
+MEDIA_MAP_FE = load_media_map()
+
+
+def media_label(row):
+    """화면(mediaName)과 같은 기준 — 한글이면 그대로, 도메인이면 URL에서 한글 이름을 찾는다."""
+    media = (row.get("매체") or "").strip()
+    if re.search(r"[가-힣]", media):
+        return media
+    url = (row.get("언론사원문") or row.get("네이버링크") or "").lower()
+    domain = re.sub(r"https?://(www\.)?", "", url).split("/")[0]
+    if not domain or "news.naver" in domain:
+        return media
+    hit = name = ""     # 가장 긴 키 우선 — 'kbs'가 'kbsm.net'(경북신문)을 먹지 않도록
+    for key, label in MEDIA_MAP_FE:
+        if key.lower() in domain and len(key) > len(hit):
+            hit, name = key, label
+    return name or media
+
+
 ROSTER_NAME_HEADERS  = ("기자", "이름", "성명", "기자명")
 ROSTER_MEDIA_HEADERS = ("매체", "매체명", "언론사", "소속", "회사")
 ROSTER_EMAIL_HEADERS = ("이메일", "메일", "email")
@@ -617,7 +652,7 @@ def load_roster():
 def is_beat_reporter(row, roster):
     # 예전엔 기사에 적힌 기자 이메일도 명단과 맞춰 봤지만, 그 열을 더는 저장하지 않는다.
     # 출입기자로 잡힌 기사 4,020건이 모두 기자명을 갖고 있어 이름만으로 충분하다
-    media = _norm(row.get("매체"))
+    media = _norm(media_label(row))
     for name in re.split(r"[,\s]+", row.get("기자명") or ""):
         roster_media = roster["by_name"].get(name)
         if not roster_media:
