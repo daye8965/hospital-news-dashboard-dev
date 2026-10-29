@@ -696,7 +696,11 @@ VIDEO_BODY_START = {
     "MBN": re.compile(r"""id=['"]newsViewArea['"][^>]*>"""),
     "JTBC": None,
 }
-SCRIPT_MARK = re.compile(r"\[앵커\]|<앵커>|◀\s?앵커|\[리포트\]|◀\s?리포트")
+# 표지는 매체마다 모양이 다르다 — SBS는 본문에 `&lt;앵커&gt;`로 escape돼 있고,
+# MBN은 대괄호가 아니라 `【 앵커멘트 】`·`【 기자 】`를 쓴다. 둘을 빠뜨려
+# SBS 58건·MBN 16건이 전부 '아님'으로 적혔다(2026-10-29).
+SCRIPT_MARK = re.compile(
+    r"\[앵커\]|<앵커>|◀\s?앵커|\[리포트\]|◀\s?리포트|【\s*앵커멘트\s*】|【\s*기자\s*】")
 
 
 def enrich_video(rows, status, deadline):
@@ -745,7 +749,7 @@ def enrich_video(rows, status, deadline):
                 stats["판정보류"] += 1   # 페이지 모양이 바뀌었다 — 함부로 '아님'으로 적지 않는다
                 continue
             body = page[match.end(): match.end() + VIDEO_BODY_LEN]
-        is_video = bool(SCRIPT_MARK.search(body))
+        is_video = bool(SCRIPT_MARK.search(html.unescape(body)))
         row["영상"] = "Y" if is_video else CHECKED_NONE
         stats["영상" if is_video else "아님"] += 1
 
