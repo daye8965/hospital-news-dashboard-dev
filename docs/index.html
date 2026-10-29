@@ -244,6 +244,7 @@ td{padding:10px 12px;vertical-align:top}
 
 <nav class="tab-nav">
   <button class="tab-btn active" data-tab="paper"  onclick="switchTab('paper')">🗞️ 지면모음</button>
+  <button class="tab-btn"        data-tab="cast"   onclick="switchTab('cast')">📺 방송모음</button>
   <button class="tab-btn"        data-tab="report" onclick="switchTab('report')">📑 서울아산병원-보고용</button>
   <button class="tab-btn"        data-tab="ours"   onclick="switchTab('ours')">🏥 우리병원</button>
   <button class="tab-btn"        data-tab="others" onclick="switchTab('others')">🔍 타병원</button>
@@ -294,6 +295,15 @@ td{padding:10px 12px;vertical-align:top}
     <div class="stats-row" id="stats-paper"></div>
     <div class="table-wrap" id="table-paper"></div>
     <div class="pagination" id="pag-paper"></div>
+  </div>
+
+  <!-- ④-2 방송모음 탭 -->
+  <div id="panel-cast" class="tab-panel">
+    <div class="notice notice-keep">📺 주요 방송사 7곳(KBS·SBS·MBC·YTN·연합뉴스TV·MBN·JTBC)의 기사를 모았습니다. <b>방송사 홈페이지에 올라온 웹기사</b>이며, 지면의 <code>A17면</code>처럼 근거가 되는 표기가 없어 <b>실제 방송에 나갔는지는 알 수 없습니다</b> — 프로그램 출연 실적과는 다릅니다. SBS Biz·YTN사이언스처럼 이름이 비슷한 채널은 별개 매체로 보아 넣지 않았습니다.</div>
+    <div class="hospital-filter" id="cast-hosp-filter"></div>
+    <div class="stats-row" id="stats-cast"></div>
+    <div class="table-wrap" id="table-cast"></div>
+    <div class="pagination" id="pag-cast"></div>
   </div>
 
   <!-- ⑤ 서울아산병원-보고용 탭 -->
@@ -682,12 +692,13 @@ function classifyMedia(media) {
 // ── 상태 ─────────────────────────────────────────────────────────────────────
 let allData = SAMPLE;
 let currentTab = 'paper';   // 처음 열릴 때 보이는 탭
-const pages = {ours:1, others:1, paper:1};
+const pages = {ours:1, others:1, paper:1, cast:1};
 const pageTotals = {};
 const sorts = {
   ours:   {col:'발행일시', asc:false},
   others: {col:'발행일시', asc:false},
   paper:  {col:'발행일시', asc:false},
+  cast:   {col:'발행일시', asc:false},
 };
 // 보고용 탭은 실적 양식대로 날짜 오름차순이 기본. 화면에서만 바꿀 수 있고 엑셀은 늘 날짜순으로 받는다
 const reportSort = {col:'날짜', asc:true};
@@ -695,6 +706,7 @@ let pressData = [];   // docs/press_releases.json 의 보도자료 목록
 let aiData = null;    // docs/ai_labels.json — ai_classify.py가 남긴 AI 판정 (없으면 배지·탭만 빈다)
 let selectedHosp = null; // null = 전체 타병원
 let paperHosp = null;    // null = 지면모음 전체 병원
+let castHosp = null;     // null = 방송모음 전체 병원
 let barChart = null, pieChart = null;
 
 // ── 초기화 ───────────────────────────────────────────────────────────────────
@@ -813,7 +825,8 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-'+tab));
   document.getElementById('filter-bar').style.display = 'flex';
   document.getElementById('excel-label').textContent =
-    tab === 'paper' ? '지면모음 엑셀 다운로드' : tab === 'report' ? '보고용 엑셀 다운로드'
+    tab === 'paper' ? '지면모음 엑셀 다운로드' : tab === 'cast' ? '방송모음 엑셀 다운로드'
+    : tab === 'report' ? '보고용 엑셀 다운로드'
     : tab === 'press' ? '게재율 엑셀 다운로드' : tab === 'ai' ? 'AI 분석 엑셀 다운로드' : '주간 엑셀 다운로드';
   updateKeywordOptions(tab);
   renderCurrent();
@@ -823,6 +836,7 @@ function renderCurrent() {
   if (currentTab === 'ours')        renderOurs();
   else if (currentTab === 'others') renderOthers();
   else if (currentTab === 'paper')  renderPaper();
+  else if (currentTab === 'cast')   renderCast();
   else if (currentTab === 'report') renderReport();
   else if (currentTab === 'press')  renderPress();
   else if (currentTab === 'ai')     renderAI();
@@ -1202,6 +1216,65 @@ function renderPaper() {
 
   renderTable('table-paper', rows, pages.paper, 'paper', accent);
   renderPag('pag-paper', rows.length, pages.paper, 'paper');
+}
+
+// ── 방송모음 렌더 ────────────────────────────────────────────────────────────
+// 지면모음과 같은 짜임새지만 근거가 다르다 — 지면은 본문의 'A17면' 표기가 증거인데
+// 방송은 그런 표기가 없어서 '방송사 홈페이지에 실린 기사'까지만 말할 수 있다.
+// 그래서 실적(보고용 탭)과는 섞지 않고 따로 본다.
+// 이름이 비슷한 다른 채널(SBS Biz·YTN사이언스·한국경제TV 등)이 딸려오지 않도록
+// 도메인이 아니라 화면에 보이는 매체명으로 '정확히 일치'만 인정한다.
+const BROADCAST_MEDIA_NAMES = ['KBS','SBS','MBC','YTN','연합뉴스TV','MBN','JTBC'];
+let broadcastSet = null;   // normMedia가 아래쪽에 정의돼 있어 처음 쓸 때 만든다
+function isMainBroadcast(r) {
+  if (!broadcastSet) broadcastSet = new Set(BROADCAST_MEDIA_NAMES.map(normMedia));
+  return broadcastSet.has(normMedia(mediaOf(r)));
+}
+
+function castGroups() {
+  return castHosp ? [HOSPITALS[castHosp].group] : Object.values(HOSPITALS).map(h => h.group);
+}
+
+function buildCastHospFilter() {
+  const current = castHosp || 'all';
+  const btn = (key, label, color) => {
+    const active = current === key;
+    return `<button class="hosp-btn${active?' active':''}" onclick="selectCastHosp('${key}')"
+      style="border-color:${color};color:${active?'#fff':color};background:${active?color:''}">${label}</button>`;
+  };
+  document.getElementById('cast-hosp-filter').innerHTML =
+    btn('all', '전체 병원', '#444') + Object.entries(HOSPITALS).map(([k, h]) => btn(k, h.label, h.color)).join('');
+}
+
+function selectCastHosp(key) {
+  castHosp = key === 'all' ? null : key;
+  pages.cast = 1;
+  renderCast();
+}
+
+function castRows() {
+  const groups = castGroups();
+  return applyFilters(allData.filter(r => groups.includes(r['병원그룹']) && isMainBroadcast(r)));
+}
+
+function renderCast() {
+  buildCastHospFilter();
+  const filtered = castRows();
+  const rows = sortRows(filtered, sorts.cast);
+  document.getElementById('result-count').textContent = `${rows.length}건`;
+
+  const hospCounts = {};
+  filtered.forEach(r => { hospCounts[r['병원그룹']] = (hospCounts[r['병원그룹']]||0) + 1; });
+  const accent = castHosp ? HOSPITALS[castHosp].color : '#6b3fa0';
+  document.getElementById('stats-cast').innerHTML = [
+    statCard('방송 기사', filtered.length, accent),
+    statCard('방송사', new Set(filtered.map(mediaOf)).size, accent),
+    statCard('출입기자 기사', filtered.filter(r => r['출입기자'] === 'Y').length, '#1a7a3c'),
+    ...Object.values(HOSPITALS).filter(h => hospCounts[h.group]).map(h => statCard(h.label, hospCounts[h.group], h.color)),
+  ].join('');
+
+  renderTable('table-cast', rows, pages.cast, 'cast', accent);
+  renderPag('pag-cast', rows.length, pages.cast, 'cast');
 }
 
 // ── 서울아산병원-보고용 렌더 ──────────────────────────────────────────────────
@@ -2532,6 +2605,7 @@ function downloadExcel() {
 
 function downloadCurrent() {
   if (currentTab === 'paper')  return downloadPaperExcel();
+  if (currentTab === 'cast')   return downloadCastExcel();
   if (currentTab === 'report') return downloadReportExcel();
   if (currentTab === 'press')  return downloadPressExcel();
   if (currentTab === 'ai')     return downloadAIExcel();
@@ -2554,6 +2628,24 @@ function downloadPaperExcel() {
   addSheet(wb, ws, '지면모음');
   const {dateFrom, dateTo} = getFilters();
   XLSX.writeFile(wb, `지면모음_${dateFrom||'처음'}_${dateTo||'오늘'}.xlsx`);
+}
+
+// 방송은 면 번호가 없으니 지면모음에서 '면' 열만 빼고 같은 구성으로 받는다
+function downloadCastExcel() {
+  const rows = sortRows(castRows(), sorts.cast);
+  const data = [
+    ['날짜','병원','매체','제목','기자','출입기자','교수명','링크'],
+    ...rows.map(r => [
+      r['날짜']||'', hospLabel(r), mediaOf(r), r['제목']||'',
+      reporterNames(r), r['출입기자']==='Y' ? '출입' : '', profOf(r), r['네이버링크']||r['언론사원문']||'',
+    ]),
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = [{wch:11},{wch:12},{wch:12},{wch:60},{wch:16},{wch:8},{wch:14},{wch:50}];
+  const wb = XLSX.utils.book_new();
+  addSheet(wb, ws, '방송모음');
+  const {dateFrom, dateTo} = getFilters();
+  XLSX.writeFile(wb, `방송모음_${dateFrom||'처음'}_${dateTo||'오늘'}.xlsx`);
 }
 
 // 연간 언론실적 엑셀과 같은 열 구성 (진료과·중복은 담당자 입력용으로 비워 둠)
