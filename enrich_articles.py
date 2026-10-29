@@ -28,7 +28,7 @@ CSV_PATH    = Path("docs/news.csv")
 STATUS_PATH = Path("docs/enrich_status.json")
 
 FIELDNAMES = ["날짜","병원그룹","검색어","매체","제목","교수명","요약","언론사원문","네이버링크",
-              "발행일시","수집일시","기자명","지면","출입기자"]
+              "발행일시","수집일시","기자명","지면","출입기자","영상"]
 
 KST = timezone(timedelta(hours=9))
 NOW = datetime.now(KST)
@@ -665,6 +665,87 @@ def is_beat_reporter(row, roster):
     return False
 
 
+# ── 4) 영상 (실제로 전파를 탄 방송 꼭지인가) ─────────────────────────────────
+# 방송사 웹기사 중 방송에 나간 리포트만 가려낸다. 방송사 홈페이지 기사라고 다 방송이
+# 아니라서, 화면의 '방송'은 이 값이 Y인 것만 센다.
+#
+# **본문 영역으로 좁히는 게 핵심이다.** 페이지 전체를 정규식으로 보면 관련기사 목록과
+# <script> 안 JSON에 섞인 '[앵커]'까지 걸린다 — KBS 표본 14건이 전부 '영상'으로 나왔고,
+# 본문으로 좁히니 9건만 걸렸다(2026-10-29 확인).
+BROADCAST_NAMES = {"KBS", "SBS", "MBC", "YTN", "연합뉴스TV", "MBN", "JTBC"}
+VIDEO_BUDGET = int(os.environ.get("VIDEO_BUDGET", "400"))
+VIDEO_BODY_LEN = 8000
+
+# 주소만으로 갈리는 매체 — 요청이 들지 않는다
+VIDEO_URL_RULES = [
+    (re.compile(r"yonhapnewstv\.co\.kr/news/MYH", re.I), True),    # 자체 영상 리포트
+    (re.compile(r"yonhapnewstv\.co\.kr/news/AKR", re.I), False),   # 연합뉴스 텍스트 전재
+    (re.compile(r"imnews\.imbc\.com/replay/", re.I), True),        # 방송 다시보기
+    (re.compile(r"imnews\.imbc\.com/news/", re.I), False),         # 웹 전용 기사
+    (re.compile(r"enews\.imbc\.com", re.I), False),                # MBC 연예 — 웹 기사만 낸다
+    (re.compile(r"ent\.sbs\.co\.kr|star\.ytn\.co\.kr|mbnmoney\.", re.I), False),
+]
+# 매체별 기사 본문이 시작하는 자리. JTBC는 클래스 이름이 난독화돼 있어 넣지 않았다 —
+# 추측으로 넣어 틀린 값을 적느니 판정을 보류한다(그 기사는 방송으로 세지 않는다).
+VIDEO_BODY_START = {
+    "KBS": re.compile(r"""id=['"]cont_newstext['"][^>]*>"""),
+    "SBS": re.compile(r"""class=['"][^'"]*\btext_area\b[^'"]*['"][^>]*>"""),
+    "YTN": re.compile(r"""id=['"]CmAdContent['"][^>]*>"""),
+    "MBN": re.compile(r"""id=['"]newsViewArea['"][^>]*>"""),
+}
+SCRIPT_MARK = re.compile(r"\[앵커\]|<앵커>|◀\s?앵커|\[리포트\]|◀\s?리포트")
+
+
+def enrich_video(rows, status, deadline):
+    targets = [r for r in rows
+               if media_label(r) in BROADCAST_NAMES and not (r.get("영상") or "").strip()]
+    targets.sort(key=lambda r: r.get("발행일시") or r.get("날짜") or "", reverse=True)
+    stats = {"대상": len(targets), "요청": 0, "영상": 0, "아님": 0, "판정보류": 0, "오류": 0}
+    blocked_hosts = set()
+
+    for row in targets:
+        if time.monotonic() > deadline:
+            stats["시간초과"] = True
+            break
+        url = (row.get("언론사원문") or "").strip()
+        verdict = next((v for pattern, v in VIDEO_URL_RULES if pattern.search(url)), None)
+        if verdict is not None:
+            row["영상"] = "Y" if verdict else CHECKED_NONE
+            stats["영상" if verdict else "아님"] += 1
+            continue
+
+        start = VIDEO_BODY_START.get(media_label(row))
+        host = re.sub(r"^https?://", "", url).split("/")[0].lower()
+        if not start or not url.startswith("http") or host in blocked_hosts:
+            stats["판정보류"] += 1
+            continue
+        if stats["요청"] >= VIDEO_BUDGET:
+            stats["예산소진"] = True
+            break
+
+        stats["요청"] += 1
+        try:
+            page = fetch(url)
+        except Blocked:
+            blocked_hosts.add(host)
+            stats["판정보류"] += 1       # 비워 두고 다음 실행에서 다시 본다
+            continue
+        except requests.RequestException:
+            stats["오류"] += 1
+            continue
+        match = start.search(page or "")
+        if not match:
+            stats["판정보류"] += 1       # 페이지 모양이 바뀌었다 — 함부로 '아님'으로 적지 않는다
+            continue
+        is_video = bool(SCRIPT_MARK.search(page[match.end(): match.end() + VIDEO_BODY_LEN]))
+        row["영상"] = "Y" if is_video else CHECKED_NONE
+        stats["영상" if is_video else "아님"] += 1
+
+    stats["남은대상"] = sum(1 for r in rows
+                          if media_label(r) in BROADCAST_NAMES and not (r.get("영상") or "").strip())
+    status["영상"] = stats
+
+
 def mark_beat_reporters(rows, status):
     try:
         roster = load_roster()
@@ -714,6 +795,9 @@ def main(status):
     # 네이버가 지면을 며칠만 제공하므로 놓치면 그 날짜는 영영 못 채운다.
     enrich_paper(rows, status, deadline)
     apply_paper_manual(rows, status)   # 사람이 적은 지면이 네이버에서 찾은 값보다 우선
+    # 영상은 기자명 백필보다 먼저 — 대상이 방송사 기사뿐이라 금방 끝나는데,
+    # 뒤에 두면 기자명이 시간 상한을 다 써서 매번 굶는다 (지면을 먼저 두는 이유와 같다)
+    enrich_video(rows, status, deadline)
     enrich_bylines(rows, status, deadline)
     mark_beat_reporters(rows, status)
     # 운영본은 보도자료 게재율 탭이 없다 — 보도자료 목록(담당자 이름 포함)을 공개 페이지에

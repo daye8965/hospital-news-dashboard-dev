@@ -299,7 +299,8 @@ td{padding:10px 12px;vertical-align:top}
 
   <!-- ④-2 방송모음 탭 -->
   <div id="panel-cast" class="tab-panel">
-    <div class="notice notice-keep">📺 주요 방송사 7곳(KBS·SBS·MBC·YTN·연합뉴스TV·MBN·JTBC)의 기사를 모았습니다. <b>방송사 홈페이지에 올라온 웹기사</b>이며, 지면의 <code>A17면</code>처럼 근거가 되는 표기가 없어 <b>실제 방송에 나갔는지는 알 수 없습니다</b> — 프로그램 출연 실적과는 다릅니다. SBS Biz·YTN사이언스처럼 이름이 비슷한 채널은 별개 매체로 보아 넣지 않았습니다.</div>
+    <div class="notice notice-keep">📺 주요 방송사 7곳(KBS·SBS·MBC·YTN·연합뉴스TV·MBN·JTBC) 기사 중 <b>실제로 방송에 나간 꼭지</b>만 모았습니다. 방송사 홈페이지 기사라고 다 방송된 것이 아니라서, 기사 본문의 방송 대본 표지(<code>[앵커]</code>·<code>[리포트]</code>)와 주소로 가려냅니다. 웹 전용 기사는 빠집니다. SBS Biz·YTN사이언스·지역 MBC처럼 이름이 비슷한 곳은 별개 매체로 봅니다. <b>JTBC는 본문 영역을 잡을 수 없어 판정을 보류</b>하므로 여기에 나오지 않습니다.</div>
+    <div class="notice" id="cast-pending" hidden>⏳ 아직 영상 판정이 채워지지 않았습니다. 오늘 밤 보강이 돌면 채워집니다 — 수집이 빠진 것이 아닙니다.</div>
     <div class="hospital-filter" id="cast-hosp-filter"></div>
     <div class="stats-row" id="stats-cast"></div>
     <div class="table-wrap" id="table-cast"></div>
@@ -308,7 +309,7 @@ td{padding:10px 12px;vertical-align:top}
 
   <!-- ⑤ 서울아산병원-보고용 탭 -->
   <div id="panel-report" class="tab-panel">
-    <div class="notice notice-keep">📑 2026 연간 언론실적 엑셀 기준으로 모았습니다. 온라인은 <b>실적에 집계된 적 있는 매체</b>만, '제외 추정'은 6/11~9/10 대시보드 기사를 실적과 대조해 <b>제외율 85% 이상이었던 유형</b>만 표시합니다(서울아산병원 기사에만 적용, 태그에 마우스를 올리면 제외율 표시). 신문은 네이버 지면 정보로 게재가 확인된 기사만 담고, 방송은 주요 방송사 7곳(KBS·SBS·MBC·YTN·연합뉴스TV·MBN·JTBC)의 <b>웹기사</b>입니다 — 프로그램 출연 실적과는 다릅니다. 한 기사가 두 섹션에 들어가지 않도록 방송은 온라인에서 뺐습니다.
+    <div class="notice notice-keep">📑 2026 연간 언론실적 엑셀 기준으로 모았습니다. 온라인은 <b>실적에 집계된 적 있는 매체</b>만, '제외 추정'은 6/11~9/10 대시보드 기사를 실적과 대조해 <b>제외율 85% 이상이었던 유형</b>만 표시합니다(서울아산병원 기사에만 적용, 태그에 마우스를 올리면 제외율 표시). 신문은 네이버 지면 정보로 게재가 확인된 기사만 담고, 방송은 주요 방송사 7곳 기사 중 <b>실제로 방송에 나간 꼭지</b>만 담습니다(방송모음 탭과 같은 기준). 방송사 웹 전용 기사는 방송이 아니라 온라인으로 갑니다. 한 기사가 두 섹션에 들어가지 않도록 방송은 온라인에서 뺐습니다.
       <label class="check-label" style="margin-left:8px"><input type="checkbox" id="hide-suspect"> 제외 추정 기사 숨기기</label>
       <label class="check-label" id="hide-ai-wrap" hidden style="margin-left:8px"><input type="checkbox" id="hide-ai-out"> AI 제외 기사 숨기기</label>
     </div>
@@ -468,7 +469,9 @@ const MEDIA_MAP_FE = {
   "isplus":"일간스포츠","sports.khan":"스포츠경향","science.ytn":"YTN사이언스","biz.sbs":"SBS Biz",
   "apsk":"메디팜스투데이",
   // 2026-10-19 추가 — 화면에 주소가 그대로 노출되던 매체들. 주소를 하나씩 열어 확인했습니다
-  "kbsm":"경북신문","usmbc":"울산MBC",   // 'kbs'·'mbc'보다 길어 먼저 맞는다. 이게 없으면 경북신문이 KBS로 둔갑한다
+  "kbsm":"경북신문","usmbc":"울산MBC","chmbc":"춘천MBC","mbceg":"MBC경남","mbccb":"MBC충북","mpmbc":"목포MBC",
+  "kjmbc":"광주MBC","jmbc":"전주MBC","ysmbc":"여수MBC","jejumbc":"제주MBC","busanmbc":"부산MBC",
+  "andongmbc":"안동MBC","dgmbc":"대구MBC",   // 'kbs'·'mbc'보다 길어 먼저 맞는다. 이게 없으면 경북신문이 KBS로 둔갑한다
   "aftertherain":"비온뒤","medisobizanews":"메디소비자뉴스","bbsi":"BBS불교방송",
   "biotimes":"바이오타임즈","press9":"프레스나인","ibabynews":"베이비뉴스",
   "vegannews":"비건뉴스","thebell":"더벨","dentalnews":"치의신보","shinailbo":"신아일보",
@@ -1226,10 +1229,18 @@ function renderPaper() {
 // 도메인이 아니라 화면에 보이는 매체명으로 '정확히 일치'만 인정한다.
 const BROADCAST_MEDIA_NAMES = ['KBS','SBS','MBC','YTN','연합뉴스TV','MBN','JTBC'];
 let broadcastSet = null;   // normMedia가 아래쪽에 정의돼 있어 처음 쓸 때 만든다
-function isMainBroadcast(r) {
+function isBroadcastMedia(r) {
   if (!broadcastSet) broadcastSet = new Set(BROADCAST_MEDIA_NAMES.map(normMedia));
   return broadcastSet.has(normMedia(mediaOf(r)));
 }
+
+// 방송사 홈페이지 기사라고 다 방송에 나간 게 아니다 — 상당수가 웹 전용 기사다.
+// enrich_articles.py가 '영상' 열에 Y(방송 꼭지)/-(아님)을 적어 주고, 화면의 '방송'은
+// Y인 것만 센다. 아직 판정이 안 된 기사(빈 값)는 방송으로 세지 않는다 — 모르는 것을
+// 방송이라고 말하지 않기 위해서다. JTBC는 본문 영역을 못 잡아 늘 빈 값으로 남는다.
+function hasVideo(r) { return (r['영상'] || '') === 'Y'; }
+function isMainBroadcast(r) { return isBroadcastMedia(r) && hasVideo(r); }
+function videoJudged() { return allData.some(r => (r['영상'] || '').trim()); }
 
 function castGroups() {
   return castHosp ? [HOSPITALS[castHosp].group] : Object.values(HOSPITALS).map(h => h.group);
@@ -1259,6 +1270,10 @@ function castRows() {
 
 function renderCast() {
   buildCastHospFilter();
+  // 보강이 '영상' 열을 한 번도 채우지 않았으면 목록이 통째로 비는데, 그게 수집 문제처럼
+  // 보여서 안내를 따로 띄운다 (보강이 한 번 돌면 사라진다)
+  const notice = document.getElementById('cast-pending');
+  if (notice) notice.hidden = videoJudged();
   const filtered = castRows();
   const rows = sortRows(filtered, sorts.cast);
   document.getElementById('result-count').textContent = `${rows.length}건`;
