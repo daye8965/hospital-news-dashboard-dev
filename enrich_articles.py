@@ -567,6 +567,22 @@ PRESS_RANGE = os.environ.get("PRESS_SHEET_RANGE", "").strip() or "'언론 업무
 # '언론 업무' 탭 4행이 머리글: 완·년도·월·게재일·구분·담당·제목/내용·진료과·의료진·요청·비고·배포범위
 P_YEAR, P_MONTH, P_DAY, P_KIND, P_OWNER, P_TITLE, P_DEPT, P_DOCTOR, P_SCOPE = 1, 2, 3, 4, 5, 6, 7, 8, 11
 
+# 배포범위는 '어디까지 뿌렸나'를 적는 칸이라 배포 단계 말이 들어간다.
+# 특정 매체 이름만 적힌 건 전체 배포가 아니라 그 매체에만 준 것이라 게재율의 분모가 될 수 없다 —
+# 2026-10-22 '신생아 기복증 AI 판독'(배포범위 연합뉴스)은 연합이 쓴 기사를 다른 곳이 받아쓴 것인데,
+# 우리 보도자료 게재 1건으로 세고 있었다. 618건 중 3건만 걸리고 수집 기간 안에서는 이 1건뿐이다.
+PRESS_SCOPE_TIERS = ("일간지", "전문지", "헬스", "방송", "외신", "전체", "전매체",
+                     "SNS", "연예", "오피니언", "인터넷", "동정", "매체")
+
+
+def is_broad_release(scope):
+    s = (scope or "").strip()
+    if not s:
+        return True                              # 안 적힌 건(271건) 예전대로 둔다
+    if any(w in s for w in PRESS_SCOPE_TIERS):
+        return True
+    return s.endswith("외")                      # '문화 외' = 문화일보 외 여러 곳
+
 
 def update_press_releases(status):
     sa_json  = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
@@ -590,9 +606,13 @@ def update_press_releases(status):
     def cell(row, i):
         return str(row[i]).strip() if i < len(row) else ""
 
-    items, skipped = [], 0
+    items, skipped, narrowed = [], 0, 0
     for row in values:
         if cell(row, P_KIND) != "보도자료":
+            continue
+        scope = re.sub(r"\s+", " ", cell(row, P_SCOPE))
+        if not is_broad_release(scope):
+            narrowed += 1     # 특정 매체에만 준 건 — 배포가 아니다
             continue
         y, m, d = cell(row, P_YEAR), cell(row, P_MONTH), cell(row, P_DAY)
         if not (y.isdigit() and m.isdigit() and d.isdigit()):
@@ -609,7 +629,7 @@ def update_press_releases(status):
             "의료진": [n.strip() for n in re.split(r"[,/\n·]+", cell(row, P_DOCTOR))
                      if re.fullmatch(r"[가-힣]{2,4}", n.strip())],
             "진료과": re.sub(r"\s+", " ", cell(row, P_DEPT)),
-            "배포범위": re.sub(r"\s+", " ", cell(row, P_SCOPE)),
+            "배포범위": scope,
             "담당": cell(row, P_OWNER),
         })
     if not items:
@@ -619,7 +639,7 @@ def update_press_releases(status):
     PRESS_PATH.write_text(json.dumps(
         {"생성": NOW.strftime("%Y-%m-%d %H:%M"), "건수": len(items), "목록": items},
         ensure_ascii=False, indent=1), encoding="utf-8")
-    status["보도자료"] = {"목록": len(items), "배포일없음": skipped,
+    status["보도자료"] = {"목록": len(items), "배포일없음": skipped, "특정매체전용": narrowed,
                       "기간": f"{items[0]['날짜']} ~ {items[-1]['날짜']}"}
 
 
