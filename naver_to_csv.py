@@ -299,6 +299,7 @@ _TITLE = r"(?:주임|책임|명예|석좌|특임|초빙|겸임|객원|임상|진
 # 아무 단어나 허용하면 '서울 아산병원 교수'가 이름 '서울'이 되므로, 소속으로 보이는 말만 허용한다.
 _AFFIL = r"(?:[가-힣]{1,10}(?:병원|의원|센터|의대|대학교|대학|학교|교실|연구소|연구원|학부|의료원|보건소)|[가-힣]{1,8}[과대])"
 _HOLDER = r"(?:이사장|학회장|부회장|회장|위원장|원장|소장|센터장|단장|실장|본부장|팀장|대표|교수)"
+_SLASH_NAME = r"(?:[가-힣]{2,4}|[가-힣](?:\s[가-힣]){1,3})"   # 방송 자막의 이름 자리
 PROF_PATTERNS = [
     re.compile(r"(?:^|[^가-힣])(" + _CHAIN + r")\s+(?:" + _AFFIL + r"\s+){0,2}" + _TITLE + r"교수"),
     re.compile(r"(?:^|[^가-힣])(" + _CHAIN + r")\s+(?:전문의|과장|원장)(?![가-힣])"),
@@ -307,6 +308,11 @@ PROF_PATTERNS = [
     # 같은 조각이 이름으로 잡히므로 직함 낱말이 바로 앞에 오는 것만 인정한다.
     re.compile(r"(?:^|[^가-힣])(" + _CHAIN + r")\s+(?:[가-힣]{2,12}\s*)?" + _HOLDER
                + r"\s*\(\s*[가-힣]{0,12}(?:병원|의대|대학교|의료원)[^)]{0,15}교수\s*\)"),
+    # 방송 자막은 '[김효원/서울아산병원 소아정신건강의학과 교수 : …]' 꼴로 적고,
+    # YTN은 '[이 동 윤 / 서울아산병원 핵의학과 교수 : …]'처럼 이름을 한 음절씩 띄운다.
+    # 이름 자리를 '붙여 쓴 2~4자'와 '한 음절씩 띄운 것' 둘로만 한정한다 — 음절 사이에
+    # 아무 공백이나 허용하면 '누적환자 1399명 박채령 / …'이 '명박채령'으로 잡힌다.
+    re.compile(r"(?:^|[^가-힣])(" + _SLASH_NAME + r")\s*/\s*(?:" + _AFFIL + r"\s*){0,2}" + _TITLE + r"교수"),
 ]
 
 def is_person_name(name):
@@ -326,7 +332,8 @@ def extract_professor(title, summary):
     found = []
     for pat in PROF_PATTERNS:
         for m in pat.finditer(combined):
-            for name in re.split(r"[·ㆍ‧•\s]+", re.sub(r"\(\d{1,3}\)", "", m.group(1))):
+            for name in re.split(r"[·ㆍ‧•]+",
+                                 re.sub(r"\(\d{1,3}\)", "", re.sub(r"\s+", "", m.group(1)))):
                 if is_person_name(name) and name not in found:
                     found.append(name)
     return ", ".join(found[:3])
