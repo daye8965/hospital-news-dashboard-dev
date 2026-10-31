@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-10-31 07:59",
-  "전체기사": 25608,
+  "실행시각": "2026-10-31 11:24",
+  "전체기사": 25609,
   "지면": {
-    "대상": 102,
+    "대상": 100,
     "요청": 78,
-    "게재확인": 3,
-    "미게재": 99,
+    "게재확인": 0,
+    "미게재": 100,
     "오류": 0
   },
   "직접지정지면": {
@@ -16,36 +16,36 @@
   "영상": {
     "대상": 317,
     "요청": 210,
-    "영상": 92,
-    "아님": 160,
-    "판정보류": 63,
-    "오류": 2,
-    "남은대상": 65
+    "영상": 103,
+    "아님": 185,
+    "판정보류": 26,
+    "오류": 3,
+    "남은대상": 29
   },
   "기자명": {
-    "대상": 904,
-    "요청": 455,
-    "채움": 162,
-    "이름없음": 14,
-    "오류": 65,
+    "대상": 729,
+    "요청": 352,
+    "채움": 3,
+    "이름없음": 3,
+    "오류": 77,
     "차단호스트": 4,
-    "네이버바이라인없음": 210,
+    "네이버바이라인없음": 265,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/052/0002426298",
-      "길이": 299818,
-      "title": "[메디컬 인사이트 160회] 생명을 잇는 나눔 '장기기증'",
+      "url": "https://n.news.naver.com/mnews/article/421/0009261286",
+      "길이": 256749,
+      "title": "큐로셀, 림카토 2차 치료 임상 3상 신청…적응증 확대 추진",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "시간초과": true,
-    "남은대상": 728
+    "남은대상": 723
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 538,
-    "표시기사": 5358
+    "표시기사": 5359
   },
   "보도자료": {
     "목록": 618,
