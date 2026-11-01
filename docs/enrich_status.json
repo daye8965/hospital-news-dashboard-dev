@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-11-01 11:14",
-  "전체기사": 25658,
+  "실행시각": "2026-11-02 07:50",
+  "전체기사": 25693,
   "지면": {
-    "대상": 75,
-    "요청": 68,
-    "게재확인": 0,
-    "미게재": 75,
+    "대상": 53,
+    "요청": 58,
+    "게재확인": 2,
+    "미게재": 51,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,26 +14,26 @@
     "이번에바뀐행": 0
   },
   "영상": {
-    "대상": 319,
-    "요청": 211,
-    "영상": 107,
-    "아님": 178,
-    "판정보류": 33,
+    "대상": 321,
+    "요청": 213,
+    "영상": 87,
+    "아님": 149,
+    "판정보류": 84,
     "오류": 1,
-    "남은대상": 34
+    "남은대상": 85
   },
   "기자명": {
-    "대상": 725,
-    "요청": 245,
-    "채움": 1,
-    "이름없음": 0,
-    "오류": 81,
+    "대상": 760,
+    "요청": 387,
+    "채움": 31,
+    "이름없음": 5,
+    "오류": 71,
     "차단호스트": 4,
-    "네이버바이라인없음": 159,
+    "네이버바이라인없음": 276,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/215/0001271151",
-      "길이": 292364,
-      "title": "퇴근 후 AI 배우러 몰렸다…‘우먼 AI 위크’ 500여 명 참여",
+      "url": "https://n.news.naver.com/mnews/article/052/0002426736",
+      "길이": 291447,
+      "title": "파킨슨병 환자 수년 관찰했더니...진행 느려진 '결정적 조건' [자막뉴스]",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
@@ -45,7 +45,7 @@
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 538,
-    "표시기사": 5368
+    "표시기사": 5377
   },
   "보도자료": {
     "목록": 618,
