@@ -381,7 +381,8 @@ OTHER_HOSP_RE = re.compile(
     r"|차병원|국립암센터|국립중앙의료원|백병원|강북삼성병원|한림대성심|명지병원|제생병원"
     r"|양지병원|을지대병원|동아대병원")
 # loose는 공동연구로 이름만 올린 경우를 살리기 위한 것 —
-# '아주대병원·서울대, 체내 분해형 무선 전자약 개발'처럼 제목에 우리 약칭이 있으면 남긴다
+# '아주대병원·서울대, 체내 분해형 무선 전자약 개발'처럼 제목에 우리 약칭이 있으면 남긴다.
+# 빅5를 나열한 정책 기사('서울아산·세브란스…')를 지키는 것도 이 loose다
 GROUP_NAME = {
     "아산":    (re.compile(r"서울아산병원|아산병원|아산사회복지재단"), re.compile(r"아산|울산대")),
     "삼성":    (re.compile(r"삼성서울병원"),                       re.compile(r"삼성|성균관")),
@@ -392,14 +393,25 @@ GROUP_NAME = {
 
 
 def is_other_hospital_story(group: str, title: str, combined: str) -> bool:
+    """다른 병원이 주인공인 기사인가 — 화면 isOtherHospitalStory()와 같은 규칙"""
     pair = GROUP_NAME.get(group)
     if not pair:
         return False
     full, loose = pair
-    if full.search(combined) or loose.search(title):
-        return False
-    return bool(OTHER_HOSP_RE.search(title)) or any(
-        f.search(title) for k, (f, _) in GROUP_NAME.items() if k != group)
+
+    def other(s: str) -> bool:
+        return bool(OTHER_HOSP_RE.search(s)) or any(
+            f.search(s) for k, (f, _) in GROUP_NAME.items() if k != group)
+
+    # (1) 제목에 다른 병원이 박혀 있고, 우리 이름이 요약에도 없을 때
+    if not full.search(combined) and not loose.search(title) and other(title):
+        return True
+    # (2) 제목엔 아무 병원도 없고 요약의 주인공이 다른 병원일 때 —
+    #     '혈액형 다른 아내가 신장 기증…새 삶 찾은 남편'(요약이 가톨릭대 서울성모병원)이
+    #     서울대 기사로 남아 있었다. 여기서는 우리 약칭도 요약까지 넓혀 본다.
+    #     제목만 보고 가리면 빅5를 나열한 정책 기사('서울아산·세브란스…'처럼 '병원'이
+    #     안 붙은 표기)가 통째로 날아간다
+    return not loose.search(combined) and other(combined)
 
 
 def is_branch_article(title: str, combined: str) -> bool:
