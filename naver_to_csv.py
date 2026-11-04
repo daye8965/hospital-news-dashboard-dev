@@ -16,7 +16,7 @@ HOSPITAL_QUERIES = {
     # 네이버는 공백을 AND로 처리하지 않아 '아산사회복지재단 심포지움'으로 검색하면
     # 재단과 무관한 심포지엄 기사가 쏟아진다. 그래서 재단 이름으로만 넓게 긁고
     # 아래 FOUNDATION_MUST_HAVE 로 추려 낸다.
-    "아산":    ["서울아산병원", "아산병원", "아산사회복지재단"],
+    "아산":    ["서울아산병원", "아산병원", "아산사회복지재단", "아산재단"],
     # 울산의대 제거 → 의대입시/지역의사제/울산범죄 노이즈 주범
     # 성대의대/성균관의대 제거 → 삼성병원 제거 → 타병원/제약 노이즈
     "삼성":    ["삼성서울병원", "성균관의대"],
@@ -350,7 +350,11 @@ def extract_professor(title, summary):
 
 # '아산사회복지재단'으로 긁으면 재단 이름이 스쳐 갈 뿐인 기업·지자체 기사도 딸려 온다
 # (쿠팡 가전행사, HD현대 정기선 회장, 천안시 소식 등). 재단이 실제로 주체인 기사만 남긴다.
-FOUNDATION_QUERY = "아산사회복지재단"
+# '아산재단'은 네이버가 '아산'+'재단'으로 쪼개 찾아 충남 아산시 기사(소상공인 특례보증,
+# 학교급식)를 쏟아낸다. 그래도 검색어로 넣는 이유는, 재단을 줄여 쓴 기사가 긴 이름으로는
+# 안 걸리기 때문이다. 쏟아지는 쪽은 keep_foundation()이 막는다 —
+# FOUNDATION_MUST_HAVE에 재단 이름이 그대로 들어 있어야 하므로 아산시 기사는 통과하지 못한다
+FOUNDATION_QUERIES = ("아산사회복지재단", "아산재단")
 FOUNDATION_MUST_HAVE = ("아산사회복지재단", "아산재단")
 # 주의: '복지'·'재단'·'사회'는 넣지 말 것 — '아산사회복지재단' 자체에 들어 있어 조건이 무력해진다
 FOUNDATION_TOPICS = ("아산의학상", "아산상", "심포지", "장학", "수여식", "학술",
@@ -498,7 +502,7 @@ def collect_news(query, group=""):
             if start_dt <= pub_dt < end_dt:
                 title = clean_text(item.get("title",""))
                 summ  = clean_text(item.get("description",""))
-                if query == FOUNDATION_QUERY and not keep_foundation(title, summ):
+                if query in FOUNDATION_QUERIES and not keep_foundation(title, summ):
                     continue
                 if not is_excluded(title, summ, group):
                     orig  = item.get("originallink","")
