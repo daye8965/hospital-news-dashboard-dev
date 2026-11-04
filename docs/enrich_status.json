@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-11-04 08:59",
-  "전체기사": 26427,
+  "실행시각": "2026-11-04 09:43",
+  "전체기사": 26438,
   "지면": {
-    "대상": 113,
-    "요청": 79,
-    "게재확인": 10,
-    "미게재": 103,
+    "대상": 104,
+    "요청": 78,
+    "게재확인": 0,
+    "미게재": 104,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,38 +14,38 @@
     "이번에바뀐행": 0
   },
   "영상": {
-    "대상": 368,
-    "요청": 247,
-    "영상": 126,
-    "아님": 186,
-    "판정보류": 54,
-    "오류": 2,
-    "남은대상": 56
+    "대상": 370,
+    "요청": 248,
+    "영상": 131,
+    "아님": 195,
+    "판정보류": 44,
+    "오류": 0,
+    "남은대상": 44
   },
   "기자명": {
-    "대상": 1072,
-    "요청": 541,
-    "채움": 301,
-    "이름없음": 23,
-    "오류": 56,
+    "대상": 759,
+    "요청": 301,
+    "채움": 11,
+    "이름없음": 2,
+    "오류": 76,
     "차단호스트": 5,
-    "네이버바이라인없음": 154,
+    "네이버바이라인없음": 207,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/056/0012286633",
-      "길이": 298308,
-      "title": "‘주거 제한 위반’ 한학자 보석 취소…15일 만에 재구속",
+      "url": "https://n.news.naver.com/mnews/article/056/0012286471",
+      "길이": 297593,
+      "title": "법원, ‘천정궁 외출’ 통일교 한학자 보석 취소",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "시간초과": true,
-    "남은대상": 748
+    "남은대상": 746
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 538,
-    "표시기사": 5486
+    "표시기사": 5488
   },
   "보도자료": {
     "목록": 618,
