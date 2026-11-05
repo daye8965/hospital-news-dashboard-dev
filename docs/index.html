@@ -1467,6 +1467,9 @@ function reportTh(label, col, style = '') {
 function renderReport() {
   const {range, sections} = getReportSections();
   document.getElementById('result-count').textContent = `${sections.reduce((s, x) => s + x.items.length, 0)}건`;
+  // 고르기용 — 섹션별 키와 전체 목록을 기억해 둔다 (접힌 섹션도 그대로 센다)
+  lastReportSections = sections.map(sec => ({key: sec.key, keys: sec.items.map(({r}) => rowKey(r))}));
+  lastRows = sections.flatMap(sec => sec.items.map(({r}) => r));
   const empty = `<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">해당 기간 기사가 없습니다.</div>`;
 
   document.getElementById('report-body').innerHTML =
@@ -1476,6 +1479,7 @@ function renderReport() {
       const items = sortReportItems(sec.items);
       const table = !sec.items.length ? empty : `<table>
         <thead><tr>
+          <th class="nosort td-pick"><input type="checkbox" id="pick-sec-${sec.key}" onclick="pickReportSection('${sec.key}', this.checked)" title="${sec.title} ${sec.items.length}건 모두 고르기"></th>
           ${reportTh('날짜', '날짜', 'style="width:56px"')}${reportTh('매체', '매체')}${withHosp ? reportTh('병원', '병원') : ''}
           <th class="nosort">보도내용</th>
           <th class="nosort" style="width:140px">판정</th>
@@ -1489,7 +1493,9 @@ function renderReport() {
           const prof = profOf(r);
           const hKey = Object.keys(HOSPITALS).find(k => HOSPITALS[k].group === r['병원그룹']);
           const hColor = HOSPITALS[hKey]?.color || '#444';
+          const key = rowKey(r);
           return `<tr${tag ? ' style="background:#fffafa"' : ''}>
+            <td class="td-pick"><input class="pick-row" type="checkbox" ${picked.has(key)?'checked':''} onclick="pickRow(${JSON.stringify(key).replace(/"/g,'&quot;')}, this.checked)"></td>
             <td class="td-date">${mdOf(r)}</td>
             <td class="td-media">${mediaOf(r)}${hasPaper(r) ? `<span class="badge-paper">${r['지면']}</span>` : ''}</td>
             ${withHosp ? `<td class="td-tag"><span class="tag" style="background:${hColor}22;color:${hColor};font-weight:600">${hospLabel(r)}</span></td>` : ''}
@@ -1505,9 +1511,10 @@ function renderReport() {
       return `<div class="report-section">
         <h2 onclick="toggleReportSection('${sec.key}')" title="${open ? '접기' : '펼치기'}">
           <span class="caret" style="color:${sec.color}">${open ? '▼' : '▶'}</span>${sec.title}<span class="cnt">${sec.items.length}건</span></h2>
-        ${open ? `<div class="table-wrap">${table}</div>` : ''}
+        ${open ? `<div class="table-wrap" data-sec="${sec.key}">${table}</div>` : ''}
       </div>`;
     }).join('');
+  updatePickUI();
 }
 
 // ── 보도자료 게재율 ───────────────────────────────────────────────────────────
@@ -2392,9 +2399,26 @@ function clearPicked() { picked.clear(); updatePickUI(); }
 // 버튼 글자와 머리글 체크박스를 지금 상태에 맞춘다.
 // 목록 탭이 아니면(보고용·게재율·AI) 버튼 자체를 감춘다 — 그 탭들은 각자 엑셀이 따로 있다
 const PICK_TABS = ['ours', 'others', 'paper', 'cast'];
+// 보고용은 섹션별 시트가 양식의 핵심이라 평평한 한 장짜리 버튼을 붙이지 않는다.
+// 대신 원래의 '보고용 엑셀' 버튼이 고른 것만 담고, 섹션마다 머리글 체크박스를 둔다
+let lastReportSections = [];   // [{key, keys:[rowKey…]}]
 function updatePickUI() {
   const btn = document.getElementById('pick-btn');
   if (!btn) return;
+  if (currentTab === 'report') {
+    btn.hidden = true;
+    const n = lastRows.filter(r => picked.has(rowKey(r))).length;
+    document.getElementById('excel-label').textContent =
+      n ? `보고용 엑셀 (선택 ${n}건)` : '보고용 엑셀 다운로드';
+    for (const sec of lastReportSections) {
+      const h = document.getElementById('pick-sec-' + sec.key);
+      if (!h) continue;
+      const got = sec.keys.filter(k => picked.has(k)).length;
+      h.checked = got > 0 && got === sec.keys.length;
+      h.indeterminate = got > 0 && got < sec.keys.length;
+    }
+    return;
+  }
   const on = PICK_TABS.includes(currentTab);
   btn.hidden = !on;
   if (!on) return;
@@ -2406,6 +2430,17 @@ function updatePickUI() {
     head.checked = n > 0 && n === lastRows.length;
     head.indeterminate = n > 0 && n < lastRows.length;
   }
+}
+
+// 섹션 머리글 체크박스 — 그 섹션 전체를 고르거나 푼다.
+// 다시 그리지 않고 DOM의 체크박스만 맞춘다 (다시 그리면 스크롤이 맨 위로 튄다)
+function pickReportSection(key, on) {
+  const sec = lastReportSections.find(s => s.key === key);
+  if (!sec) return;
+  for (const k of sec.keys) { if (on) picked.add(k); else picked.delete(k); }
+  document.querySelectorAll(`#report-body [data-sec="${key}"] input.pick-row`)
+    .forEach(b => { b.checked = on; });
+  updatePickUI();
 }
 
 function renderTable(id, rows, page, panelKey, defaultColor) {
@@ -2828,12 +2863,19 @@ function downloadCastExcel() {
 function downloadReportExcel() {
   const {range, sections} = getReportSections();
   const wb = XLSX.utils.book_new();
+  // 고른 기사가 있으면 그것만 담는다. 섹션 구성은 그대로 두되, 고른 게 없는 섹션은
+  // 빈 시트를 만들지 않고 건너뛴다 — 실적에 붙여 넣을 때 빈 장이 섞이면 번거롭다
+  const sel = picked.size;
+  let total = 0;
   sections.forEach(sec => {
     const withHosp = sec.key === 'others';
     const online = sec.key === 'asan-online';
+    const items = sel ? sec.items.filter(({r}) => picked.has(rowKey(r))) : sec.items;
+    if (sel && !items.length) return;
+    total += items.length;
     // 타병원 시트는 병원을 맨 앞에 — 병원별로 훑어 내려가는 쓰임이라 첫 열이어야 눈에 든다
     const head = [...(withHosp?['병원']:[]), '날짜','매체','보도내용','진료과','이름','중복','구분', ...(online?['링크']:[]), '제외 추정'];
-    const body = sec.items.map(({r, tag}) => [
+    const body = items.map(({r, tag}) => [
       ...(withHosp ? [hospLabel(r)] : []),
       mdOf(r),
       mediaOf(r),   // 면 번호는 붙이지 않는다 — 실적 양식의 매체명과 그대로 맞춰야 한다
@@ -2846,7 +2888,9 @@ function downloadReportExcel() {
     ws['!cols'] = head.map(h => ({wch: h==='보도내용' ? 60 : h==='링크' ? 50 : h==='매체' ? 18 : 10}));
     addSheet(wb, ws, sec.title.replace(/[\\\/?*\[\]:]/g, '').slice(0, 31));
   });
-  XLSX.writeFile(wb, `서울아산병원_보고용_${range.from.replace('0000-00-00','처음')}_${range.to.replace('9999-99-99','오늘')}.xlsx`);
+  if (!wb.SheetNames.length) { alert('내려받을 기사가 없습니다.'); return; }
+  const picktag = sel ? `_선택${total}건` : '';
+  XLSX.writeFile(wb, `서울아산병원_보고용${picktag}_${range.from.replace('0000-00-00','처음')}_${range.to.replace('9999-99-99','오늘')}.xlsx`);
 }
 
 // ── 매체 드릴다운 모달 ────────────────────────────────────────────────────────
