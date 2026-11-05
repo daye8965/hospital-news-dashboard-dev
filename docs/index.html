@@ -1534,11 +1534,15 @@ function pressVerbish(key) {
 // ('네이처인덱스'가 제목에 없고 요약에만 있는 기사를 살리기 위한 규칙)
 const PRESS_LONG_NOUN_LEN = 5;
 
-// 제목 신호로 단독으로는 못 쓰는 말 — 사건이 아니라 '무엇을 다쳤나/고쳤나'를 가리키는
-// 일반 임상어다. 점수에는 그대로 더하지만 이것만으로 보도자료에 묶지는 않는다.
+// 단독으로는 못 쓰는 말 — 사건이 아니라 '무엇을 다쳤나/고쳤나', '결과가 어땠나'를
+// 가리키는 일반 임상어다. 점수에는 그대로 더하지만 이것만으로 보도자료에 묶지는 않는다.
 // '키르기스스탄 두개 골절 두피 손상 환아 초청진료'의 '골절'(5.30)이 제목에 박혔다는
 // 이유로 '골다공증 골절 여성, 41%는 2년 내 또 뼈 부러져'를 끌어왔다.
-const PRESS_SOLO_STOP = new Set('골절 두개 두피 손상 절제 이식 재건 염증 출혈 감염 통증 변형 봉합 내시경'.split(' '));
+// 뒷줄은 '결과' 쪽 말이다(2026-11-05 추가) — 어느 의학 기사에나 나오는데 코퍼스에서는
+// 드물어 가중치가 높다. '사망률'(7.16) 하나가 요약에서 맞았다는 이유로 백일해 기사
+// '아기가 우선이니 나중에…'가 란셋 좌주간부 보도자료에 묶였다
+const PRESS_SOLO_STOP = new Set(('골절 두개 두피 손상 절제 이식 재건 염증 출혈 감염 통증 변형 봉합 내시경 '
+  + '사망률 생존율 재발률 발생률 사망위험 합병증 부작용 후유증 유병률 치료율').split(' '));
 
 // 두 글자 말은 띄어쓰기를 무시하는 대신 '경계'를 본다 — '생후 4주'의 '4주'가
 // 기사의 '故 박정운 4주기'와 맞아 연예인 기사 4건이 묶인 적이 있다.
@@ -1626,17 +1630,21 @@ function pressMatches(item) {
   for (let off = -PRESS_BEFORE; off <= PRESS_AFTER; off++) {
     for (const a of idx.get(shiftDay(item['날짜'], off)) || []) {
       let score = 0, matched = 0;
-      const used = new Set();
+      const used = new Set(), hits = [];
       for (const [k, w] of phrases) {                 // 구를 먼저 세고
         if (!a.textN.includes(pressNorm(k))) continue;
-        score += w; matched++;
+        score += w; matched++; hits.push(k);
         for (const part of k.split(' ')) used.add(part);
       }
       for (const [k, w] of singles) {                 // 구에 이미 들어간 낱말은 다시 세지 않는다
         if (used.has(k) || !a.textN.includes(pressNorm(k))) continue;
-        score += w; matched++;
+        score += w; matched++; hits.push(k);
       }
       if (!matched) continue;
+      // 일반 임상어 하나만 맞은 것은 인정하지 않는다 (PRESS_SOLO_STOP 참조).
+      // 의료진 이름이 함께 맞으면 신호가 둘이라 아래 byDoctor 쪽에서 살아난다.
+      // 보도자료 618건 전체로 재 보니 이 줄로 빠지는 것은 백일해 기사 1건뿐이다
+      const soloGeneric = matched === 1 && PRESS_SOLO_STOP.has(pressNorm(hits[0]));
       // 제목 신호는 중복 제거와 따로 본다 — '아산상 수상자'가 요약에서 맞았다고 해서
       // 제목에 박힌 '아산상'을 못 보고 넘어가면 안 된다
       let titleRare = false;
@@ -1649,6 +1657,7 @@ function pressMatches(item) {
       }
       const byDoctor = (item['의료진'] || []).some(n => a.textN.includes(pressNorm(n)));
       if (byDoctor) score += PRESS_DOCTOR_WEIGHT;
+      if (soloGeneric && !byDoctor) continue;
       if (score >= PRESS_MIN_SCORE || titleRare) found.push({r: a.r, score, byDoctor});
     }
   }
