@@ -183,6 +183,12 @@ td{padding:10px 12px;vertical-align:top}
 .excel-btn:hover{background:#1a7a3c;color:#fff}
 .excel-btn:active{transform:scale(.97)}
 .excel-btn svg{flex-shrink:0}
+/* 현재 목록/선택 기사 받기 — 주간 엑셀과 색으로 구분한다 */
+.excel-btn.alt{border-color:#1a5fa8;color:#1a5fa8}
+.excel-btn.alt:hover{background:#1a5fa8;color:#fff}
+/* 기사 고르기 칸 */
+.td-pick{width:26px;text-align:center;padding-left:6px;padding-right:0}
+.td-pick input{cursor:pointer;margin:0;vertical-align:middle}
 
 /* 모달 */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center}
@@ -262,6 +268,12 @@ td{padding:10px 12px;vertical-align:top}
   <label class="check-label" title="연간 언론실적에 한 번이라도 집계된 매체만 봅니다. 매체명이 주소로 남아 있는 기사는 함께 가려집니다"><input type="checkbox" id="perf-only"> 실적 매체만</label>
   <button onclick="resetFilters()">초기화</button>
   <span id="result-count"></span>
+  <button class="excel-btn alt" id="pick-btn" onclick="downloadPicked()" hidden>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+    <span id="pick-label">현재 목록 엑셀</span>
+  </button>
   <button class="excel-btn" onclick="downloadCurrent()">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -853,6 +865,7 @@ function switchTab(tab) {
     : tab === 'report' ? '보고용 엑셀 다운로드'
     : tab === 'press' ? '게재율 엑셀 다운로드' : tab === 'ai' ? 'AI 분석 엑셀 다운로드' : '주간 엑셀 다운로드';
   updateKeywordOptions(tab);
+  clearPicked();
   renderCurrent();
 }
 
@@ -2357,15 +2370,56 @@ function sortTh(panelKey, label, col, style = '') {
     title="${label} 기준 정렬">${label} <span class="si">${arrow}</span></th>`;
 }
 
+// ── 기사 고르기 ──────────────────────────────────────────────────────────────
+// 화면에서 고른 기사를 링크로 기억한다. 페이지를 넘겨도 유지되고,
+// 필터·탭이 바뀌면 비운다 — 안 보이는 기사가 선택에 남아 있으면 건수가 안 맞아 보인다.
+// lastRows는 '지금 화면이 보여 주는 전체 목록'(필터·정렬까지 끝난 것)이다.
+// 아무것도 안 골랐을 때 이것을 그대로 내려받는 게 '검색 결과만 받기'다
+const picked = new Set();
+let lastRows = [];
+function rowKey(r) { return r['언론사원문'] || r['네이버링크'] || r['제목'] || ''; }
+
+function pickRow(key, on) {
+  if (on) picked.add(key); else picked.delete(key);
+  updatePickUI();
+}
+function pickAll(on) {
+  for (const r of lastRows) { const k = rowKey(r); if (on) picked.add(k); else picked.delete(k); }
+  renderCurrent();
+}
+function clearPicked() { picked.clear(); updatePickUI(); }
+
+// 버튼 글자와 머리글 체크박스를 지금 상태에 맞춘다.
+// 목록 탭이 아니면(보고용·게재율·AI) 버튼 자체를 감춘다 — 그 탭들은 각자 엑셀이 따로 있다
+const PICK_TABS = ['ours', 'others', 'paper', 'cast'];
+function updatePickUI() {
+  const btn = document.getElementById('pick-btn');
+  if (!btn) return;
+  const on = PICK_TABS.includes(currentTab);
+  btn.hidden = !on;
+  if (!on) return;
+  const n = lastRows.filter(r => picked.has(rowKey(r))).length;
+  document.getElementById('pick-label').textContent =
+    n ? `선택 ${n}건 엑셀` : `현재 목록 ${lastRows.length}건 엑셀`;
+  const head = document.getElementById('pick-all');
+  if (head) {
+    head.checked = n > 0 && n === lastRows.length;
+    head.indeterminate = n > 0 && n < lastRows.length;
+  }
+}
+
 function renderTable(id, rows, page, panelKey, defaultColor) {
   const wrap = document.getElementById(id);
+  lastRows = rows;
   const pageRows = rows.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE);
   if (!pageRows.length) {
     wrap.innerHTML = `<div style="text-align:center;padding:50px 20px;color:var(--muted);font-size:13px">검색 결과가 없습니다.</div>`;
+    updatePickUI();
     return;
   }
   wrap.innerHTML = `<table>
     <thead><tr>
+      <th class="nosort td-pick"><input type="checkbox" id="pick-all" onclick="pickAll(this.checked)" title="검색 결과 ${rows.length}건 모두 고르기"></th>
       ${sortTh(panelKey,'날짜','발행일시')}
       ${panelKey!=='ours'?'<th class="nosort">병원</th>':''}
       ${sortTh(panelKey,'매체','매체')}
@@ -2388,7 +2442,9 @@ function renderTable(id, rows, page, panelKey, defaultColor) {
       // 매체명 보정
       const media = resolveMedia(r['매체']||'', r['언론사원문']||r['네이버링크']||'');
       const paperView = panelKey === 'paper';
+      const key = rowKey(r);
       return `<tr>
+        <td class="td-pick"><input type="checkbox" ${picked.has(key)?'checked':''} onclick="pickRow(${JSON.stringify(key).replace(/"/g,'&quot;')}, this.checked)"></td>
         <td class="td-date">${displayDate}</td>
         ${panelKey!=='ours'?`<td class="td-tag"><span class="tag" style="background:${color}22;color:${color};font-weight:600">${HOSPITALS[hKey]?.label||r['병원그룹']}</span></td>`:''}
         <td class="td-media">${media}${!paperView&&hasPaper(r)?`<span class="badge-paper">${r['지면']}</span>`:''}</td>
@@ -2400,6 +2456,7 @@ function renderTable(id, rows, page, panelKey, defaultColor) {
         <td class="td-link">${naverLink?`<a href="${naverLink}" target="_blank" rel="noopener">네이버</a>`:''}</td>
       </tr>`;
     }).join('')}</tbody></table>`;
+  updatePickUI();
 }
 
 // ── 비교 탭 렌더 ──────────────────────────────────────────────────────────────
@@ -2577,6 +2634,7 @@ function resetFilters() {
 
 function onFilterChange() {
   if (pages[currentTab] !== undefined) pages[currentTab] = 1;
+  clearPicked();
   renderCurrent();
 }
 
@@ -2693,6 +2751,32 @@ function downloadExcel() {
 
   const fileName = `빅5병원_뉴스_${weekLabel}.xlsx`;
   XLSX.writeFile(wb, fileName);
+}
+
+// 고른 기사만, 아무것도 안 골랐으면 지금 화면의 목록 전체를 한 장으로 내려받는다.
+// 옆의 '주간 엑셀'은 날짜만 보고 병원별 시트를 만드는 전혀 다른 물건이라 그대로 둔다
+function downloadPicked() {
+  const sel = lastRows.filter(r => picked.has(rowKey(r)));
+  const rows = sel.length ? sel : lastRows;
+  if (!rows.length) { alert('내려받을 기사가 없습니다.'); return; }
+  const COLS = ['날짜','병원','매체','지면','제목','요약','링크','기자','출입기자','교수명'];
+  const ws = XLSX.utils.aoa_to_sheet([COLS, ...rows.map(r => [
+    (r['발행일시'] || r['날짜'] || '').slice(0, 16),
+    HOSPITALS[Object.keys(HOSPITALS).find(k => HOSPITALS[k].group === r['병원그룹'])]?.label || r['병원그룹'] || '',
+    resolveMedia(r['매체'] || '', r['언론사원문'] || r['네이버링크'] || ''),
+    hasPaper(r) ? r['지면'] : '',
+    r['제목'] || '',
+    r['요약'] || '',
+    r['언론사원문'] || r['네이버링크'] || '',
+    reporterNames(r),
+    r['출입기자'] === 'Y' ? '출입' : '',
+    profOf(r) || '',
+  ])]);
+  ws['!cols'] = [{wch:17},{wch:12},{wch:14},{wch:7},{wch:55},{wch:80},{wch:60},{wch:16},{wch:8},{wch:16}];
+  const wb = XLSX.utils.book_new();
+  addSheet(wb, ws, '기사');
+  const today = ymdLocal(new Date());
+  XLSX.writeFile(wb, `빅5병원_뉴스_${sel.length ? '선택' : '목록'}_${rows.length}건_${today}.xlsx`);
 }
 
 function downloadCurrent() {
