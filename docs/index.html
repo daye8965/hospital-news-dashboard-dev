@@ -2129,8 +2129,10 @@ function aiMoreBadge(g) {
 // 보도자료 목록은 우리 것밖에 없어서 타병원은 기사 모양으로 추정한다.
 // 같은 날 · 비슷한 제목 · 5건 이상 + 그중 제목에 그 병원 이름이 있는 기사가 1건 이상.
 // 마지막 조건이 없으면 대웅제약·뷰노·길리어드 같은 '기업 보도자료' 묶음이 절반을 차지한다.
-// 아산 보도자료 정답지(보도자료 게재율 탭)와 맞춰 보니 정밀도 86%,
-// 5건 이상 묶음만 놓고 본 재현율 76%였다 (2026-09-15~10-14, 정답 166건 중 126건)
+// 아산 보도자료 정답지(보도자료 게재율 탭)와 맞춰 보니 수집 전체 기간에서
+// 정밀도 71.4%(999건 중) · 재현율 65.9%(1,082건 중 713건)다.
+// 2026-11-06에 묶는 방법을 '대표 제목 하나'에서 '묶음의 모든 제목'으로 바꾸면서
+// 70.8% / 54.3% 에서 올라갔다 (아래 prClusters 주석 참조)
 const PR_SIM = 0.35;   // 제목 글자쌍 겹침. 매체가 제목을 고쳐 써서 느슨하게 잡는다
 const PR_MIN = 5;      // 같은 날 이만큼 퍼지면 보도자료로 본다
 const PR_DAY_SIM = 0.6;   // 하루 차이 나는 묶음을 합칠 때의 문턱 (아래 참조)
@@ -2166,7 +2168,11 @@ function prClusters(rows, group) {
     const gs = [];
     for (const r of byDate[day]) {
       const t = r['제목'] || '';
-      const hit = gs.find(g => aiCharSim(g.title, t) >= PR_SIM);
+      // 대표 제목 하나가 아니라 묶음의 모든 제목과 대조한다. 매체가 제목을 제각각 고쳐 쓰면
+      // 같은 보도자료가 두 묶음으로 갈라지고, 병원 이름이 제목에 들어간 기사가 작은 쪽에 묻혀
+      // 아래 owned 검사에서 묶음째 빠졌다 — 2026-11-05 박덕우 교수 좌주간부 보도자료가
+      // 제목에 '서울아산병원'이 있는 3건과 없는 12건으로 나뉘어 한 줄도 안 떴다
+      const hit = gs.find(g => g.all.some(x => aiCharSim(x['제목'] || '', t) >= PR_SIM));
       if (hit) hit.all.push(r); else gs.push({title: t, all: [r], r});
     }
     for (const g of gs) {
@@ -2334,7 +2340,7 @@ function renderAI() {
     `<div style="font-size:12px;color:var(--muted);font-family:var(--mono)">기간: ${S.range.label}${S.range.isDefault ? ' (기간 미설정 시 최근 7일)' : ''}</div>` +
     (aiData['실행'] ? `<div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:14px">마지막 AI 판정: ${aiData['실행']['시각']} · ${aiData['실행']['모델']}</div>` : '<div style="margin-bottom:14px"></div>') +
     section('pr', '📣 보도자료로 나온 기사 (추정)', `${S.prByHosp.reduce((n, h) => n + h.releases, 0)}건 · 기사 ${prTotal}건`,
-      '보도자료 목록은 우리 것밖에 없어서, <b>같은 날 비슷한 제목 기사가 5건 이상</b> 나왔고 그중 하나라도 제목에 그 병원 이름이 있으면 보도자료로 봤습니다. 하루 늦게 받아쓴 묶음은 앞날에 합칩니다. 아산 보도자료 정답지와 맞춰 보니 <b>정밀도 86%</b>였습니다. 게재가 적었던 보도자료는 빠지므로 실제보다 적게 잡힙니다.', prTable) +
+      '보도자료 목록은 우리 것밖에 없어서, <b>같은 날 비슷한 제목 기사가 5건 이상</b> 나왔고 그중 하나라도 제목에 그 병원 이름이 있으면 보도자료로 봤습니다. 하루 늦게 받아쓴 묶음은 앞날에 합칩니다. 아산 보도자료 정답지와 맞춰 보니 <b>정밀도 71%·재현율 66%</b>였습니다. 게재가 적었던 보도자료는 빠지므로 실제보다 적게 잡힙니다.', prTable) +
     section('issues', '📰 오늘의 이슈', `${S.issueDays.length}일`, '그날 나온 서울아산병원 기사를 같은 사건끼리 묶어 AI가 고른 주요 이슈입니다.', issues) +
     section('policy', '🏛️ 정책 관심 기사', `주제 ${S.policyG.length}개 · 기사 ${S.policy.length}건`, '수가·의대 정원·전공의·상급종합병원 구조전환처럼 병원 운영에 영향을 줄 정책 기사입니다 (모든 병원 기사 대상). 비슷한 주제는 한 줄로 묶고 <b>+N</b>으로 셉니다. 주제를 누르면 기사로 갑니다.', policyTable) +
     section('dept', '🩺 진료과별 언론 노출', `${S.deptRows.length}개 진료과`, '서울아산병원 기사에 이름이 나온 의료진을 진료과별로 모았습니다.', deptTable) +
