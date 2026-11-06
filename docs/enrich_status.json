@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-11-06 12:26",
-  "전체기사": 27056,
+  "실행시각": "2026-11-07 07:10",
+  "전체기사": 27266,
   "지면": {
-    "대상": 130,
-    "요청": 79,
-    "게재확인": 0,
-    "미게재": 130,
+    "대상": 146,
+    "요청": 86,
+    "게재확인": 7,
+    "미게재": 139,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,38 +14,38 @@
     "이번에바뀐행": 0
   },
   "영상": {
-    "대상": 424,
-    "요청": 287,
-    "영상": 160,
-    "아님": 224,
-    "판정보류": 38,
-    "오류": 2,
-    "남은대상": 40
+    "대상": 435,
+    "요청": 294,
+    "영상": 152,
+    "아님": 203,
+    "판정보류": 79,
+    "오류": 1,
+    "남은대상": 80
   },
   "기자명": {
-    "대상": 771,
-    "요청": 136,
-    "채움": 7,
-    "이름없음": 2,
-    "오류": 80,
-    "차단호스트": 6,
-    "네이버바이라인없음": 41,
+    "대상": 980,
+    "요청": 486,
+    "채움": 184,
+    "이름없음": 21,
+    "오류": 56,
+    "차단호스트": 5,
+    "네이버바이라인없음": 219,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/056/0012288167",
-      "길이": 295944,
-      "title": "경찰, ‘세브란스병원 흉기 난동 여성’ 구속영장 신청…공소청 면담",
+      "url": "https://n.news.naver.com/mnews/article/422/0000923667",
+      "길이": 288793,
+      "title": "[이시각헤드라인] 11월 6일 뉴스투나잇",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "시간초과": true,
-    "남은대상": 762
+    "남은대상": 775
   },
   "출입기자": {
     "결과": "대조 완료",
-    "명단인원": 538,
-    "표시기사": 5632
+    "명단인원": 540,
+    "표시기사": 5694
   },
   "보도자료": {
     "목록": 617,
