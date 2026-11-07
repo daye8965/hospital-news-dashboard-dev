@@ -1,10 +1,10 @@
 {
-  "실행시각": "2026-11-07 07:10",
-  "전체기사": 27266,
+  "실행시각": "2026-11-07 11:49",
+  "전체기사": 27270,
   "지면": {
-    "대상": 146,
-    "요청": 86,
-    "게재확인": 7,
+    "대상": 140,
+    "요청": 83,
+    "게재확인": 1,
     "미게재": 139,
     "오류": 0
   },
@@ -14,38 +14,38 @@
     "이번에바뀐행": 0
   },
   "영상": {
-    "대상": 435,
-    "요청": 294,
-    "영상": 152,
-    "아님": 203,
-    "판정보류": 79,
-    "오류": 1,
-    "남은대상": 80
+    "대상": 436,
+    "요청": 295,
+    "영상": 158,
+    "아님": 217,
+    "판정보류": 61,
+    "오류": 0,
+    "남은대상": 61
   },
   "기자명": {
-    "대상": 980,
-    "요청": 486,
-    "채움": 184,
-    "이름없음": 21,
-    "오류": 56,
+    "대상": 781,
+    "요청": 293,
+    "채움": 9,
+    "이름없음": 3,
+    "오류": 76,
     "차단호스트": 5,
-    "네이버바이라인없음": 219,
+    "네이버바이라인없음": 199,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/422/0000923667",
-      "길이": 288793,
-      "title": "[이시각헤드라인] 11월 6일 뉴스투나잇",
+      "url": "https://n.news.naver.com/mnews/article/421/0009274961",
+      "길이": 258292,
+      "title": "세브란스 교수 피습, 정부 \"병원 안전망 다시 점검\"…대책 보완",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "시간초과": true,
-    "남은대상": 775
+    "남은대상": 769
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 540,
-    "표시기사": 5694
+    "표시기사": 5698
   },
   "보도자료": {
     "목록": 617,
