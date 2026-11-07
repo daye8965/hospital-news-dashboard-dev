@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-11-07 11:49",
-  "전체기사": 27270,
+  "실행시각": "2026-11-08 05:57",
+  "전체기사": 27345,
   "지면": {
-    "대상": 140,
-    "요청": 83,
-    "게재확인": 1,
-    "미게재": 139,
+    "대상": 118,
+    "요청": 76,
+    "게재확인": 2,
+    "미게재": 116,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,38 +14,38 @@
     "이번에바뀐행": 0
   },
   "영상": {
-    "대상": 436,
-    "요청": 295,
-    "영상": 158,
-    "아님": 217,
-    "판정보류": 61,
+    "대상": 450,
+    "요청": 304,
+    "영상": 181,
+    "아님": 237,
+    "판정보류": 32,
     "오류": 0,
-    "남은대상": 61
+    "남은대상": 32
   },
   "기자명": {
-    "대상": 781,
-    "요청": 293,
-    "채움": 9,
-    "이름없음": 3,
-    "오류": 76,
-    "차단호스트": 5,
-    "네이버바이라인없음": 199,
+    "대상": 850,
+    "요청": 376,
+    "채움": 60,
+    "이름없음": 8,
+    "오류": 69,
+    "차단호스트": 4,
+    "네이버바이라인없음": 232,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/421/0009274961",
-      "길이": 258292,
-      "title": "세브란스 교수 피습, 정부 \"병원 안전망 다시 점검\"…대책 보완",
+      "url": "https://n.news.naver.com/mnews/article/215/0001272015",
+      "길이": 291707,
+      "title": "[단독] 대장내시경 후 사망 위험 낮춘 '변수'…외과 의사였다",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "시간초과": true,
-    "남은대상": 769
+    "남은대상": 782
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 540,
-    "표시기사": 5698
+    "표시기사": 5709
   },
   "보도자료": {
     "목록": 617,
