@@ -1,10 +1,10 @@
 {
-  "실행시각": "2026-11-08 05:57",
-  "전체기사": 27345,
+  "실행시각": "2026-11-08 11:30",
+  "전체기사": 27351,
   "지면": {
-    "대상": 118,
-    "요청": 76,
-    "게재확인": 2,
+    "대상": 116,
+    "요청": 75,
+    "게재확인": 0,
     "미게재": 116,
     "오류": 0
   },
@@ -14,38 +14,38 @@
     "이번에바뀐행": 0
   },
   "영상": {
-    "대상": 450,
-    "요청": 304,
-    "영상": 181,
-    "아님": 237,
-    "판정보류": 32,
-    "오류": 0,
-    "남은대상": 32
+    "대상": 452,
+    "요청": 305,
+    "영상": 189,
+    "아님": 250,
+    "판정보류": 12,
+    "오류": 1,
+    "남은대상": 13
   },
   "기자명": {
-    "대상": 850,
-    "요청": 376,
-    "채움": 60,
-    "이름없음": 8,
-    "오류": 69,
+    "대상": 790,
+    "요청": 249,
+    "채움": 7,
+    "이름없음": 5,
+    "오류": 77,
     "차단호스트": 4,
-    "네이버바이라인없음": 232,
+    "네이버바이라인없음": 156,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/215/0001272015",
-      "길이": 291707,
-      "title": "[단독] 대장내시경 후 사망 위험 낮춘 '변수'…외과 의사였다",
+      "url": "https://n.news.naver.com/mnews/article/421/0009276259",
+      "길이": 258906,
+      "title": "'반려동물 만성염증성장병증' 근본적 이해·관리, 보호자 관심 높아",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "시간초과": true,
-    "남은대상": 782
+    "남은대상": 778
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 540,
-    "표시기사": 5709
+    "표시기사": 5710
   },
   "보도자료": {
     "목록": 617,
