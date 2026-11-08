@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-11-08 11:30",
-  "전체기사": 27351,
+  "실행시각": "2026-11-09 06:13",
+  "전체기사": 27408,
   "지면": {
-    "대상": 116,
-    "요청": 75,
-    "게재확인": 0,
-    "미게재": 116,
+    "대상": 89,
+    "요청": 72,
+    "게재확인": 2,
+    "미게재": 87,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,38 +14,38 @@
     "이번에바뀐행": 0
   },
   "영상": {
-    "대상": 452,
+    "대상": 451,
     "요청": 305,
-    "영상": 189,
-    "아님": 250,
-    "판정보류": 12,
-    "오류": 1,
+    "영상": 187,
+    "아님": 251,
+    "판정보류": 13,
+    "오류": 0,
     "남은대상": 13
   },
   "기자명": {
-    "대상": 790,
-    "요청": 249,
-    "채움": 7,
-    "이름없음": 5,
-    "오류": 77,
+    "대상": 843,
+    "요청": 438,
+    "채움": 60,
+    "이름없음": 3,
+    "오류": 73,
     "차단호스트": 4,
-    "네이버바이라인없음": 156,
+    "네이버바이라인없음": 298,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/421/0009276259",
-      "길이": 258906,
-      "title": "'반려동물 만성염증성장병증' 근본적 이해·관리, 보호자 관심 높아",
+      "url": "https://n.news.naver.com/mnews/article/009/0005760695",
+      "길이": 268650,
+      "title": "의사 사망에 법까지 만들었는데…여전히 진료실에 흉기 들고 들어온다",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "시간초과": true,
-    "남은대상": 778
+    "남은대상": 780
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 540,
-    "표시기사": 5710
+    "표시기사": 5725
   },
   "보도자료": {
     "목록": 617,
