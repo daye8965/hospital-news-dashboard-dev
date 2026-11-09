@@ -598,6 +598,13 @@ function deptCell(r, name, fill) {
   return fill.get(`${r['병원그룹']}|${name}`) || deptOf(r, name);
 }
 
+// 기사 하나가 한 줄인 시트용 — 이름 순서대로 진료과를 잇는다. 모르는 자리는 '-'로 두어
+// 이름과 자리를 맞추고, 전부 모르면 칸을 비운다
+function deptLine(r, fill) {
+  const out = profOf(r).split(/,\s*/).filter(Boolean).map(n => deptCell(r, n, fill) || '-');
+  return out.some(d => d !== '-') ? out.join(', ') : '';
+}
+
 function reporterNames(r) {
   const v = (r['기자명'] || '').trim();
   return v === CHECKED_NONE ? '' : v;
@@ -2848,6 +2855,9 @@ function downloadExcel() {
       return !isNoise(r);
     }).sort((a,b) => b['발행일시'].localeCompare(a['발행일시']));
 
+    // 비워 두고 손으로 적던 '교수 소속'·'이름' 칸을 채운다 (2026-11-09)
+    const fill = deptFallback([{items: rows.map(r => ({r}))}]);
+
     const sheetData = [
       COLS,
       ...rows.map(r => [
@@ -2859,8 +2869,8 @@ function downloadExcel() {
         r['언론사원문'] || r['네이버링크'] || '',
         reporterNames(r),
         r['출입기자'] === 'Y' ? '출입' : '',
-        '',   // 교수 소속 (수동 입력)
-        '',   // 이름 (수동 입력)
+        deptLine(r, fill),
+        profOf(r),
       ])
     ];
 
@@ -2922,7 +2932,7 @@ function downloadPicked() {
     reporterNames(r),
     r['출입기자'] === 'Y' ? '출입' : '',
     profOf(r) || '',
-    profOf(r).split(/,\s*/).filter(Boolean).map(n => deptCell(r, n, deptFill) || '-').join(', ').replace(/^[-,\s]+$/, ''),
+    deptLine(r, deptFill),
   ])]);
   ws['!cols'] = [{wch:17},{wch:12},{wch:14},{wch:7},{wch:55},{wch:80},{wch:60},{wch:16},{wch:8},{wch:16},{wch:18}];
   const wb = XLSX.utils.book_new();
@@ -2943,15 +2953,17 @@ function downloadCurrent() {
 function downloadPaperExcel() {
   const groups = paperGroups();
   const rows = sortRows(applyFilters(allData.filter(r => groups.includes(r['병원그룹']) && hasPaper(r))), sorts.paper);
+  const fill = deptFallback([{items: rows.map(r => ({r}))}]);
   const data = [
-    ['날짜','병원','매체','면','제목','기자','출입기자','교수명','링크'],
+    ['날짜','병원','매체','면','제목','기자','출입기자','교수명','진료과','링크'],
     ...rows.map(r => [
       r['날짜']||'', hospLabel(r), mediaOf(r), r['지면']||'', r['제목']||'',
-      reporterNames(r), r['출입기자']==='Y' ? '출입' : '', profOf(r), r['네이버링크']||r['언론사원문']||'',
+      reporterNames(r), r['출입기자']==='Y' ? '출입' : '', profOf(r), deptLine(r, fill),
+      r['네이버링크']||r['언론사원문']||'',
     ]),
   ];
   const ws = XLSX.utils.aoa_to_sheet(data);
-  ws['!cols'] = [{wch:11},{wch:12},{wch:12},{wch:6},{wch:60},{wch:16},{wch:8},{wch:14},{wch:50}];
+  ws['!cols'] = [{wch:11},{wch:12},{wch:12},{wch:6},{wch:60},{wch:16},{wch:8},{wch:14},{wch:18},{wch:50}];
   const wb = XLSX.utils.book_new();
   addSheet(wb, ws, '지면모음');
   const {dateFrom, dateTo} = getFilters();
@@ -2961,15 +2973,17 @@ function downloadPaperExcel() {
 // 방송은 면 번호가 없으니 지면모음에서 '면' 열만 빼고 같은 구성으로 받는다
 function downloadCastExcel() {
   const rows = sortRows(castRows(), sorts.cast);
+  const fill = deptFallback([{items: rows.map(r => ({r}))}]);
   const data = [
-    ['날짜','병원','매체','제목','기자','출입기자','교수명','링크'],
+    ['날짜','병원','매체','제목','기자','출입기자','교수명','진료과','링크'],
     ...rows.map(r => [
       r['날짜']||'', hospLabel(r), mediaOf(r), r['제목']||'',
-      reporterNames(r), r['출입기자']==='Y' ? '출입' : '', profOf(r), r['네이버링크']||r['언론사원문']||'',
+      reporterNames(r), r['출입기자']==='Y' ? '출입' : '', profOf(r), deptLine(r, fill),
+      r['네이버링크']||r['언론사원문']||'',
     ]),
   ];
   const ws = XLSX.utils.aoa_to_sheet(data);
-  ws['!cols'] = [{wch:11},{wch:12},{wch:12},{wch:60},{wch:16},{wch:8},{wch:14},{wch:50}];
+  ws['!cols'] = [{wch:11},{wch:12},{wch:12},{wch:60},{wch:16},{wch:8},{wch:14},{wch:18},{wch:50}];
   const wb = XLSX.utils.book_new();
   addSheet(wb, ws, '방송모음');
   const {dateFrom, dateTo} = getFilters();
