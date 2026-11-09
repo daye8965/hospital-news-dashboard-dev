@@ -2881,15 +2881,26 @@ function downloadReportExcel() {
     total += items.length;
     // 타병원 시트는 병원을 맨 앞에 — 병원별로 훑어 내려가는 쓰임이라 첫 열이어야 눈에 든다
     const head = [...(withHosp?['병원']:[]), '날짜','매체','보도내용','진료과','이름','중복','구분', ...(online?['링크']:[]), '제외 추정'];
-    const body = items.map(({r, tag}) => [
-      ...(withHosp ? [hospLabel(r)] : []),
-      mdOf(r),
-      mediaOf(r),   // 면 번호는 붙이지 않는다 — 실적 양식의 매체명과 그대로 맞춰야 한다
-      r['제목']||'', '', profOf(r), '',
-      isBroadcast(r) ? '방송' : '',
-      ...(online ? [r['언론사원문']||r['네이버링크']||''] : []),
-      tag,
-    ]);
+    // 실적 양식은 교수 한 명이 한 줄이다. 이름이 둘 이상이면 줄을 나누고 나머지 칸은
+    // 그대로 베낀 뒤, 둘째 줄부터 '중복'을 적는다 — 건수를 셀 때 두 번 세지 않으려는 표시다.
+    // 예전에는 '김철수, 이영희'처럼 한 칸에 몰아넣어서 받은 뒤 손으로 나눠야 했다
+    const body = [];
+    items.forEach(({r, tag}) => {
+      const lead = [
+        ...(withHosp ? [hospLabel(r)] : []),
+        mdOf(r),
+        mediaOf(r),   // 면 번호는 붙이지 않는다 — 실적 양식의 매체명과 그대로 맞춰야 한다
+        r['제목']||'', '',
+      ];
+      const tail = [
+        isBroadcast(r) ? '방송' : '',
+        ...(online ? [r['언론사원문']||r['네이버링크']||''] : []),
+        tag,
+      ];
+      const names = profOf(r).split(/,\s*/).filter(Boolean);
+      if (!names.length) names.push('');   // 교수 이름이 없으면 한 줄 그대로
+      names.forEach((n, i) => body.push([...lead, n, i ? '중복' : '', ...tail]));
+    });
     const ws = XLSX.utils.aoa_to_sheet([head, ...body]);
     ws['!cols'] = head.map(h => ({wch: h==='보도내용' ? 60 : h==='링크' ? 50 : h==='매체' ? 18 : 10}));
     addSheet(wb, ws, sec.title.replace(/[\\\/?*\[\]:]/g, '').slice(0, 31));
