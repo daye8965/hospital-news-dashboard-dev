@@ -12,6 +12,11 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+/* hidden 속성이 항상 이기게 한다. 브라우저 기본값인 [hidden]{display:none}은 우선순위가
+   가장 낮아서, .excel-btn{display:inline-flex} 같은 평범한 규칙에도 밀린다 —
+   그래서 보고용·게재율·AI 탭에서 감췄어야 할 '현재 목록 N건 엑셀' 버튼이 그대로 보이고
+   건수는 직전 목록 탭의 것이 남아 있었다(2026-11-09) */
+[hidden]{display:none !important}
 :root{
   --bg:#f7f7f5;--surface:#fff;--border:#e4e4e0;
   --text:#1a1a18;--muted:#6b6b67;--accent:#1a5fa8;--accent-bg:#eef4fb;

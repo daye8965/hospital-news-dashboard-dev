@@ -203,6 +203,16 @@ const IS_DEV = true;   // 운영 저장소에서는 false
   버튼의 건수와 화면의 건수가 어긋나 보이기 때문입니다.
 - 버튼은 **목록 탭에만** 보입니다(`PICK_TABS = ours·others·paper·cast`). 게재율·AI는
   각자 맞춘 엑셀이 따로 있습니다. **보고용은 고르기만 되고 버튼은 안 붙습니다** — 아래 참조.
+- **감추는 건 `btn.hidden = true`인데, 이것만으로는 안 감춰졌습니다**(2026-11-09 고침).
+  브라우저 기본 규칙 `[hidden]{display:none}`은 우선순위가 가장 낮아 `.excel-btn{display:inline-flex}`에
+  밀립니다. 그래서 보고용·게재율·AI 탭에서 버튼이 그대로 보였고, **건수는 직전 목록 탭의 것이
+  남아 있었습니다**(`lastRows`는 그 탭 기준으로 다시 채워지는데 글자는 안 고쳐 주므로 —
+  보고용에서 `303건`인데 버튼은 `현재 목록 41건 엑셀`). CSS 맨 위에
+  `[hidden]{display:none !important}`를 넣어 해결했습니다.
+  **`hidden`으로 감추는 다른 것들도 이 규칙을 탑니다** — `#open-badge`·`#secret-badge`·
+  `#cast-pending`·`#compare-block`·`#hide-ai-wrap`. 전부 `style.display`가 아니라 `hidden`
+  속성을 켜고 끄므로 안전합니다. **`style.display`로 보이게 만드는 코드를 새로 쓰면 안 됩니다** —
+  `hidden` 속성이 남아 있으면 `!important`에 막힙니다.
 - **`lastRows`는 `renderTable()`이 맨 앞에서 채웁니다** — 결과가 0건이라 일찍 반환하는 길에서도
   채워야 버튼 글자가 `0건`으로 맞습니다.
 - 폭은 26px입니다. 1400px에서 제목이 402 → **383px**가 되고 표는 넘치지 않습니다
