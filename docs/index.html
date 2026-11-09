@@ -2209,9 +2209,14 @@ function aiFlat(text) {
   for (const w of AI_STOP_LONG) t = t.split(w).join('');
   return t;
 }
+// 같은 제목을 수없이 다시 쪼개므로 기억해 둔다 — 아래 growByOfficial이 비교를 많이 한다
+const aiGramCache = new Map();
 function aiGrams(text) {
+  const hit = aiGramCache.get(text);
+  if (hit) return hit;
   const t = aiFlat(text), out = new Set();
   for (let i = 0; i + 2 <= t.length; i++) out.add(t.slice(i, i + 2));
+  if (aiGramCache.size < 80000) aiGramCache.set(text, out);
   return out;
 }
 function aiCharSim(a, b) {
@@ -2305,6 +2310,21 @@ function dayDiff(a, b) {
 // 제목 앞의 [세브란스병원]·[연세암병원] 같은 머리말은 떼고 비교한다
 function pressBoardTitle(t) { return (t || '').replace(/^\s*\[[^\]]{1,16}\]\s*/, ''); }
 
+// **병원 이름은 떼고 비교한다.** 겹침(`aiCharSim`)이 짧은 쪽 기준이라, 제목이 짧으면
+// 병원 이름만으로 문턱을 넘는다 — `신촌 세브란스병원서 흉기 난동`(10글자쌍)이
+// `세브란스, 뉴스위크가 인정한 세계 최고 의료관광병원`과 0.5로 맞아, 흉기난동 기사
+// 191건이 뉴스위크 보도자료 묶음으로 끌려 들어왔다(묶음이 237건이 됐다).
+// 병원 이름은 어느 보도자료인지를 전혀 가려 주지 않으므로 떼는 게 맞다.
+const PR_NAME_RE = {
+  '아산': /서울아산병원|아산병원|아산사회복지재단|아산재단|아산/g,
+  '삼성': /삼성서울병원|성균관대|삼성/g,
+  '세브란스': /신촌\s*세브란스|세브란스병원|세브란스|연세암병원|연세의료원|연세대학교|연세대|연세/g,
+  '서울대': /서울대학교병원|서울대병원|서울대학교|서울의대|서울대/g,
+  '성모': /서울성모병원|가톨릭대학교|가톨릭대|성모/g,
+};
+function prBare(t, group) { return (t || '').replace(PR_NAME_RE[group] || /$^/g, ' '); }
+function prSim(a, b, group) { return aiCharSim(prBare(a, group), prBare(b, group)); }
+
 function officialPress(c, group) {
   const list = pressBoard && pressBoard['보도자료'] && pressBoard['보도자료'][group];
   if (!list || !list.length) return null;
@@ -2316,7 +2336,7 @@ function officialPress(c, group) {
     const t = pressBoardTitle(raw);
     // 묶음의 어느 제목이든 맞으면 된다 — 매체가 제목을 제각각 고쳐 쓰기 때문이다
     let sim = 0;
-    for (const r of c.all) sim = Math.max(sim, aiCharSim(r['제목'] || '', t));
+    for (const r of c.all) sim = Math.max(sim, prSim(r['제목'] || '', t, group));
     if (!best || sim > best.sim) best = {sim, ymd, title: raw};
   }
   return best && best.sim >= PR_OFFICIAL_SIM ? best : null;
@@ -2328,6 +2348,96 @@ function prOfficialCell(c) {
   if (!c.official) return `<span style="color:var(--muted)" title="같은 기간 홈페이지 보도자료 중 맞는 것을 찾지 못했습니다 — 보도자료가 아닐 수 있습니다">—</span>`;
   return `<span class="tag" style="background:#e1f5ee;color:#0f6e56;font-weight:600"
     title="${aiEsc(c.official.ymd)} 홈페이지 보도자료 — ${aiEsc(c.official.title)}">✓ 확인</span>`;
+}
+
+// 확인된 묶음은 **홈페이지 보도자료를 기준으로 기사를 다시 모은다.**
+// 묶기는 '같은 날 비슷한 제목'이라 두 가지를 놓친다 — ① 하루 이틀 뒤 받아쓰는 전문지
+// ② 제목을 많이 고쳐 쓴 기사. 2026-11-05 좌주간부 보도자료가 화면에 12건으로 보였는데
+// 게재율 탭 기준 실제는 29건이었다(11/05 22 · 11/06 4 · 11/07 1 · 11/08 2).
+//
+// 홈페이지 제목과 직접 맞는 기사를 씨앗으로 삼고(`PR_GROW_SEED`), 거기서 서로 이어지는
+// 기사를 배포일 −1~+7일 안에서 붙인다(`PR_GROW_LINK`). 씨앗만으로는 모자란다 —
+// `더퍼스트: 서울아산병원 심장내과 교수팀, 좌주간부 관상동맥질환 5379명 분석`은
+// 홈페이지 제목과 0.17밖에 안 겹치는데 다른 기사들과는 이어집니다.
+const PR_GROW_SEED = 0.3;    // 홈페이지 제목과 직접 맞는 기사
+const PR_GROW_LINK = PR_SIM; // 거기서 이어 붙는 기사
+const PR_GROW_PASS = 1;      // 한 번만 — 여러 번 하면 사슬이 눈덩이처럼 커진다
+// 이어 붙이려면 **홈페이지 제목과도 조금은 닮아야** 한다. 이게 없으면 같은 날 벌어진
+// 다른 일이 통째로 끌려온다 — 09-10 `인공와우` 보도자료 묶음에 `KT·서울아산병원 AI 병원`
+// 기사가 전부 들어와 116건이 됐다(홈페이지 제목과는 0.00이다).
+// 재 보니 0.15를 두면 아산 정밀도가 77.4% → 84.9%로 오르고 좌주간부 28건은 그대로였다
+const PR_GROW_FLOOR = 0.15;
+
+function growByOfficial(rows, clusters, group) {
+  const conf = clusters.filter(c => c.official);
+  if (!conf.length) return clusters;
+
+  // ① 확인된 묶음에서 **그 보도자료와 상관없는 기사를 떼어 낸다.** 같은 날 벌어진 다른
+  // 일이 묶기 단계에서 이미 한 묶음이 돼 있기도 하다 — 09-10 `인공와우` 묶음 안에
+  // `KT·서울아산병원 AI 병원` 기사 63건이 들어 있었고, 홈페이지 제목과는 0.00이었다.
+  // 떼어 낸 기사는 ④에서 다시 묶어 '추정'으로 돌려놓는다
+  const dropped = [];
+  for (const c of conf) {
+    const t = pressBoardTitle(c.official.title);
+    const keep = [];
+    for (const r of c.all) (prSim(r['제목'] || '', t, group) >= PR_GROW_FLOOR ? keep : dropped).push(r);
+    c.all = keep;
+  }
+
+  // ② 배포일 −1~+7일 안에서 다시 모은다
+  for (const c of conf) {
+    const t = pressBoardTitle(c.official.title);
+    const win = rows.filter(r => {
+      const g = dayDiff(r['날짜'], c.official.ymd);
+      return g >= -PR_OFFICIAL_BEFORE && g <= PR_OFFICIAL_AFTER;
+    });
+    const got = new Map(c.all.map(r => [rowKey(r), r]));
+    for (const r of win) if (prSim(r['제목'] || '', t, group) >= PR_GROW_SEED) got.set(rowKey(r), r);
+    for (let pass = 0; pass < PR_GROW_PASS; pass++) {
+      const members = [...got.values()];
+      let added = false;
+      for (const r of win) {
+        const k = rowKey(r);
+        if (got.has(k)) continue;
+        if (prSim(r['제목'] || '', t, group) < PR_GROW_FLOOR) continue;
+        if (members.some(m => prSim(m['제목'] || '', r['제목'] || '', group) >= PR_GROW_LINK)) {
+          got.set(k, r); added = true;
+        }
+      }
+      if (!added) break;
+    }
+    c.grown = got;
+  }
+
+  // ③ 기사 하나는 보도자료 하나에만 — 홈페이지 제목과 더 닮은 쪽, 같으면 배포일이 가까운 쪽
+  const claim = new Map();
+  for (const c of conf) {
+    const t = pressBoardTitle(c.official.title);
+    for (const [k, r] of c.grown) {
+      const score = prSim(r['제목'] || '', t, group) * 100 - Math.abs(dayDiff(r['날짜'], c.official.ymd));
+      const cur = claim.get(k);
+      if (!cur || score > cur.score) claim.set(k, {c, score});
+    }
+  }
+
+  const bag = new Map(clusters.map(c => [c, new Map()]));
+  for (const c of clusters) for (const r of c.all) {
+    const to = claim.get(rowKey(r))?.c || c;
+    bag.get(to).set(rowKey(r), r);
+  }
+  for (const c of conf) for (const [k, r] of c.grown) {
+    if (claim.get(k)?.c === c) bag.get(c).set(k, r);
+  }
+  for (const c of clusters) {
+    c.all = [...bag.get(c).values()].sort((a, b) => (a['날짜'] || '').localeCompare(b['날짜'] || ''));
+    delete c.grown;
+  }
+  // ④ 떼어 낸 기사를 다시 묶어 '추정'으로 돌려놓는다 (같은 규칙을 그대로 쓴다)
+  const extra = dropped.length >= PR_MIN ? prClusters(dropped, group) : [];
+  extra.forEach(c => { c.official = null; });
+
+  // 확인된 묶음은 그대로 두고, 기사를 뺏겨 작아진 추정 묶음은 뺀다
+  return [...clusters.filter(c => c.official ? c.all.length : c.all.length >= PR_MIN), ...extra];
 }
 
 function prClusters(rows, group) {
@@ -2399,10 +2509,11 @@ function aiSections() {
   const prByHosp = Object.keys(GROUP_NAME).map(g => {
     const sub = allData.filter(r => r['병원그룹'] === g && r['날짜'] >= range.from
                                  && r['날짜'] <= range.to && !isNoise(r));
-    const cl = prClusters(sub, g);
+    let cl = prClusters(sub, g);
     // 병원 홈페이지의 실제 보도자료와 맞춰 본다 (목록이 없는 병원은 빈 칸)
     const board = pressBoard?.['보도자료']?.[g] || [];
     cl.forEach(c => { c.official = board.length ? officialPress(c, g) : null; });
+    if (board.length) cl = growByOfficial(sub, cl, g);
     return {group: g, label: HOSPITALS[Object.keys(HOSPITALS).find(k => HOSPITALS[k].group === g)]?.label || g,
             color: HOSPITALS[Object.keys(HOSPITALS).find(k => HOSPITALS[k].group === g)]?.color || '#444',
             hasBoard: board.length > 0, confirmed: cl.filter(c => c.official).length,
