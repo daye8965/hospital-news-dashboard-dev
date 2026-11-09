@@ -520,6 +520,84 @@ function hospLabel(r) { return Object.values(HOSPITALS).find(h => h.group === r[
 // CSV의 교수명 컬럼은 예전 규칙으로 모은 값이라 '평균'·'반도체' 같은 게 섞여 있다.
 // 지금은 본문 추출이 더 정확해서 그것만 쓴다 (새로 수집되는 행은 같은 규칙으로 채워진다).
 function profOf(r) { return extractProfessor(r['제목'], r['요약']); }
+// ── 진료과 ──────────────────────────────────────────────────────────────
+// 보고용 엑셀의 '진료과' 칸. 실적 양식의 진료과 이름은 병원 홈페이지 표기가 기준이라
+// 우리 의료진은 `docs/amc_doctors.json`(amc.seoul.kr에서 받아 둔 명단)을 먼저 본다.
+// 명단은 아산 기사에만 씁니다 — 동명이인이 44명이라 타병원 교수에게 우리 진료과가 붙을 수 있다.
+// 명단에 없거나(융합의학과처럼 임상 진료과가 아닌 곳) 타병원이면 기사 글에서 이름 옆을 본다.
+// 찾는 방법: 이름 옆 글을 한글 덩어리로 써어 **덩어리 통째로** 맞춘다.
+// 조각으로 맞추면 `연세암병원`에서 `암병원`을, `심장혈관외과`에서 `혈관외과`를,
+// `두산연강외과학술상`에서 `두산연강외과`를 뒤집어냅니다 — 세 개 모두 실제로 걸렸습니다.
+const DEPT_TAIL_RE = /(?:내과|외과|의학과|치과|안과|이비인후과|피부과|병리과|신경과|산부인과|소아과|청소년과|혈액과|감염과|신장과|영양과|중환자과|대사과|센터|클리닉)$/;
+
+function deptToken(t) {
+  // 가운뎃점은 진료과 이름 안에도 있지만(간이식ㆍ간담도외과) 양 끝에 붙은 건 구분자다
+  t = (t || '').replace(/^[ㆍ·]+|[ㆍ·]+$/g, '');
+  if (!t || t.length > 14) return '';
+  if (amcDepts.includes(t)) return t;
+  const tail = t.split(/[ㆍ·]/).pop();   // `특화연구소·신경과` → `신경과` (위 줄이 먼저라 진료과 이름은 안 잘린다)
+  if (tail !== t && (amcDepts.includes(tail) || DEPT_TAIL_RE.test(tail))) return tail;
+  return DEPT_TAIL_RE.test(t) ? t : '';
+}
+
+function deptFromText(name, text) {
+  const i = text.indexOf(name);
+  if (i < 0) return '';
+  const words = t => t.match(/[가-힣ㆍ·]+/g) || [];
+  // 이름에서 가까운 덩어리부터 본다. 앞(`심장내과 박승정 교수`)을 먼저,
+  // 없으면 뒤(`김민선 대한비만학회 이사장(서울아산병원 내분비내과 교수)`)를 본다
+  const near = [...words(text.slice(Math.max(0, i - 20), i)).reverse(),
+                ...words(text.slice(i + name.length, i + name.length + 25))];
+  for (const t of near) {
+    const d = deptToken(t);
+    if (d) return d;
+  }
+  return '';
+}
+
+function deptOf(r, name) {
+  if (!name) return '';
+  const cands = (r['병원그룹'] === '아산' && amcDoctors[name]) || [];
+  if (cands.length === 1) return cands[0];
+  const found = deptFromText(name, `${r['제목'] || ''} ${r['요약'] || ''}`);
+  // 동명이인은 기사가 진료과를 가려 줄 때만 적는다 — 둘 중 아무거나 고를 수는 없다
+  if (cands.length > 1) return cands.includes(found) ? found : '';
+  return found;
+}
+
+// 같은 사람인데 기사마다 진료과가 적혔 있기도 없기도 하다. 한 번이라도 적힌 것을
+// **같은 병원 안에서** 다른 기사의 빈 칸에도 채운다 — 받은 뒤 손으로 메우던 일이다.
+// 병원을 섮지 않는 이유는 `deptOf`가 명단을 아산에만 쓰는 것과 같다(동명이인).
+// 고를 때는 홈페이지 진료과 이름을 먼저 — `정신건강의학과`(1회)가 `정신의학과`(2회)에 지면 안 된다
+function deptFallback(sections) {
+  const tally = new Map();
+  sections.forEach(sec => sec.items.forEach(({r}) => {
+    profOf(r).split(/,\s*/).filter(Boolean).forEach(n => {
+      const d = deptOf(r, n);
+      if (!d) return;
+      const key = `${r['병원그룹']}|${n}`;
+      const m = tally.get(key) || {};
+      m[d] = (m[d] || 0) + 1;
+      tally.set(key, m);
+    });
+  }));
+  const best = new Map();
+  tally.forEach((m, key) => {
+    const pick = Object.entries(m).sort((a, b) =>
+      (amcDepts.includes(b[0]) ? 1 : 0) - (amcDepts.includes(a[0]) ? 1 : 0) || b[1] - a[1])[0];
+    best.set(key, pick[0]);
+  });
+  return best;
+}
+
+// 한 사람에게는 한 진료과만 적는다. 명단에 있으면 명단, 없으면 그 기간 기사들이
+// 가장 자주 적은 것을 씁니다 — 같은 사람이 시트 안에서 두 진료과로 갈리면 고쳐야 하기 때문이다
+function deptCell(r, name, fill) {
+  const cands = (r['병원그룹'] === '아산' && amcDoctors[name]) || [];
+  if (cands.length === 1) return cands[0];
+  return fill.get(`${r['병원그룹']}|${name}`) || deptOf(r, name);
+}
+
 function reporterNames(r) {
   const v = (r['기자명'] || '').trim();
   return v === CHECKED_NONE ? '' : v;
@@ -740,6 +818,8 @@ const sorts = {
 const reportSort = {col:'날짜', asc:true};
 let pressData = [];   // docs/press_releases.json 의 보도자료 목록
 let aiData = null;    // docs/ai_labels.json — ai_classify.py가 남긴 AI 판정 (없으면 배지·탭만 빈다)
+let amcDoctors = {};  // docs/amc_doctors.json 의 이름 → 진료과 (amc_doctors.py가 받아 둔 것)
+let amcDepts = [];    // 위 파일의 진료과 이름 목록 — 긴 것부터 찾는다
 let selectedHosp = null; // null = 전체 타병원
 let paperHosp = null;    // null = 지면모음 전체 병원
 let castHosp = null;     // null = 방송모음 전체 병원
@@ -783,6 +863,19 @@ async function init() {
   } catch(e) {
     console.log('AI 판정 로드 실패:', e);
   }
+  // 우리 의료진 명단 (보고용 엑셀의 '진료과' 칸에만 씁니다. 없으면 그 칸이 빈다)
+  try {
+    const res = await fetch('./amc_doctors.json?t=' + Date.now());
+    if (res.ok) {
+      const d = await res.json();
+      amcDoctors = d['의료진'] || {};
+      // 긴 이름부터 두어야 '내과'가 '소화기내과'를 먼저 먹지 않는다 (MEDIA_MAP_FE와 같은 이유)
+      amcDepts = (d['진료과'] || []).slice().sort((a, b) => b.length - a.length);
+    }
+  } catch(e) {
+    console.log('의료진 명단 로드 실패:', e);
+  }
+
   // 판정이 있을 때만 보고용 탭의 'AI 제외 기사 숨기기'를 보여 준다
   if (aiData) {
     const el = document.getElementById('hide-ai-wrap');
@@ -3016,6 +3109,7 @@ function downloadReportExcel() {
   const {range, sections} = getReportSections();
   const wb = XLSX.utils.book_new();
   const sel0 = picked.size;
+  const deptFill = deptFallback(sections);   // 기간 안의 다른 기사가 적어 둔 진료과로 빈 칸을 메운다
   // 1번 시트는 주간 실적 요약 — 홍보팀 양식 그대로. 아래 시트들을 세어 만든다
   addSheet(wb, weeklySummarySheet(range, sections, sel0), '요약', false);
   // 고른 기사가 있으면 그것만 담는다. 섹션 구성은 그대로 두되, 고른 게 없는 섹션은
@@ -3049,8 +3143,8 @@ function downloadReportExcel() {
         ...(withHosp ? [hospLabel(r)] : []),
         mdOf(r),
         mediaOf(r),   // 면 번호는 붙이지 않는다 — 실적 양식의 매체명과 그대로 맞춰야 한다
-        r['제목']||'', '',
-      ];
+        r['제목']||'',
+      ];   // 진료과는 이름마다 다르므로 아래에서 이름과 함께 붙인다
       const tail = [
         isBroadcast(r) ? '방송' : '',
         ...(online ? [r['언론사원문']||r['네이버링크']||''] : []),
@@ -3058,7 +3152,10 @@ function downloadReportExcel() {
       ];
       const names = profOf(r).split(/,\s*/).filter(Boolean);
       if (!names.length) names.push('');   // 교수 이름이 없으면 한 줄 그대로
-      names.forEach((n, i) => body.push([...lead, n, i ? '중복' : '', ...tail]));
+      names.forEach((n, i) => body.push([
+        ...lead,
+        deptCell(r, n, deptFill),
+        n, i ? '중복' : '', ...tail]));
     });
     const ws = XLSX.utils.aoa_to_sheet([head, ...body]);
     ws['!cols'] = head.map(h => ({wch: h==='보도내용' ? 60 : h==='링크' ? 50 : h==='매체' ? 18 : 10}));
