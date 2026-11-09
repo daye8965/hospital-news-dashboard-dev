@@ -2907,7 +2907,10 @@ function downloadPicked() {
   const sel = lastRows.filter(r => picked.has(rowKey(r)));
   const rows = sel.length ? sel : lastRows;
   if (!rows.length) { alert('내려받을 기사가 없습니다.'); return; }
-  const COLS = ['날짜','병원','매체','지면','제목','요약','링크','기자','출입기자','교수명'];
+  const COLS = ['날짜','병원','매체','지면','제목','요약','링크','기자','출입기자','교수명','진료과'];
+  // 진료과는 보고용 엑셀과 같은 기준으로 채운다 (명단 → 본문 → 같은 병원 다른 기사).
+  // 여긴 기사 하나가 한 줄이라 교수가 여럿이면 이름 순서대로 쉼표로 잇는다
+  const deptFill = deptFallback([{items: rows.map(r => ({r}))}]);
   const ws = XLSX.utils.aoa_to_sheet([COLS, ...rows.map(r => [
     (r['발행일시'] || r['날짜'] || '').slice(0, 16),
     HOSPITALS[Object.keys(HOSPITALS).find(k => HOSPITALS[k].group === r['병원그룹'])]?.label || r['병원그룹'] || '',
@@ -2919,8 +2922,9 @@ function downloadPicked() {
     reporterNames(r),
     r['출입기자'] === 'Y' ? '출입' : '',
     profOf(r) || '',
+    profOf(r).split(/,\s*/).filter(Boolean).map(n => deptCell(r, n, deptFill) || '-').join(', ').replace(/^[-,\s]+$/, ''),
   ])]);
-  ws['!cols'] = [{wch:17},{wch:12},{wch:14},{wch:7},{wch:55},{wch:80},{wch:60},{wch:16},{wch:8},{wch:16}];
+  ws['!cols'] = [{wch:17},{wch:12},{wch:14},{wch:7},{wch:55},{wch:80},{wch:60},{wch:16},{wch:8},{wch:16},{wch:18}];
   const wb = XLSX.utils.book_new();
   addSheet(wb, ws, '기사');
   const today = ymdLocal(new Date());
