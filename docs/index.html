@@ -2889,13 +2889,23 @@ function downloadReportExcel() {
     const items = sel ? sec.items.filter(({r}) => picked.has(rowKey(r))) : sec.items;
     if (sel && !items.length) return;
     total += items.length;
+    // 타병원은 병원마다 시트를 나눈다 — 실적도 병원별로 따로 적기 때문이다.
+    // 기사가 없는 병원은 시트를 만들지 않는다 (고른 게 없는 섹션을 건너뛰는 것과 같은 이유).
+    // '병원' 열은 그대로 둔다 — 붙여 넣는 쪽의 열 구성을 바꾸지 않으려는 것이다
+    const sheets = withHosp
+      ? REPORT_OTHER_GROUPS
+          .map(g => items.filter(({r}) => r['병원그룹'] === g))
+          .filter(list => list.length)
+          .map(list => ({title: hospLabel(list[0].r) + ' 신문·방송', items: list}))
+      : [{title: sec.title, items}];
+    sheets.forEach(sh => {
     // 타병원 시트는 병원을 맨 앞에 — 병원별로 훑어 내려가는 쓰임이라 첫 열이어야 눈에 든다
     const head = [...(withHosp?['병원']:[]), '날짜','매체','보도내용','진료과','이름','중복','구분', ...(online?['링크']:[]), '제외 추정'];
     // 실적 양식은 교수 한 명이 한 줄이다. 이름이 둘 이상이면 줄을 나누고 나머지 칸은
     // 그대로 베낀 뒤, 둘째 줄부터 '중복'을 적는다 — 건수를 셀 때 두 번 세지 않으려는 표시다.
     // 예전에는 '김철수, 이영희'처럼 한 칸에 몰아넣어서 받은 뒤 손으로 나눠야 했다
     const body = [];
-    items.forEach(({r, tag}) => {
+    sh.items.forEach(({r, tag}) => {
       const lead = [
         ...(withHosp ? [hospLabel(r)] : []),
         mdOf(r),
@@ -2913,7 +2923,8 @@ function downloadReportExcel() {
     });
     const ws = XLSX.utils.aoa_to_sheet([head, ...body]);
     ws['!cols'] = head.map(h => ({wch: h==='보도내용' ? 60 : h==='링크' ? 50 : h==='매체' ? 18 : 10}));
-    addSheet(wb, ws, sec.title.replace(/[\\\/?*\[\]:]/g, '').slice(0, 31));
+    addSheet(wb, ws, sh.title.replace(/[\\\/?*\[\]:]/g, '').slice(0, 31));
+    });
   });
   if (!wb.SheetNames.length) { alert('내려받을 기사가 없습니다.'); return; }
   const picktag = sel ? `_선택${total}건` : '';
