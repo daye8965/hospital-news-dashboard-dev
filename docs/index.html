@@ -1409,6 +1409,10 @@ function reportRange() {
   return {from: ymdLocal(from), to: ymdLocal(to), label: `${ymdLocal(from)} ~ ${ymdLocal(to)}`, isDefault: true};
 }
 
+// 신문·방송 판정 — 요약 시트도 같은 기준으로 세야 해서 위로 끌어올렸다
+function isReportPrint(r) { return hasPaper(r); }
+function isReportCast(r)  { return !hasPaper(r) && isMainBroadcast(r); }
+
 function getReportSections() {
   const range = reportRange();
   const hideSuspect = document.getElementById('hide-suspect').checked;
@@ -1419,8 +1423,7 @@ function getReportSections() {
   // 방송을 따로 뽑았으니 온라인 섹션에서는 뺀다 — 같은 기사가 두 시트에 들어가면
   // 실적을 두 번 세게 된다. 지면이 있는 방송사 기사는 없지만(방송사는 지면이 없다)
   // 순서상 신문을 먼저 보고 남은 것만 방송으로 본다.
-  const isPrint = r => hasPaper(r);
-  const isCast  = r => !isPrint(r) && isMainBroadcast(r);
+  const isPrint = isReportPrint, isCast = isReportCast;
   const prep = rows => rows
     .map(r => ({r, tag: suspectTag(r)}))
     .filter(x => !(hideSuspect && x.tag))
@@ -2723,9 +2726,10 @@ function styleSheet(ws) {
   }
   return ws;
 }
-// 시트를 붙일 때 서식을 함께 입힌다 — 호출부가 이것만 쓰면 빠뜨릴 일이 없다
-function addSheet(wb, ws, name) {
-  XLSX.utils.book_append_sheet(wb, styleSheet(ws), name);
+// 시트를 붙일 때 서식을 함께 입힌다 — 호출부가 이것만 쓰면 빠뜨릴 일이 없다.
+// styled=false는 자기 서식을 직접 입힌 시트용이다(요약 시트) — 표 서식을 덮어쓰면 안 된다
+function addSheet(wb, ws, name, styled = true) {
+  XLSX.utils.book_append_sheet(wb, styled ? styleSheet(ws) : ws, name);
 }
 
 function downloadExcel() {
@@ -2876,9 +2880,144 @@ function downloadCastExcel() {
 }
 
 // 연간 언론실적 엑셀과 같은 열 구성 (진료과·중복은 담당자 입력용으로 비워 둠)
+// ── 주간 실적 요약 시트 ────────────────────────────────────────────────────────
+// 홍보팀이 매주 보내는 「주요병원 주간언론실적」 표를 그대로 만든다.
+// 세로로 신문(주요 5개지 + 기타) · 방송(KBS·SBS·MBC + 기타), 가로로 병원 4곳.
+// 건수는 '기사 하나 = 1'이다 — 아래 시트들은 교수 한 명이 한 줄이라 줄 수가 더 많다.
+const WEEKLY_PRINT = ['조선일보','중앙일보','동아일보','매일경제','한국경제'];
+const WEEKLY_CAST  = ['KBS','SBS','MBC'];
+// 열 순서와 이름은 실적 양식 그대로 — 세브란스는 양식 표기가 '신촌세브란스병원'이다
+const WEEKLY_HOSP = [
+  {group:'아산',     label:'서울아산병원'},
+  {group:'삼성',     label:'삼성서울병원'},
+  {group:'서울대',   label:'서울대병원'},
+  {group:'세브란스', label:'신촌세브란스병원'},
+];
+// 양식의 색 — 원본은 Office 2007 테마색(accent6 80% 밝게, 흰색 5% 어둡게)이라 계산해 박아 둔다
+const WEEKLY_FILL = {title:'FDEADA', head:'F3F3F3', side:'F2F2F2', total:'FFFFCC'};
+
+function weeklySummarySheet(range, sections, sel) {
+  const rowsOf = key => {
+    const sec = sections.find(s => s.key === key);
+    if (!sec) return [];
+    return (sel ? sec.items.filter(({r}) => picked.has(rowKey(r))) : sec.items).map(x => x.r);
+  };
+  const others = rowsOf('others');
+  const tally = (rows, names) => {
+    const n = {};
+    [...names, '기타'].forEach(x => n[x] = 0);
+    rows.forEach(r => { const m = mediaOf(r); n[names.includes(m) ? m : '기타']++; });
+    return n;
+  };
+  const cols = WEEKLY_HOSP.map(h => ({
+    label: h.label,
+    print: tally(h.group === '아산' ? rowsOf('asan-print')
+      : others.filter(r => r['병원그룹'] === h.group && isReportPrint(r)), WEEKLY_PRINT),
+    cast:  tally(h.group === '아산' ? rowsOf('asan-cast')
+      : others.filter(r => r['병원그룹'] === h.group && isReportCast(r)), WEEKLY_CAST),
+  }));
+
+  const ws = {};
+  const bd = (t, b, l, r) => {
+    const o = {}, line = s => ({style: s, color: {rgb: '000000'}});
+    if (t) o.top = line(t);
+    if (b) o.bottom = line(b);
+    if (l) o.left = line(l);
+    if (r) o.right = line(r);
+    return o;
+  };
+  const put = (r, c, v, o = {}) => {
+    const cell = {t: typeof v === 'number' ? 'n' : 's', v};
+    if (o.f) { cell.f = o.f; cell.t = 'n'; }
+    cell.s = {
+      font: {name: XL_FONT, sz: o.sz || 11, bold: !!o.bold},
+      alignment: {horizontal: o.h || 'center', vertical: 'center'},
+      ...(o.fill ? {fill: {patternType: 'solid', fgColor: {rgb: o.fill}}} : {}),
+      ...(o.border ? {border: o.border} : {}),
+    };
+    ws[XLSX.utils.encode_cell({r, c})] = cell;
+    return cell;
+  };
+
+  // 제목 두 줄 (B2:G2 · B3:G3)
+  const span = (ymd, fallback) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
+    return m ? `${m[1]}.${m[2]}.${m[3]}(${pressWeekday(ymd)})` : fallback;
+  };
+  for (let c = 1; c <= 6; c++) for (let r = 1; r <= 2; r++) {
+    put(r, c, '', {fill: WEEKLY_FILL.title,
+      border: bd(r === 1 ? 'thin' : null, r === 2 ? 'thin' : null,
+                 c === 1 ? 'thin' : null, c === 6 ? 'thin' : null)});
+  }
+  put(1, 1, '주요병원 주간언론실적', {sz: 15, bold: true, fill: WEEKLY_FILL.title,
+      border: bd('thin', null, 'thin', null)});
+  put(2, 1, `${span(range.from, '처음')} ~ ${span(range.to, '오늘')}`,
+      {fill: WEEKLY_FILL.title, border: bd(null, 'thin', 'thin', null)});
+  put(3, 1, '단위: 건', {sz: 10, h: 'right'});
+
+  // 표 바탕 — 병합 칸도 테두리를 그려야 선이 이어지므로 빈 칸까지 모두 깐다.
+  // 매체 사이는 hair, 계·합계 아래는 thin (원본 양식과 같은 모양)
+  const BOTTOM = {4:'thin', 11:'thin', 16:'thin', 17:'thin'};
+  for (let r = 4; r <= 17; r++) for (let c = 1; c <= 6; c++) {
+    put(r, c, '', {
+      fill: r === 4 ? WEEKLY_FILL.head : r === 17 ? WEEKLY_FILL.total : c <= 2 ? WEEKLY_FILL.side : null,
+      border: bd(r === 4 ? 'thin' : null, BOTTOM[r] || 'hair', c === 1 ? 'thin' : 'thin', c === 6 ? 'thin' : null),
+    });
+  }
+  const style = (r, c) => ({fill: ws[XLSX.utils.encode_cell({r, c})].s.fill?.fgColor?.rgb,
+                            border: ws[XLSX.utils.encode_cell({r, c})].s.border});
+  put(4, 1, '구분', style(4, 1));
+  cols.forEach((h, i) => put(4, 3 + i, h.label, style(4, 3 + i)));
+
+  // 신문 6줄(5개지 + 기타) → 계, 방송 3줄 + 기타 → 계
+  const blocks = [
+    {label: '신문', row: 5, names: [...WEEKLY_PRINT, '기타'], of: h => h.print},
+    {label: '방송', row: 12, names: [...WEEKLY_CAST, '기타'], of: h => h.cast},
+  ];
+  blocks.forEach(blk => {
+    put(blk.row, 1, blk.label, style(blk.row, 1));
+    blk.names.forEach((name, i) => {
+      const r = blk.row + i;
+      put(r, 2, name, style(r, 2));
+      cols.forEach((h, j) => put(r, 3 + j, blk.of(h)[name], style(r, 3 + j)));
+    });
+    const sumRow = blk.row + blk.names.length;
+    put(sumRow, 2, '               계 >', {...style(sumRow, 2), h: 'left'});
+    cols.forEach((h, j) => {
+      const L = 'DEFG'[j], a = blk.row + 1, b = sumRow;
+      put(sumRow, 3 + j, Object.values(blk.of(h)).reduce((x, y) => x + y, 0),
+          {...style(sumRow, 3 + j), f: `SUM(${L}${a}:${L}${b})`});
+    });
+  });
+
+  // 신문+방송 합계
+  put(17, 1, '        신문+방송 합계 >', {...style(17, 1), bold: true});
+  cols.forEach((h, j) => {
+    const L = 'DEFG'[j];
+    const sum = o => Object.values(o).reduce((x, y) => x + y, 0);
+    put(17, 3 + j, sum(h.print) + sum(h.cast), {...style(17, 3 + j), bold: true, f: `${L}12+${L}17`});
+  });
+  put(18, 1, `* 서울아산병원 온라인 기사: ${rowsOf('asan-online').length}건`, {h: 'right'});
+
+  ws['!ref'] = XLSX.utils.encode_range({s: {r: 0, c: 0}, e: {r: 19, c: 6}});
+  ws['!merges'] = [
+    {s:{r:1,c:1}, e:{r:1,c:6}},  {s:{r:2,c:1}, e:{r:2,c:6}},
+    {s:{r:3,c:1}, e:{r:3,c:6}},  {s:{r:4,c:1}, e:{r:4,c:2}},
+    {s:{r:5,c:1}, e:{r:11,c:1}}, {s:{r:12,c:1}, e:{r:16,c:1}},
+    {s:{r:17,c:1}, e:{r:17,c:2}},{s:{r:18,c:1}, e:{r:18,c:6}},
+  ];
+  ws['!cols'] = [{wch:1.5},{wch:7},{wch:11.5},{wch:14},{wch:14},{wch:14},{wch:17}];
+  ws['!rows'] = [{hpt:11.25},{hpt:25.5},{hpt:19.5},{hpt:21},
+    ...Array(14).fill({hpt:23.1}), {hpt:24.75}, {hpt:11.25}];
+  return ws;
+}
+
 function downloadReportExcel() {
   const {range, sections} = getReportSections();
   const wb = XLSX.utils.book_new();
+  const sel0 = picked.size;
+  // 1번 시트는 주간 실적 요약 — 홍보팀 양식 그대로. 아래 시트들을 세어 만든다
+  addSheet(wb, weeklySummarySheet(range, sections, sel0), '요약', false);
   // 고른 기사가 있으면 그것만 담는다. 섹션 구성은 그대로 두되, 고른 게 없는 섹션은
   // 빈 시트를 만들지 않고 건너뛴다 — 실적에 붙여 넣을 때 빈 장이 섞이면 번거롭다
   const sel = picked.size;
@@ -2926,7 +3065,7 @@ function downloadReportExcel() {
     addSheet(wb, ws, sh.title.replace(/[\\\/?*\[\]:]/g, '').slice(0, 31));
     });
   });
-  if (!wb.SheetNames.length) { alert('내려받을 기사가 없습니다.'); return; }
+  if (wb.SheetNames.length <= 1) { alert('내려받을 기사가 없습니다.'); return; }
   const picktag = sel ? `_선택${total}건` : '';
   XLSX.writeFile(wb, `서울아산병원_보고용${picktag}_${range.from.replace('0000-00-00','처음')}_${range.to.replace('9999-99-99','오늘')}.xlsx`);
 }
