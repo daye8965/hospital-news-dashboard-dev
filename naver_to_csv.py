@@ -374,6 +374,15 @@ PHARMA_RE = re.compile(r"유한양행|대웅제약|한미약품|종근당|녹십
 # 에이아이트릭스 대표가 세브란스병원 교수라, 예외를 두면 회사 경영 기사까지 남는다.
 # 화면 쪽 VENDOR_RE에도 같은 목록이 있다
 VENDOR_RE = re.compile(r"에이아이트릭스")
+# 부동산 분양·임대 기사 — 병원이 '○○병원 인접' 같은 입지 설명으로만 나온다.
+# 모델하우스 탐방·견본주택 개관·임차인 모집 기사가 같은 단지로 수십 건씩 들어온다
+# (청라 아크원 푸르지오 10건, 이대역 마포 프론티어 14건).
+# 제목에 병원 이름이 있으면 남긴다 — 송도 세브란스 사업비 기사처럼 진짜 병원 기사가 있다.
+# ※ '청약'·'역세권'·'시행사'·'지식산업센터'·'웃돈'은 넣지 말 것. 전부 재 보고 뺐다 —
+#    코스닥 공모주 청약(스카이랩스 4건), 월곶 역세권 현장 점검, 길리어드 행사의 '시행사',
+#    광교덴티움지식산업센터(덴티움 4건), '전국 평균 웃돈'(웃돌다)이 함께 걸린다
+# 화면 쪽 REALTY_RE에도 같은 목록이 있다
+REALTY_RE = re.compile(r"모델하우스|견본주택|분양홍보관|전용면적|분양가|분양권|입주자 모집|주상복합|생활숙박|타운하우스|테라스하우스|미분양|청약통장|특별공급|조합원 모집|오피스텔|임차인 모집|단기임대|민간임대")
 HOSP_NAME_RE = re.compile(r"아산병원|삼성서울병원|세브란스|서울대병원|서울대학교병원|서울성모병원|연세암병원")
 HOSP_PROF_RE = re.compile(r"(아산병원|삼성서울병원|세브란스|서울대병원|서울대학교병원|서울성모병원|연세암병원)[^.]{0,40}교수")
 # 분원 기사 — 본원 이름이 함께 나오지 않으면 그 분원 기사로 본다
@@ -464,6 +473,9 @@ def is_excluded(title: str, summary: str = "", group: str = "") -> bool:
         return True
     # 의료 AI·진단 기업 — 교수 코멘트 예외 없이, 제목에 병원 이름이 없으면 뺀다
     if VENDOR_RE.search(combined) and not HOSP_NAME_RE.search(title):
+        return True
+    # 부동산 분양·임대 기사 (위 REALTY_RE 참조)
+    if REALTY_RE.search(combined) and not HOSP_NAME_RE.search(title):
         return True
     if is_branch_article(title, combined):
         return True

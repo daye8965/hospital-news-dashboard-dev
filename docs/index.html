@@ -987,6 +987,14 @@ const PHARMA_RE = /유한양행|대웅제약|한미약품|종근당|녹십자|�
 // 들어간 기사는 0건이었다 — 제목에 병원이 나오면(공동연구 발표 등) 그때는 남는다.
 // '노을'처럼 흔한 낱말인 회사 이름은 넣으면 안 된다 — 중증천식 기사가 함께 걸린다
 const VENDOR_RE = /에이아이트릭스/;
+// 부동산 분양·임대 기사 — 병원이 '○○병원 인접' 같은 입지 설명으로만 나온다.
+// 모델하우스 탐방·견본주택 개관·임차인 모집 기사가 같은 단지로 수십 건씩 들어온다
+// (청라 아크원 푸르지오 10건, 이대역 마포 프론티어 14건).
+// 제목에 병원 이름이 있으면 남긴다 — 송도 세브란스 사업비 기사처럼 진짜 병원 기사가 있다.
+// ※ '청약'·'역세권'·'시행사'·'지식산업센터'·'웃돈'은 넣지 말 것. 전부 재 보고 뺐다 —
+//    코스닥 공모주 청약(스카이랩스 4건), 월곶 역세권 현장 점검, 길리어드 행사의 '시행사',
+//    광교덴티움지식산업센터(덴티움 4건), '전국 평균 웃돈'(웃돌다)이 함께 걸린다
+const REALTY_RE = /모델하우스|견본주택|분양홍보관|전용면적|분양가|분양권|입주자 모집|주상복합|생활숙박|타운하우스|테라스하우스|미분양|청약통장|특별공급|조합원 모집|오피스텔|임차인 모집|단기임대|민간임대/;
 const HOSP_NAME_RE = /아산병원|삼성서울병원|세브란스|서울대병원|서울대학교병원|서울성모병원|연세암병원/;
 const HOSP_PROF_RE = /(아산병원|삼성서울병원|세브란스|서울대병원|서울대학교병원|서울성모병원|연세암병원)[^.]{0,40}교수/;
 
@@ -1043,6 +1051,8 @@ function isNoise(r) {
   if (OTHER_ASAN_RE.test(headSumm) && !headSumm.includes('서울아산병원')) return true;
   if (PHARMA_RE.test(headSumm) && !HOSP_NAME_RE.test(r['제목'] || '') && !HOSP_PROF_RE.test(headSumm)) return true;
   if (VENDOR_RE.test(headSumm) && !HOSP_NAME_RE.test(r['제목'] || '')) return true;
+  // 부동산 분양·임대 기사 (위 REALTY_RE 참조)
+  if (REALTY_RE.test(headSumm) && !HOSP_NAME_RE.test(r['제목'] || '')) return true;
   if (isBranchArticle(r['제목'] || '', headSumm)) return true;
   if (isOtherHospitalStory(r['병원그룹'], r['제목'] || '', headSumm)) return true;
   if (FE_EXCLUDE_KW.some(kw => combined.includes(kw))) return true;
