@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-11-10 13:38",
-  "전체기사": 27727,
+  "실행시각": "2026-11-11 07:24",
+  "전체기사": 27985,
   "지면": {
-    "대상": 84,
-    "요청": 74,
-    "게재확인": 0,
-    "미게재": 84,
+    "대상": 103,
+    "요청": 71,
+    "게재확인": 17,
+    "미게재": 86,
     "오류": 0
   },
   "직접지정지면": {
@@ -16,40 +16,40 @@
   "영상": {
     "대상": 456,
     "요청": 309,
-    "영상": 182,
-    "아님": 237,
-    "판정보류": 32,
-    "오류": 5,
-    "남은대상": 37
+    "영상": 177,
+    "아님": 218,
+    "판정보류": 61,
+    "오류": 0,
+    "남은대상": 61
   },
   "기자명": {
-    "대상": 797,
-    "요청": 161,
-    "채움": 6,
-    "이름없음": 1,
-    "오류": 74,
+    "대상": 1055,
+    "요청": 504,
+    "채움": 235,
+    "이름없음": 20,
+    "오류": 52,
     "차단호스트": 4,
-    "네이버바이라인없음": 75,
+    "네이버바이라인없음": 192,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/421/0009278980",
-      "길이": 258783,
-      "title": "현대바이오 전립선암 임상 1상, 첫 환자 투약 후 치료 연장 신청",
+      "url": "https://n.news.naver.com/mnews/article/666/0000131458",
+      "길이": 280589,
+      "title": "[천자춘추] 정신질환은 치료가 필요한 ‘질병’입니다",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "시간초과": true,
-    "남은대상": 790
+    "남은대상": 800
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 540,
-    "표시기사": 5806
+    "표시기사": 5853
   },
   "보도자료": {
-    "목록": 621,
-    "배포일없음": 17,
+    "목록": 622,
+    "배포일없음": 16,
     "특정매체전용": 3,
     "기간": "2021-01-05 ~ 2026-12-07"
   },
