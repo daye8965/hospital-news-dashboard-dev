@@ -8,6 +8,7 @@ AI 분석 탭의 '보도자료로 나온 기사 (추정)'는 기사 모양만 �
   아산       https://news.amc.seoul.kr/news/con/list.do?pressChk=Y
   서울대     https://www.snuh.org/board/B003/list.do
   세브란스   https://sev.severance.healthcare/sev/news/press/report.do
+  성모       https://www.cmcseoul.or.kr/page/board/news
 
 삼성서울병원은 공개 보도자료 게시판을 찾지 못했다 — 홈페이지 메뉴·사이트맵에 없다.
 그래서 삼성 묶음은 예전처럼 추정으로만 남는다.
@@ -22,7 +23,7 @@ import re
 import sys
 import time
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "docs", "hospital_press.json")
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) hospital-news-dashboard"
@@ -77,6 +78,29 @@ def parse_sev(html):
     return out
 
 
+# ── 성모: 게시판이 JSON API다. 화면은 Vue가 그려서 HTML에는 목록이 아예 없다 ──────
+#    /api/article/41?p=쪽&s=개수&q={}
+#    p·s·q라는 이름은 cmc.vue.js의 페이지 컴포넌트가 쓰는 것이고, 41은 보도자료
+#    게시판 번호다(페이지의 <board-list board-no="41" board-id="news">).
+#    총 건수는 응답 헤더 X-Cmc-Total-Count에 온다(2026-11-11 기준 1,906건).
+#
+#    날짜는 createdDt(epoch 밀리초)뿐이다. **KST로 읽어야 한다** — 돌리는 컴퓨터의
+#    시간대로 읽으면 밤늦게 올린 보도자료의 날짜가 하루 밀린다.
+#    응답에 기사 본문(content)까지 들어 있어 한 쪽이 1MB를 넘는다. 빼는 인자가 없어
+#    그대로 받고 날짜·제목만 쓴다.
+KST = timezone(timedelta(hours=9))
+
+
+def parse_cmc(text):
+    out = []
+    for a in json.loads(text):
+        ms, title = a.get("createdDt"), clean(a.get("title") or "")
+        if not ms or not title:
+            continue
+        out.append((datetime.fromtimestamp(ms / 1000, KST).strftime("%Y-%m-%d"), title))
+    return out
+
+
 SITES = [
     {"group": "아산", "parse": parse_asan,
      "home": "https://news.amc.seoul.kr/news/con/list.do?pressChk=Y",
@@ -88,6 +112,10 @@ SITES = [
      "home": "https://sev.severance.healthcare/sev/news/press/report.do",
      "page": lambda i: ("https://sev.severance.healthcare/sev/news/press/report.do"
                         "?article.offset=%d&articleLimit=12" % (i * 12))},
+    {"group": "성모", "parse": parse_cmc,
+     "home": "https://www.cmcseoul.or.kr/page/board/news",
+     "page": lambda i: ("https://www.cmcseoul.or.kr/api/article/41"
+                        "?p=%d&s=100&q=%%7B%%7D" % (i + 1))},
 ]
 
 
