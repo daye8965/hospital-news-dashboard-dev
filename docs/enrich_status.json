@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-11-11 11:49",
-  "전체기사": 27991,
+  "실행시각": "2026-11-12 08:30",
+  "전체기사": 28202,
   "지면": {
-    "대상": 86,
-    "요청": 63,
-    "게재확인": 0,
-    "미게재": 86,
+    "대상": 113,
+    "요청": 75,
+    "게재확인": 13,
+    "미게재": 100,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,38 +14,38 @@
     "이번에바뀐행": 0
   },
   "영상": {
-    "대상": 456,
-    "요청": 309,
-    "영상": 185,
-    "아님": 250,
-    "판정보류": 15,
-    "오류": 6,
-    "남은대상": 21
+    "대상": 459,
+    "요청": 310,
+    "영상": 180,
+    "아님": 246,
+    "판정보류": 32,
+    "오류": 1,
+    "남은대상": 33
   },
   "기자명": {
-    "대상": 807,
-    "요청": 255,
-    "채움": 9,
-    "이름없음": 0,
-    "오류": 73,
+    "대상": 1016,
+    "요청": 432,
+    "채움": 193,
+    "이름없음": 21,
+    "오류": 57,
     "차단호스트": 4,
-    "네이버바이라인없음": 168,
+    "네이버바이라인없음": 155,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/421/0009281605",
-      "길이": 259109,
-      "title": "엘앤씨바이오, PRS KOREA 2026 최고 등급 후원…ECM 임상 성과 공유",
+      "url": "https://n.news.naver.com/mnews/article/422/0000925183",
+      "길이": 270732,
+      "title": "공공병원에 '의료AI 고속도로'…전원의뢰서 10분→10초",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "시간초과": true,
-    "남은대상": 798
+    "남은대상": 802
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 540,
-    "표시기사": 5857
+    "표시기사": 5915
   },
   "보도자료": {
     "목록": 622,
