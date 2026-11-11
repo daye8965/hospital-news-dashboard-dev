@@ -2299,6 +2299,40 @@ function prLeads(re, title) {
   return !!m && m.index === 0;
 }
 
+// 묶음이 '우리 병원이 낸 보도자료'인지는 **병원 이름이 주어 자리에 있는가**로 본다.
+// 이름이 제목에 들어 있기만 하면 공동연구·협력·시상 기사가 통째로 들어온다 —
+// `제주대병원·삼성서울병원, 해녀 무릎 골관절염 연구`는 제주대병원이 낸 것이고,
+// `두산연강외과학술상에 김창현 전남대·이상훈 삼성서울병원 교수`는 두산연강재단이 낸 것이다.
+//
+// **`prLeads`처럼 '제목이 병원 이름으로 시작'을 요구하면 안 된다**(2026-10-30에 넣었다가 뺀 규칙).
+// `1만㎞ 날아온 美 자선사업가, 서울아산병원서 간이식 성공`처럼 매체가 병원 이름을
+// 제목 가운데 쓰면 우리 보도자료가 묶음째 빠진다. 그래서 **앞에 무엇이 오는지**만 본다.
+const PR_LEAD_ORG_RE = /병원|의료원|의대|의과대학|대학교|재단|학회|협회|제약|바이오|공단|공사|연구원|연구소|보건소|시청|도청|구청|교육청|㈜|주식회사/;
+// 수상·인사 소식에서만 ②를 건다 — 아래 주석 참조
+const PR_HONOR_RE = /수상|시상|학술상|공로상|우수상|감사패|훈장|임명|취임|위촉|선임|[\[【]\s*인사/;
+const PR_HONOR_SHARE = 0.3;
+
+// honorStory = 그 묶음이 수상·인사 소식인가
+function prOwnSubject(re, title, honorStory) {
+  const t = (title || '').replace(/^\s*(?:[\[(【][^\])】]{0,12}[\])】]\s*)*["'“‘]?\s*/, '');
+  const m = re.exec(t);
+  if (!m) return false;
+  const lead = t.slice(0, m.index);
+  // ① 우리 이름 **앞에 다른 기관**이 있으면 그 기관의 보도자료다.
+  //    `강동경희대병원, 삼성서울병원·공공조직은행과 …` · `SGC문화재단, 신촌세브란스병원서 …`
+  if (PR_LEAD_ORG_RE.test(lead)) return false;
+  // ② 사람 이름 뒤에 붙은 **소속 표기**면 주어가 아니다 — `…이상훈 삼성서울병원 교수`.
+  //    **항상 걸면 안 된다** — `김영찬 서울대병원 조교수 코로나 감염 전 알레르기…`는
+  //    홈페이지에도 올라온 진짜 서울대병원 보도자료다. 연구 성과는 병원이 내고,
+  //    상은 상을 주는 재단·학회가 낸다. 그래서 **수상·인사 묶음일 때만** 건다
+  if (honorStory) {
+    const nb = /([가-힣]{2,4})\s*$/.exec(lead);
+    const after = t.slice(m.index + m[0].length);
+    if (nb && isPersonName(nb[1]) && /^\s*[가-힣]{0,10}\s*교수/.test(after)) return false;
+  }
+  return true;
+}
+
 // ── 추정 묶음을 병원 홈페이지의 실제 보도자료와 맞춰 보기 ────────────────────
 // 위 묶기는 '기사 모양'만 보고 하는 추정이라, 병원이 실제로 올린 보도자료와 맞으면
 // 추정이 아니라 확인이 된다. 목록은 hospital_press.py가 받아 둔다.
@@ -2468,8 +2502,10 @@ function prClusters(rows, group) {
     }
     for (const g of gs) {
       if (g.all.length < PR_MIN) continue;
-      // 병원이 주체인지 — 묶음 안에 제목으로 병원을 밝힌 기사가 하나라도 있어야 한다
-      const owned = g.all.filter(x => name.full.test(x['제목'] || ''));
+      // 병원이 주체인지 — 묶음 안에 병원을 **주어 자리에 쓴** 제목이 하나라도 있어야 한다.
+      // 이름이 들어 있기만 하면 안 된다 — `prOwnSubject` 주석 참조
+      const honor = g.all.filter(x => PR_HONOR_RE.test(x['제목'] || '')).length / g.all.length;
+      const owned = g.all.filter(x => prOwnSubject(name.full, x['제목'], honor >= PR_HONOR_SHARE));
       if (!owned.length) continue;
       // 사건·사고 보도는 보도자료가 아니다 (위 PR_INCIDENT_RE 참조)
       const inc = g.all.filter(x => PR_INCIDENT_RE.test(x['제목'] || '')).length;
