@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-11-12 08:30",
-  "전체기사": 28202,
+  "실행시각": "2026-11-12 12:49",
+  "전체기사": 28207,
   "지면": {
-    "대상": 113,
-    "요청": 75,
-    "게재확인": 13,
-    "미게재": 100,
+    "대상": 101,
+    "요청": 69,
+    "게재확인": 0,
+    "미게재": 101,
     "오류": 0
   },
   "직접지정지면": {
@@ -16,36 +16,36 @@
   "영상": {
     "대상": 459,
     "요청": 310,
-    "영상": 180,
-    "아님": 246,
-    "판정보류": 32,
-    "오류": 1,
-    "남은대상": 33
+    "영상": 182,
+    "아님": 248,
+    "판정보류": 25,
+    "오류": 4,
+    "남은대상": 29
   },
   "기자명": {
-    "대상": 1016,
-    "요청": 432,
-    "채움": 193,
-    "이름없음": 21,
-    "오류": 57,
+    "대상": 808,
+    "요청": 191,
+    "채움": 6,
+    "이름없음": 1,
+    "오류": 74,
     "차단호스트": 4,
-    "네이버바이라인없음": 155,
+    "네이버바이라인없음": 106,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/422/0000925183",
-      "길이": 270732,
-      "title": "공공병원에 '의료AI 고속도로'…전원의뢰서 10분→10초",
+      "url": "https://n.news.naver.com/mnews/article/421/0009284196",
+      "길이": 260095,
+      "title": "병원 간 전원도 10초 만에…강원 '공공의료 AI 고속도로' 개통(종합)",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "시간초과": true,
-    "남은대상": 802
+    "남은대상": 801
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 540,
-    "표시기사": 5915
+    "표시기사": 5917
   },
   "보도자료": {
     "목록": 622,
