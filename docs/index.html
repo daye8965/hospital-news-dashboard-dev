@@ -1550,7 +1550,7 @@ function getReportSections() {
   const prep = rows => rows
     .map(r => ({r, tag: suspectTag(r)}))
     .filter(x => !(hideSuspect && x.tag))
-    .filter(x => !(hideAiOut && (aiOf(x.r) || {}).s === '제외'))
+    .filter(x => !(hideAiOut && (aiRecordOf(x.r) || {}).s === '제외'))
     .sort((a, b) => (a.r['발행일시']||'').localeCompare(b.r['발행일시']||''));   // 실적 양식처럼 날짜 오름차순
   const asan = base.filter(r => r['병원그룹'] === '아산');
   return {
@@ -2036,8 +2036,40 @@ function aiBadges(r) {
   if (a.c && a.c !== '없음') html += `<span class="badge-crisis" title="AI가 대응이 필요할 수 있다고 본 이슈">${aiEsc(a.c)}</span>`;
   return html;
 }
-function aiRecordBadge(r) {
+// 우리 보도자료 기사는 AI가 '제외'라고 해도 실적에 넣는다(2026-11-13).
+// 11/11 '두바이 정부 대표단 방문' 보도자료 기사 12건 중 5건이 '국제협력 단신'으로 AI 제외였다 —
+// 같은 보도자료인데 묶어 물은 기사 묶음마다 판정이 갈렸고, 그중 3건은 보도자료 목록에 오르기 전에 판정됐다.
+// 보도자료인지는 셋 중 하나로 본다 — ① AI가 고른 보도자료(pr) ② 게재율 탭의 규칙 배정(개발본만)
+// ③ 병원 홈페이지 보도자료 게시판과 제목이 맞음(hospital_press.json — 운영본에도 있다)
+// **제목에 '아산'이 있는 기사만** 뒤집는다. 없이 돌려 보니 77건 중 엉뚱한 게 섞였다 — 규칙 배정의
+// '골프공 안구 파열'·'한고은 유방 혹', AI가 고른 '가천대 길병원 창업교육', 병원계 소식 묶음 기사 등.
+// 제목에 우리 이름이 없는 진짜 보도자료 기사('동생과 놀이공원은 처음' 등 10여 건)는 AI 판정 그대로 둔다
+let ourPressCache = null;
+function ourPressOf(r) {
+  if ((r['병원그룹'] || '') !== '아산') return '';
+  if (!/아산/.test(r['제목'] || '')) return '';
   const a = aiOf(r);
+  if (a && a.pr) return a.pr.split('|').slice(1).join('|');
+  if (!ourPressCache) {
+    ourPressCache = new Map();
+    if (pressData.length && allData.length) {
+      const from = allData.map(x => (x['날짜'] || '').slice(0, 10)).filter(Boolean).sort()[0];
+      for (const [it, hits] of pressAssignments(from)) for (const h of hits) ourPressCache.set(h.r, it['제목']);
+    }
+  }
+  if (ourPressCache.has(r)) return ourPressCache.get(r);
+  const off = officialPress({all: [r]}, '아산');
+  return off ? off.title : '';
+}
+// 화면·엑셀이 쓰는 실적 판정 — AI 판정에 위 규칙만 얹는다. 판정 파일(ai_labels.json)은 그대로 둔다
+function aiRecordOf(r) {
+  const a = aiOf(r);
+  if (!a || a.s !== '제외') return a;
+  const pr = ourPressOf(r);
+  return pr ? {...a, s: '포함', sr: `우리 보도자료 기사(${pr}) — 보도자료 기사는 AI 판단과 상관없이 실적에 넣습니다. AI 원래 판단: 제외(${a.sr || ''})`} : a;
+}
+function aiRecordBadge(r) {
+  const a = aiRecordOf(r);
   if (!a || !a.s) return '';
   return `<span class="badge-ai ${a.s === '제외' ? 'out' : 'in'}" title="AI 판단 근거: ${aiEsc(a.sr)}">AI ${a.s}</span>`;
 }
@@ -2697,7 +2729,7 @@ function downloadAIExcel() {
   const link = r => r['언론사원문'] || r['네이버링크'] || '';
   sheet('전체 판정', [['날짜', '병원', '매체', '제목', '논조', '위기', '정책 주제', '정책 분야', 'AI 실적', '실적 근거', '의료진', '타병원 참고점', '링크'],
     ...S.labeled.map(({r, a}) => [r['날짜'], hospLabel(r), mediaOf(r), r['제목'], a.t || '', a.c || '', a.p || '', a.pa || '',
-      a.s || '', a.sr || '', (a.d || []).map(([n, d]) => d ? `${n}(${d})` : n).join(', '), a.b || '', link(r)])],
+      aiRecordOf(r)?.s || '', aiRecordOf(r)?.sr || '', (a.d || []).map(([n, d]) => d ? `${n}(${d})` : n).join(', '), a.b || '', link(r)])],
     [11, 12, 12, 60, 6, 12, 18, 12, 8, 30, 30, 30, 50]);
   sheet('정책 관심', [['날짜', '분야', '주제', '병원', '매체', '제목', '링크'],
     ...S.policy.map(({r, a}) => [r['날짜'], a.pa || '', a.p, hospLabel(r), mediaOf(r), r['제목'], link(r)])],
