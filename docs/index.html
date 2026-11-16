@@ -524,7 +524,53 @@ function isBroadcast(r) { return BROADCAST.has(mediaOf(r)); }
 function hospLabel(r) { return Object.values(HOSPITALS).find(h => h.group === r['병원그룹'])?.label || r['병원그룹'] || ''; }
 // CSV의 교수명 컬럼은 예전 규칙으로 모은 값이라 '평균'·'반도체' 같은 게 섞여 있다.
 // 지금은 본문 추출이 더 정확해서 그것만 쓴다 (새로 수집되는 행은 같은 규칙으로 채워진다).
-function profOf(r) { return extractProfessor(r['제목'], r['요약']); }
+//
+// ── 공동 저자를 놓치는 문제 (2026-11-16) ────────────────────────────────────
+// `extractProfessor`는 `이름 + 교수` 모양을 찾는다. 그런데 보도자료 기사는
+// `융합의학과 김남국·병리과 조영미 교수팀`처럼 **소속이 이름 사이에 끼어서**
+// 뒤엣것만 잡힌다 — 2026-11-12 희귀 신장암 기사 13건 중 10건이 `조영미`만 잡혔다.
+// 실적은 의료진 한 명이 한 줄이라, 못 잡은 이름은 실적에서 통째로 빠진다.
+//
+// 그래서 **이미 갖고 있는 두 목록**으로 보탠다. 둘 다 아산 기사에만 있다.
+//   ① AI 판정의 의료진(`d`) — 같은 제목·요약을 모델이 읽고 적은 것. 레지던트·전문의·
+//      팀장·학회 임원처럼 '교수'가 안 붙은 사람까지 잡는다(347건이 늘어난다)
+//   ② 그 기사가 묶인 보도자료의 `의료진` 칸 — 게재율 탭과 같은 배정(53건).
+//      **개발본에만 있습니다** — 운영본은 `press_releases.json`을 안 만든다
+//
+// **보탠 이름은 기사 글(제목+요약)에 실제로 있어야 인정한다.** 보도자료에 적힌 의료진이
+// 모든 기사에 나오는 것은 아니라서, 글에 없는 이름까지 넣으면 **없는 실적이 생긴다**
+// (이 검사로 걸러지는 이름이 보도자료 쪽 483개·AI 쪽 94개다).
+// 모양 검사도 함께 한다 — `최`·`이 회장`·`김 군` 같은 조각이 AI 쪽에 섞여 있었다.
+let pressItemCache = null;
+// 기사가 어느 보도자료 것인지 — 게재율 탭과 같은 규칙(`pressAssignments`)으로 본다.
+// 목록이 아직 안 왔으면 캐시를 만들지 않는다 — 빈 채로 굳으면 영영 안 채워진다
+function pressItemOf(r) {
+  if (!pressData.length || !allData.length) return null;
+  if (!pressItemCache) {
+    pressItemCache = new Map();
+    const from = allData.map(x => (x['날짜'] || '').slice(0, 10)).filter(Boolean).sort()[0];
+    for (const [it, hits] of pressAssignments(from)) for (const h of hits) pressItemCache.set(h.r, it);
+  }
+  return pressItemCache.get(r) || null;
+}
+function profNames(r) {
+  const out = extractProfessor(r['제목'], r['요약']).split(/,\s*/).filter(Boolean);
+  if ((r['병원그룹'] || '') !== '아산') return out;
+  const text = `${r['제목'] || ''} ${r['요약'] || ''}`;
+  const add = n => {
+    if (!n || out.includes(n)) return;
+    if (!/^[가-힣]{2,4}$/.test(n) || !isPersonName(n)) return;   // `최`·`이 회장`·`김 군`
+    if (!text.includes(n)) return;                                // 글에 없는 이름은 안 넣는다
+    out.push(n);
+  };
+  const a = aiOf(r);
+  if (a && Array.isArray(a.d)) a.d.forEach(p => add(p && p[0]));
+  ((pressItemOf(r) || {})['의료진'] || []).forEach(add);
+  // 줄 차례는 글에 나온 순서대로 — 실적 양식이 그렇게 읽힌다.
+  // 글에서 못 찾는 이름(`이 동 윤` → `이동윤`처럼 공백을 지운 것)은 뒤로 보낸다
+  return out.sort((x, y) => (text.indexOf(x) + 1 || 1e9) - (text.indexOf(y) + 1 || 1e9));
+}
+function profOf(r) { return profNames(r).join(', '); }
 // ── 진료과 ──────────────────────────────────────────────────────────────
 // 보고용 엑셀의 '진료과' 칸. 실적 양식의 진료과 이름은 병원 홈페이지 표기가 기준이라
 // 우리 의료진은 `docs/amc_doctors.json`(amc.seoul.kr에서 받아 둔 명단)을 먼저 본다.
@@ -2044,20 +2090,13 @@ function aiBadges(r) {
 // **제목에 '아산'이 있는 기사만** 뒤집는다. 없이 돌려 보니 77건 중 엉뚱한 게 섞였다 — 규칙 배정의
 // '골프공 안구 파열'·'한고은 유방 혹', AI가 고른 '가천대 길병원 창업교육', 병원계 소식 묶음 기사 등.
 // 제목에 우리 이름이 없는 진짜 보도자료 기사('동생과 놀이공원은 처음' 등 10여 건)는 AI 판정 그대로 둔다
-let ourPressCache = null;
 function ourPressOf(r) {
   if ((r['병원그룹'] || '') !== '아산') return '';
   if (!/아산/.test(r['제목'] || '')) return '';
   const a = aiOf(r);
   if (a && a.pr) return a.pr.split('|').slice(1).join('|');
-  if (!ourPressCache) {
-    ourPressCache = new Map();
-    if (pressData.length && allData.length) {
-      const from = allData.map(x => (x['날짜'] || '').slice(0, 10)).filter(Boolean).sort()[0];
-      for (const [it, hits] of pressAssignments(from)) for (const h of hits) ourPressCache.set(h.r, it['제목']);
-    }
-  }
-  if (ourPressCache.has(r)) return ourPressCache.get(r);
+  const it = pressItemOf(r);   // 게재율 탭의 규칙 배정 (개발본만 — 위 pressItemOf 참조)
+  if (it) return it['제목'];
   const off = officialPress({all: [r]}, '아산');
   return off ? off.title : '';
 }
@@ -3265,7 +3304,7 @@ const WEEKLY_HOSP = [
 // 양식의 색 — 원본은 Office 2007 테마색(accent6 80% 밝게, 흰색 5% 어둡게)이라 계산해 박아 둔다
 const WEEKLY_FILL = {title:'FDEADA', head:'F3F3F3', side:'F2F2F2', total:'FFFFCC'};
 
-function weeklySummarySheet(range, sections, sel) {
+function weeklySummarySheet(range, sections, sel, plan = []) {
   const rowsOf = key => {
     const sec = sections.find(s => s.key === key);
     if (!sec) return [];
@@ -3286,6 +3325,32 @@ function weeklySummarySheet(range, sections, sel) {
       : others.filter(r => r['병원그룹'] === h.group && isReportCast(r)), WEEKLY_CAST),
   }));
 
+  // 숫자 칸은 **아래 시트들을 세는 수식**으로 넣는다(2026-11-16) — 받은 뒤 시트에서
+  // 줄을 지우면 요약도 따라 줄어야 하기 때문이다. 계·합계는 전부터 수식이었다.
+  // 세는 단위는 '기사 하나 = 1'이라 `중복` 줄은 뺀다(아래 시트는 의료진 한 명이 한 줄).
+  // 아산은 신문·방송 시트가 따로라 그냥 세면 되고, **타병원은 한 시트에 섞여 있어**
+  // `구분` 칸으로 가른다 — 그래서 그 칸을 섹션과 같은 함수로 적는다(`downloadReportExcel` 참조).
+  // 시트가 없으면(기사 0건이거나 고른 게 없어 건너뛴 섹션) 수식 없이 숫자만 남긴다.
+  const sheetOf = (key, group) => plan.find(x => x.key === key && (!group || x.group === group));
+  // **머리글 줄을 꼭 빼야 한다** — `중복` 열은 머리글 글자까지 '중복'이라 열 전체(F:F)로 세면
+  // 머리글이 중복 한 줄로 잡혀 건수가 하나씩 모자란다. 그래서 2행부터 끝까지로 잡는다
+  const colRef = (x, head) => {
+    const L = XLSX.utils.encode_col(x.head.indexOf(head));
+    return `'${x.name.replace(/'/g, "''")}'!$${L}$2:$${L}$1048576`;
+  };
+  // media가 null이면 '그 시트의 기사 전체'를 센다
+  const countIn = (x, media, kind) => {
+    if (!x) return '';
+    const M = colRef(x, '매체'), D = colRef(x, '중복'), K = colRef(x, '구분');
+    const q = media === null ? null : `"${media}"`;
+    const all = q ? `COUNTIF(${M},${q})` : `COUNTA(${M})`;
+    const dup = q ? `COUNTIFS(${M},${q},${D},"중복")` : `COUNTIF(${D},"중복")`;
+    if (!kind) return `${all}-${dup}`;
+    const cast = q ? `COUNTIFS(${M},${q},${K},"방송")` : `COUNTIF(${K},"방송")`;
+    const castDup = q ? `COUNTIFS(${M},${q},${D},"중복",${K},"방송")` : `COUNTIFS(${D},"중복",${K},"방송")`;
+    return kind === 'cast' ? `${cast}-${castDup}` : `${all}-${dup}-${cast}+${castDup}`;
+  };
+
   const ws = {};
   const bd = (t, b, l, r) => {
     const o = {}, line = s => ({style: s, color: {rgb: '000000'}});
@@ -3297,7 +3362,9 @@ function weeklySummarySheet(range, sections, sel) {
   };
   const put = (r, c, v, o = {}) => {
     const cell = {t: typeof v === 'number' ? 'n' : 's', v};
-    if (o.f) { cell.f = o.f; cell.t = 'n'; }
+    // 값은 계산해 둔 것을 그대로 두고 수식만 얹는다 — 엑셀이 열 때 다시 계산한다.
+    // 글자를 내놓는 수식은 't'가 'str'이어야 한다(맨 아래 온라인 기사 줄)
+    if (o.f) { cell.f = o.f; if (typeof v === 'string') cell.t = 'str'; }
     cell.s = {
       font: {name: XL_FONT, sz: o.sz || 11, bold: !!o.bold},
       alignment: {horizontal: o.h || 'center', vertical: 'center'},
@@ -3340,15 +3407,27 @@ function weeklySummarySheet(range, sections, sel) {
 
   // 신문 6줄(5개지 + 기타) → 계, 방송 3줄 + 기타 → 계
   const blocks = [
-    {label: '신문', row: 5, names: [...WEEKLY_PRINT, '기타'], of: h => h.print},
-    {label: '방송', row: 12, names: [...WEEKLY_CAST, '기타'], of: h => h.cast},
+    {label: '신문', row: 5, names: [...WEEKLY_PRINT, '기타'], of: h => h.print, key: 'asan-print', kind: 'print'},
+    {label: '방송', row: 12, names: [...WEEKLY_CAST, '기타'], of: h => h.cast, key: 'asan-cast', kind: 'cast'},
   ];
+  // 아산은 섹션 시트가 곧 그 종류라 가를 필요가 없고(kind 없음), 타병원은 한 시트를 구분 칸으로 가른다
+  const target = (blk, h) => h.group === '아산'
+    ? {x: sheetOf(blk.key), kind: null}
+    : {x: sheetOf('others', h.group), kind: blk.kind};
   blocks.forEach(blk => {
     put(blk.row, 1, blk.label, style(blk.row, 1));
     blk.names.forEach((name, i) => {
       const r = blk.row + i;
       put(r, 2, name, style(r, 2));
-      cols.forEach((h, j) => put(r, 3 + j, blk.of(h)[name], style(r, 3 + j)));
+      cols.forEach((h, j) => {
+        const {x, kind} = target(blk, WEEKLY_HOSP[j]);
+        const L = 'DEFG'[j];
+        // 기타 = 그 종류 전체 − 위에 이름 적힌 매체들. 지우면 따라 줄도록 뺄셈으로 둔다
+        const f = !x ? '' : name === '기타'
+          ? `${countIn(x, null, kind)}-SUM(${L}${blk.row + 1}:${L}${blk.row + blk.names.length - 1})`
+          : countIn(x, name, kind);
+        put(r, 3 + j, blk.of(h)[name], {...style(r, 3 + j), ...(f ? {f} : {})});
+      });
     });
     const sumRow = blk.row + blk.names.length;
     put(sumRow, 2, '               계 >', {...style(sumRow, 2), h: 'left'});
@@ -3366,7 +3445,9 @@ function weeklySummarySheet(range, sections, sel) {
     const sum = o => Object.values(o).reduce((x, y) => x + y, 0);
     put(17, 3 + j, sum(h.print) + sum(h.cast), {...style(17, 3 + j), bold: true, f: `${L}12+${L}17`});
   });
-  put(18, 1, `* 서울아산병원 온라인 기사: ${rowsOf('asan-online').length}건`, {h: 'right'});
+  const onSheet = sheetOf('asan-online');
+  put(18, 1, `* 서울아산병원 온라인 기사: ${rowsOf('asan-online').length}건`, {h: 'right',
+      ...(onSheet ? {f: `"* 서울아산병원 온라인 기사: "&(${countIn(onSheet, null, null)})&"건"`} : {})});
 
   ws['!ref'] = XLSX.utils.encode_range({s: {r: 0, c: 0}, e: {r: 19, c: 6}});
   ws['!merges'] = [
@@ -3384,13 +3465,13 @@ function weeklySummarySheet(range, sections, sel) {
 function downloadReportExcel() {
   const {range, sections} = getReportSections();
   const wb = XLSX.utils.book_new();
-  const sel0 = picked.size;
   const deptFill = deptFallback(sections);   // 기간 안의 다른 기사가 적어 둔 진료과로 빈 칸을 메운다
-  // 1번 시트는 주간 실적 요약 — 홍보팀 양식 그대로. 아래 시트들을 세어 만든다
-  addSheet(wb, weeklySummarySheet(range, sections, sel0), '요약', false);
   // 고른 기사가 있으면 그것만 담는다. 섹션 구성은 그대로 두되, 고른 게 없는 섹션은
   // 빈 시트를 만들지 않고 건너뛴다 — 실적에 붙여 넣을 때 빈 장이 섞이면 번거롭다
   const sel = picked.size;
+  // 시트 구성을 **먼저** 정한다(2026-11-16) — 1번 시트(요약)의 수식이 아래 시트의
+  // 이름과 열 자리를 가리키기 때문이다. 전에는 요약을 먼저 만들고 시트를 뒤에 붙였다
+  const plan = [];
   let total = 0;
   sections.forEach(sec => {
     const withHosp = sec.key === 'others';
@@ -3399,48 +3480,58 @@ function downloadReportExcel() {
     if (sel && !items.length) return;
     total += items.length;
     // 타병원은 병원마다 시트를 나눈다 — 실적도 병원별로 따로 적기 때문이다.
-    // 기사가 없는 병원은 시트를 만들지 않는다 (고른 게 없는 섹션을 건너뛰는 것과 같은 이유).
-    // '병원' 열은 그대로 둔다 — 붙여 넣는 쪽의 열 구성을 바꾸지 않으려는 것이다
-    const sheets = withHosp
+    // 기사가 없는 병원은 시트를 만들지 않는다 (고른 게 없는 섹션을 건너뛰는 것과 같은 이유)
+    const groups = withHosp
       ? REPORT_OTHER_GROUPS
-          .map(g => items.filter(({r}) => r['병원그룹'] === g))
-          .filter(list => list.length)
-          .map(list => ({title: hospLabel(list[0].r) + ' 신문·방송', items: list}))
-      : [{title: sec.title, items}];
-    sheets.forEach(sh => {
-    // 타병원 시트는 병원을 맨 앞에 — 병원별로 훑어 내려가는 쓰임이라 첫 열이어야 눈에 든다
-    const head = [...(withHosp?['병원']:[]), '날짜','매체','보도내용','진료과','이름','중복','구분', ...(online?['링크']:[]), '제외 추정'];
-    // 실적 양식은 교수 한 명이 한 줄이다. 이름이 둘 이상이면 줄을 나누고 나머지 칸은
+          .map(g => ({group: g, items: items.filter(({r}) => r['병원그룹'] === g)}))
+          .filter(x => x.items.length)
+          .map(x => ({...x, title: hospLabel(x.items[0].r) + ' 신문·방송'}))
+      : [{group: '아산', items, title: sec.title}];
+    groups.forEach(g => plan.push({
+      ...g, key: sec.key, withHosp, online,
+      name: g.title.replace(/[\\\/?*\[\]:]/g, '').slice(0, 31),
+      // 타병원 시트는 병원을 맨 앞에 — 병원별로 훑어 내려가는 쓰임이라 첫 열이어야 눈에 든다
+      head: [...(withHosp ? ['병원'] : []), '날짜', '매체', '보도내용', '진료과', '이름', '중복', '구분',
+             ...(online ? ['링크'] : []), '제외 추정'],
+    }));
+  });
+  // 1번 시트는 주간 실적 요약 — 홍보팀 양식 그대로. 아래 시트들을 세는 수식으로 채운다
+  addSheet(wb, weeklySummarySheet(range, sections, sel, plan), '요약', false);
+  plan.forEach(x => {
+    // 실적 양식은 의료진 한 명이 한 줄이다. 이름이 둘 이상이면 줄을 나누고 나머지 칸은
     // 그대로 베낀 뒤, 둘째 줄부터 '중복'을 적는다 — 건수를 셀 때 두 번 세지 않으려는 표시다.
     // 예전에는 '김철수, 이영희'처럼 한 칸에 몰아넣어서 받은 뒤 손으로 나눠야 했다
     const body = [];
-    sh.items.forEach(({r, tag}) => {
+    x.items.forEach(({r, tag}) => {
       const lead = [
-        ...(withHosp ? [hospLabel(r)] : []),
+        ...(x.withHosp ? [hospLabel(r)] : []),
         mdOf(r),
         mediaOf(r),   // 면 번호는 붙이지 않는다 — 실적 양식의 매체명과 그대로 맞춰야 한다
-        r['제목']||'',
+        r['제목'] || '',
       ];   // 진료과는 이름마다 다르므로 아래에서 이름과 함께 붙인다
+      // 타병원 시트는 신문·방송이 한 장에 섞여 있고 **요약 수식이 이 칸으로 둘을 가른다.**
+      // 그래서 섹션을 나눌 때와 같은 함수(isReportCast)를 쓴다 — 값은 전과 같다(662건 전부 일치).
+      // 아산 온라인 시트는 전처럼 '방송사 홈페이지 기사'를 가리킨다(50건)
       const tail = [
-        isBroadcast(r) ? '방송' : '',
-        ...(online ? [r['언론사원문']||r['네이버링크']||''] : []),
+        (x.withHosp ? isReportCast(r) : isBroadcast(r)) ? '방송' : '',
+        ...(x.online ? [r['언론사원문'] || r['네이버링크'] || ''] : []),
         tag,
       ];
-      const names = profOf(r).split(/,\s*/).filter(Boolean);
-      if (!names.length) names.push('');   // 교수 이름이 없으면 한 줄 그대로
+      // 이름은 글에서 뽑은 것에 AI 판정·보도자료 의료진을 보탠 것 (profNames 참조)
+      const names = profNames(r);
+      if (!names.length) names.push('');   // 의료진 이름이 없으면 한 줄 그대로
       names.forEach((n, i) => body.push([
         ...lead,
         deptCell(r, n, deptFill),
         n, i ? '중복' : '', ...tail]));
     });
-    const ws = XLSX.utils.aoa_to_sheet([head, ...body]);
-    ws['!cols'] = head.map(h => ({wch: h==='보도내용' ? 60 : h==='링크' ? 50 : h==='매체' ? 18 : 10}));
-    addSheet(wb, ws, sh.title.replace(/[\\\/?*\[\]:]/g, '').slice(0, 31));
-    });
+    const ws = XLSX.utils.aoa_to_sheet([x.head, ...body]);
+    ws['!cols'] = x.head.map(h => ({wch: h === '보도내용' ? 60 : h === '링크' ? 50 : h === '매체' ? 18 : 10}));
+    addSheet(wb, ws, x.name);
   });
   if (wb.SheetNames.length <= 1) { alert('내려받을 기사가 없습니다.'); return; }
   const picktag = sel ? `_선택${total}건` : '';
-  XLSX.writeFile(wb, `서울아산병원_보고용${picktag}_${range.from.replace('0000-00-00','처음')}_${range.to.replace('9999-99-99','오늘')}.xlsx`);
+  XLSX.writeFile(wb, `서울아산병원_보고용${picktag}_${range.from.replace('0000-00-00', '처음')}_${range.to.replace('9999-99-99', '오늘')}.xlsx`);
 }
 
 // ── 매체 드릴다운 모달 ────────────────────────────────────────────────────────
