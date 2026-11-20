@@ -1,10 +1,10 @@
 {
-  "실행시각": "2026-11-20 08:37",
-  "전체기사": 29944,
+  "실행시각": "2026-11-20 12:59",
+  "전체기사": 29952,
   "지면": {
-    "대상": 141,
-    "요청": 85,
-    "게재확인": 11,
+    "대상": 130,
+    "요청": 80,
+    "게재확인": 0,
     "미게재": 130,
     "오류": 0
   },
@@ -14,38 +14,38 @@
     "이번에바뀐행": 0
   },
   "영상": {
-    "대상": 479,
-    "요청": 326,
-    "영상": 160,
-    "아님": 212,
-    "판정보류": 106,
-    "오류": 1,
-    "남은대상": 107
+    "대상": 480,
+    "요청": 327,
+    "영상": 158,
+    "아님": 207,
+    "판정보류": 112,
+    "오류": 3,
+    "남은대상": 115
   },
   "기자명": {
-    "대상": 1131,
-    "요청": 524,
-    "채움": 262,
-    "이름없음": 29,
-    "오류": 52,
+    "대상": 850,
+    "요청": 213,
+    "채움": 13,
+    "이름없음": 5,
+    "오류": 73,
     "차단호스트": 4,
-    "네이버바이라인없음": 176,
+    "네이버바이라인없음": 118,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/215/0001273314",
-      "길이": 280570,
-      "title": "'리트 만점' 이진우 사망에도…경찰 \"실체적 진실 수사\"",
+      "url": "https://n.news.naver.com/mnews/article/215/0001273311",
+      "길이": 280157,
+      "title": "세포치료제·비만약…'K-바이오 스타' 모였다 [2026 제약바이오 대상]",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "시간초과": true,
-    "남은대상": 840
+    "남은대상": 832
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 540,
-    "표시기사": 6298
+    "표시기사": 6300
   },
   "보도자료": {
     "목록": 626,
