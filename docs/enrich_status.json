@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-11-20 12:59",
-  "전체기사": 29952,
+  "실행시각": "2026-11-21 08:09",
+  "전체기사": 30142,
   "지면": {
-    "대상": 130,
+    "대상": 134,
     "요청": 80,
-    "게재확인": 0,
-    "미게재": 130,
+    "게재확인": 7,
+    "미게재": 127,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,38 +14,38 @@
     "이번에바뀐행": 0
   },
   "영상": {
-    "대상": 480,
-    "요청": 327,
-    "영상": 158,
-    "아님": 207,
-    "판정보류": 112,
-    "오류": 3,
-    "남은대상": 115
+    "대상": 484,
+    "요청": 232,
+    "영상": 162,
+    "아님": 212,
+    "판정보류": 110,
+    "오류": 0,
+    "남은대상": 110
   },
   "기자명": {
-    "대상": 850,
-    "요청": 213,
-    "채움": 13,
-    "이름없음": 5,
-    "오류": 73,
-    "차단호스트": 4,
-    "네이버바이라인없음": 118,
+    "대상": 1033,
+    "요청": 507,
+    "채움": 172,
+    "이름없음": 21,
+    "오류": 54,
+    "차단호스트": 5,
+    "네이버바이라인없음": 253,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/215/0001273311",
-      "길이": 280157,
-      "title": "세포치료제·비만약…'K-바이오 스타' 모였다 [2026 제약바이오 대상]",
+      "url": "https://n.news.naver.com/mnews/article/015/0005356474",
+      "길이": 286029,
+      "title": "새 아산의료원장에 박승일 병원장·서울아산병원장에 이제환 부원장",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "시간초과": true,
-    "남은대상": 832
+    "남은대상": 840
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 540,
-    "표시기사": 6300
+    "표시기사": 6344
   },
   "보도자료": {
     "목록": 626,
