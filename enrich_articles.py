@@ -39,7 +39,8 @@ PAPER_BUDGET   = int(os.environ.get("PAPER_BUDGET", "300"))        # 실행당 �
 TIME_LIMIT_SEC = int(os.environ.get("ENRICH_TIME_LIMIT", "1500"))  # 전체 보강 시간 상한
 REQUEST_DELAY  = 0.25
 # 지면 정보는 신문 발행 뒤에 붙으므로, 이 기간 안의 기사는 '미게재'여도 다시 확인한다
-PAPER_RECHECK_DAYS = 4
+PAPER_RECHECK_DAYS = int(os.environ.get("PAPER_RECHECK_DAYS", "4"))
+PAPER_BACK_DAYS    = int(os.environ.get("PAPER_BACK_DAYS", "3"))   # 발행일보다 며칠 앞 지면까지 볼지
 
 CHECKED_NONE = "-"   # 확인했지만 값이 없음 → 다음 실행에서 다시 요청하지 않음
 
@@ -359,8 +360,19 @@ def enrich_paper(rows, status, deadline):
         candidates.append((row, match.group(1), match.group(2), day))
 
     def issue_keys(oid, day):
-        # 온라인 기사는 전날 저녁에 먼저 나오는 경우가 많아 발행일과 다음 날 지면을 함께 본다
-        return [(oid, d) for d in (day, day + timedelta(days=1)) if d <= today]
+        # 온라인 기사는 전날 저녁에 먼저 나오는 경우가 많아 발행일 다음 날 지면도 본다.
+        #
+        # **앞날도 봅니다**(2026-11-23). 네이버가 주는 발행일시가 실제 보도일보다 늦게 찍히는
+        # 기사가 있다 — 세계일보 '젊은 뇌졸중, 모야모야병 의심해봐야'는 11/19자 A18면에
+        # 버젓이 있는데 발행일시가 11/21(토)로 와서 11/21·11/22만 조회했고,
+        # **그 이틀은 지면이 아예 없는 날**(토·일, 기사 0건)이라 '미게재'로 적혔다.
+        # URL에 날짜가 박힌 기사로 재 보니 발행일시가 더 늦은 것이 1,191건이고, 그중
+        # 지면 신문인데 면이 안 붙은 것이 262건이다. 뒤로 3일까지 보면 그 89%가 범위에 든다.
+        #
+        # 맞추는 건 **기사 번호**라 날짜를 넓혀도 엉뚱한 면이 붙지는 않는다 — 요청만 는다
+        # (최근 30일 대상 기준 63 → 122건. PAPER_BUDGET 300 안에 든다).
+        return [(oid, day + timedelta(days=k)) for k in range(-PAPER_BACK_DAYS, 2)
+                if day + timedelta(days=k) <= today]
 
     needed = sorted({key for _, oid, _, day in candidates for key in issue_keys(oid, day)},
                     key=lambda key: key[1], reverse=True)
