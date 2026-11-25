@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-11-24 15:58",
-  "전체기사": 30464,
+  "실행시각": "2026-11-25 08:59",
+  "전체기사": 30693,
   "지면": {
-    "대상": 63,
-    "요청": 134,
-    "게재확인": 0,
-    "미게재": 63,
+    "대상": 57,
+    "요청": 121,
+    "게재확인": 6,
+    "미게재": 51,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,38 +14,38 @@
     "이번에바뀐행": 0
   },
   "영상": {
-    "대상": 488,
-    "요청": 332,
-    "영상": 201,
-    "아님": 274,
-    "판정보류": 12,
+    "대상": 489,
+    "요청": 253,
+    "영상": 171,
+    "아님": 225,
+    "판정보류": 92,
     "오류": 1,
-    "남은대상": 13
+    "남은대상": 93
   },
   "기자명": {
-    "대상": 818,
-    "요청": 232,
-    "채움": 2,
-    "이름없음": 3,
-    "오류": 78,
+    "대상": 1045,
+    "요청": 377,
+    "채움": 204,
+    "이름없음": 21,
+    "오류": 56,
     "차단호스트": 5,
-    "네이버바이라인없음": 144,
+    "네이버바이라인없음": 91,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/421/0009305580",
-      "길이": 256779,
-      "title": "똑같이 '삐' 소리 나도 다르다…AI로 이명 세 유형 나눴다",
+      "url": "https://n.news.naver.com/mnews/article/421/0009307924",
+      "길이": 257886,
+      "title": "페니트리움바이오 \"전립선암 임상서 전이 병변 회복 확인\"",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
     "시간초과": true,
-    "남은대상": 813
+    "남은대상": 820
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 540,
-    "표시기사": 6420
+    "표시기사": 6468
   },
   "보도자료": {
     "목록": 625,
