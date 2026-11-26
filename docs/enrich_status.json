@@ -1,5 +1,5 @@
 {
-  "실행시각": "2026-11-26 10:51",
+  "실행시각": "2026-11-26 14:06",
   "전체기사": 31051,
   "지면": {
     "대상": 78,
@@ -15,25 +15,25 @@
   },
   "영상": {
     "대상": 492,
-    "요청": 268,
-    "영상": 176,
-    "아님": 235,
-    "판정보류": 79,
+    "요청": 335,
+    "영상": 202,
+    "아님": 277,
+    "판정보류": 11,
     "오류": 2,
-    "남은대상": 81
+    "남은대상": 13
   },
   "기자명": {
-    "대상": 843,
-    "요청": 265,
-    "채움": 13,
-    "이름없음": 3,
-    "오류": 75,
+    "대상": 838,
+    "요청": 196,
+    "채움": 10,
+    "이름없음": 1,
+    "오류": 77,
     "차단호스트": 5,
-    "네이버바이라인없음": 169,
+    "네이버바이라인없음": 103,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/421/0009310249",
-      "길이": 255839,
-      "title": "현대그린푸드, 1500억에 의료용품 기업 인수…헬스케어 시장 진출",
+      "url": "https://n.news.naver.com/mnews/article/421/0009309800",
+      "길이": 266468,
+      "title": "제38회 아산상 시상식",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
