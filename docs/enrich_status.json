@@ -1,11 +1,11 @@
 {
-  "실행시각": "2026-11-25 14:27",
-  "전체기사": 30695,
+  "실행시각": "2026-11-26 08:39",
+  "전체기사": 31041,
   "지면": {
-    "대상": 52,
-    "요청": 124,
-    "게재확인": 0,
-    "미게재": 52,
+    "대상": 90,
+    "요청": 135,
+    "게재확인": 15,
+    "미게재": 75,
     "오류": 0
   },
   "직접지정지면": {
@@ -14,38 +14,37 @@
     "이번에바뀐행": 0
   },
   "영상": {
-    "대상": 489,
-    "요청": 232,
-    "영상": 163,
-    "아님": 212,
-    "판정보류": 108,
-    "오류": 6,
-    "남은대상": 114
+    "대상": 492,
+    "요청": 285,
+    "영상": 186,
+    "아님": 242,
+    "판정보류": 63,
+    "오류": 1,
+    "남은대상": 64
   },
   "기자명": {
-    "대상": 824,
-    "요청": 159,
-    "채움": 4,
-    "이름없음": 1,
-    "오류": 76,
-    "차단호스트": 6,
-    "네이버바이라인없음": 72,
+    "대상": 1169,
+    "요청": 440,
+    "채움": 317,
+    "이름없음": 20,
+    "오류": 43,
+    "차단호스트": 7,
+    "네이버바이라인없음": 51,
     "네이버진단": {
-      "url": "https://n.news.naver.com/mnews/article/421/0009307717",
-      "길이": 257581,
-      "title": "'이건희 회장 유산' 국가 감염병 대응 마중물…전문병원 내년 착공",
+      "url": "https://n.news.naver.com/mnews/article/022/0004178153",
+      "길이": 261549,
+      "title": "아산상 시상식",
       "byline_s태그": false,
       "journalist태그": true,
       "journalist주변HTML": "2> </div> <div class=\"media_end_head_info nv_notrans \"> <div class=\"media_end_head_info_journalist\"> <div class=\"media_end_head_journalist_info\"> <div class=\"media_end_head_info_datestamp\"> <div class=\"media_end_head_info_datestamp_bunch_area\"> <div class=\"media_end_head_info_datestamp_group\"> <div class=\"media_end_head_info_datestamp_bunch\"> <em class=\"media_end_head_info_datestamp_term\">입력</em> <span class=\"media_end_head_info_datestamp_time _ARTICLE_DATE_TIME\" data-da",
       "jsonld_author": false
     },
-    "시간초과": true,
-    "남은대상": 819
+    "남은대상": 832
   },
   "출입기자": {
     "결과": "대조 완료",
     "명단인원": 540,
-    "표시기사": 6468
+    "표시기사": 6550
   },
   "보도자료": {
     "목록": 625,
